@@ -56,7 +56,7 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	if st.BorderRadius == 0 {
 		st.BorderRadius = 12
 	}
-	if st.Padding == (properties.Inset{}) {
+	if st.Padding == (properties.Inset{}) && !d.padSet {
 		st.Padding = properties.UniformInset(20)
 	}
 
@@ -88,7 +88,7 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	pos := image.Pt((win.X-d.size.X)/2, (win.Y-d.size.Y)/2)
 	off := op.Offset(pos).Push(gtx.Ops)
 	pop := elements.PushOffset(pos)
-	dims := d.panel.Layout(panelGtx, elements.Box(st, d.content()).Layout)
+	dims := kit.LayoutClickable(panelGtx, &d.panel, elements.Box(st, d.content()).Layout)
 	pop()
 	off.Pop()
 	if dims.Size != d.size {

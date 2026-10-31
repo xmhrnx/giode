@@ -13,6 +13,7 @@ import (
 	"github.com/mehran9675/giode/elements"
 	"github.com/mehran9675/giode/fonts"
 	"github.com/mehran9675/giode/styles"
+	"github.com/mehran9675/giode/styles/properties"
 )
 
 func TestDialogTakesNoSpace(t *testing.T) {
@@ -77,5 +78,22 @@ func TestDialogOutsideGap(t *testing.T) {
 	elements.DrainPortals(gtx)
 	if dims.Size.Y != 50 {
 		t.Errorf("height %d, want 50: the gap went around the dialog", dims.Size.Y)
+	}
+}
+
+func TestZeroPadding(t *testing.T) {
+	fonts.UseGofont()
+	open := true
+	d := New(&open, func() elements.Element { return elements.Box(styles.Styles{Width: 100, Height: 50}) }).Padding(properties.Inset{})
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(400, 300)}}
+	elements.SetWindowSize(image.Pt(400, 300))
+	for range 2 {
+		elements.BeginFrame()
+		d.Layout(gtx)
+		elements.DrainPortals(gtx)
+	}
+	if d.size != image.Pt(100, 50) {
+		t.Errorf("panel %v with Padding(Inset{}), want the content's 100x50", d.size)
 	}
 }
