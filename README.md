@@ -120,7 +120,7 @@ The full documentation is in [`docs/`](docs/index.md), also published as a websi
 ## Agent skill
 
 [`skills/giode`](skills/giode) is a skill for AI coding agents (Claude Code and others that
-read `SKILL.md`): giode's mental model, the CLI, code organization rules and the gotchas,
+read `SKILL.md`): Giode's mental model, the CLI, code organization rules and the gotchas,
 with the documentation bundled in `references/`. Install it for every project with:
 
 ```sh

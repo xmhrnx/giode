@@ -1,13 +1,13 @@
 ---
 name: giode
-description: Build, debug and ship cross-platform Go apps with the giode UI library (github.com/mehran9675/giode, on Gio) and the giode CLI (giode new/build/run/ci/release, giode.toml). Use when code imports giode or a project has a giode.toml, when the user asks for a giode app, component, screen, layout, style, theme, platform feature (file pickers, notifications, tray, Android/iOS, Java bridge, elevation, i18n, RTL), MCP automation of a giode app, or for building, signing and packaging one for Windows, macOS, Linux, Android, iOS or the web.
+description: Build, debug and ship cross-platform Go apps with the Giode UI library (github.com/mehran9675/giode, on Gio) and the Giode CLI (`giode new/build/run/ci/release`, giode.toml). Use when code imports Giode or a project has a giode.toml, when the user asks for a Giode app, component, screen, layout, style, theme, platform feature (file pickers, notifications, tray, Android/iOS, Java bridge, elevation, i18n, RTL), MCP automation of a Giode app, or for building, signing and packaging one for Windows, macOS, Linux, Android, iOS or the web.
 ---
 
-# giode
+# Giode
 
-giode is a Go UI library on top of [Gio](https://gioui.org): no webview, GPU-rendered,
+Giode is a Go UI library on top of [Gio](https://gioui.org): no webview, GPU-rendered,
 one codebase for Windows, macOS, Linux, Android, iOS and the web. UIs are composed from Go
-functions returning `giode.Element`s, styled with CSS-like `giode.Styles`. The giode CLI
+functions returning `giode.Element`s, styled with CSS-like `giode.Styles`. The Giode CLI
 (`github.com/mehran9675/giode-cli/cmd/giode`) creates, builds, runs, signs and packages
 apps from a `giode.toml`.
 
@@ -137,7 +137,7 @@ sub-packages; Android Java calls through `github.com/mehran9675/giode/android`
   keys to text with `{placeholders}` or plural forms.
 - `giode.Intl(key, data)` fills placeholders from a map, a struct or name/value pairs; a
   `count` picks the plural form. `giode.SetLocale("fa")` switches at runtime.
-- giode's own strings (window buttons, edit menu, ...) are translated for ~40 languages;
+- Giode's own strings (window buttons, edit menu, ...) are translated for ~40 languages;
   override them with `giode.*` keys in your files.
 - In a right-to-left locale the whole UI mirrors automatically. Use `Inset{Start:, End:}`,
   `giode.SideStart`/`SideEnd`, `giode.ToastBottomEnd` for direction-aware placement.
@@ -145,7 +145,7 @@ sub-packages; Android Java calls through `github.com/mehran9675/giode/android`
 
 ## Code organization and clean code
 
-Follow these rules for every giode app and component you write or change. They apply on
+Follow these rules for every Giode app and component you write or change. They apply on
 top of the code's existing conventions; when a project already has a structure, keep it.
 
 **One component per file.** Each component - a function returning an `Element`, a
@@ -165,7 +165,7 @@ myapp/
   assets/            # icons, images, fonts (embedded with //go:embed)
   locales/           # en.json, fa.json, ... (Config.Intl)
   internal/
-    <domain>/        # the app's logic: no giode imports, unit-tested on its own
+    <domain>/        # the app's logic: no Giode imports, unit-tested on its own
   ui/
     app.go           # the root view and the top-level state it owns
     theme.go         # palette, shared colors, sizes and style helpers
@@ -203,7 +203,7 @@ keep logic out of the UI package.
 
 ## Inspecting a running app
 
-Start any giode app with `GIODE_MCP=1` (or `Config.MCP: true`): an MCP server on
+Start any Giode app with `GIODE_MCP=1` (or `Config.MCP: true`): an MCP server on
 `http://127.0.0.1:7600/mcp` (`MCPOptions.Host`/`Port`, `GIODE_MCP_PORT`) exposes the UI
 tree, screenshots, clicks, typing and scrolling. Use it to check a change visually instead
 of guessing. For headless tests, lay elements out with a `layout.Context` and read
@@ -213,7 +213,7 @@ pixels where a GPU (or Mesa with `EGL_PLATFORM=surfaceless`) is available.
 ## The CLI
 
 Install: `go install github.com/mehran9675/giode-cli/cmd/giode@latest` (or the install
-scripts in the giode-cli README).
+scripts in the Giode CLI README).
 
 | Command | What it does |
 | --- | --- |
