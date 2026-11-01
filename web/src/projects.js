@@ -76,7 +76,7 @@ export const PROJECTS = [
 		repo: "Mehran9675/pocket-agent",
 		tagline: "A private AI workspace for Android, iPhone and iPad.",
 		description: "Chat with models running on the device or in the cloud, hand multi-step tasks to agents, and run deep research that reads dozens of sources and writes a cited report. One Go codebase with native rendering and no webview.",
-		accent: "#10b981",
+		accent: "#fb923c",
 		platforms: ["android", "ios"],
 		category: "AI",
 		highlights: [
