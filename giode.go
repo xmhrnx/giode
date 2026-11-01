@@ -14,3 +14,4 @@
 package giode
 
 //go:generate go run ./internal/cmd/reexport
+//go:generate go run ./internal/cmd/skilldocs

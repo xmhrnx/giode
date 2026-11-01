@@ -117,6 +117,18 @@ The full documentation is in [`docs/`](docs/index.md), also published as a websi
 - [Extending the library](docs/extending.md), [architecture](docs/architecture.md) and
   [low-level access](docs/low-level.md)
 
+## Agent skill
+
+[`skills/giode`](skills/giode) is a skill for AI coding agents (Claude Code and others that
+read `SKILL.md`): giode's mental model, the CLI, code organization rules and the gotchas,
+with the documentation bundled in `references/`. Install it for every project with:
+
+```sh
+mkdir -p ~/.claude/skills && cp -r skills/giode ~/.claude/skills/
+```
+
+`go generate` in the repository root refreshes `references/` from `docs/`.
+
 ## License
 
 Apache License 2.0; see [LICENSE](LICENSE).
