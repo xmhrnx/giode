@@ -2,6 +2,7 @@ package kit
 
 import (
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 )
 
@@ -114,4 +115,22 @@ func Unselectable(w layout.Widget) layout.Widget {
 // SelectionArea's selection: it's not inside an Unselectable widget.
 func TextSelectable() bool {
 	return noSelect == 0
+}
+
+// LayoutClickable lays w out with click's input area under it, like
+// click.Layout(gtx, w) but without clipping what w paints to its size:
+// a box shadow, which falls outside the box, stays whole instead of
+// showing only where it's under the box's rounded corners. w's own
+// interactive children stay on top of the click area.
+func LayoutClickable(gtx layout.Context, click *widget.Clickable, w layout.Widget) layout.Dimensions {
+	macro := op.Record(gtx.Ops)
+	dims := w(gtx)
+	call := macro.Stop()
+	cgtx := gtx
+	cgtx.Constraints = layout.Exact(dims.Size)
+	click.Layout(cgtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Dimensions{Size: dims.Size, Baseline: dims.Baseline}
+	})
+	call.Add(gtx.Ops)
+	return dims
 }

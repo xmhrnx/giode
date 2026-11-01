@@ -363,7 +363,7 @@ func (s *Sheet) panelOps(gtx layout.Context, width, maxH, fixedH int, handle boo
 
 	track := elements.TrackChild()
 	macro := op.Record(gtx.Ops)
-	dims := s.panel.Layout(pgtx, func(gtx layout.Context) layout.Dimensions {
+	dims := kit.LayoutClickable(pgtx, &s.panel, func(gtx layout.Context) layout.Dimensions {
 		d := panel.Layout(gtx)
 		if handle && !s.fixed {
 			// The handle and title are where a drag moves the sheet.

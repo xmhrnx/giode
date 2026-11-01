@@ -107,7 +107,7 @@ func (s *Select) layoutSheet(gtx layout.Context, st styles.Styles) layout.Dimens
 		}
 		return s.sheet.list.Layout(gtx)
 	})
-	dims := s.sheet.panel.Layout(pgtx, elements.Box(panelSt, content).Layout)
+	dims := kit.LayoutClickable(pgtx, &s.sheet.panel, elements.Box(panelSt, content).Layout)
 	call := macro.Stop()
 
 	pos := image.Pt(0, win.Y-dims.Size.Y)

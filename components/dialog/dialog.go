@@ -8,6 +8,7 @@ import (
 
 	"github.com/mehran9675/giode/elements"
 	"github.com/mehran9675/giode/styles"
+	"github.com/mehran9675/giode/styles/properties"
 )
 
 var defaultBackground = "#1e293b"
@@ -29,6 +30,8 @@ type Dialog struct {
 	// panel takes the clicks on the panel's own empty space, which
 	// would otherwise fall through to the scrim and close the dialog.
 	panel widget.Clickable
+	// padSet records an explicit Padding, which may be zero.
+	padSet bool
 	// size is the panel's size last frame, used to center it before
 	// laying it out (see Layout).
 	size image.Point
@@ -44,6 +47,16 @@ func New(open *bool, content func() elements.Element, st ...styles.Styles) *Dial
 	if len(st) > 0 {
 		d.st = st[0]
 	}
+	return d
+}
+
+// Padding sets the panel's padding, zero included: the styles' Padding
+// can't say zero, since an all-zero inset means "use the default"
+// (20dp). Padding(giode.Inset{}) lets the content reach the panel's
+// edges, as for a settings panel with a sidebar. It returns d for
+// chaining.
+func (d *Dialog) Padding(p properties.Inset) *Dialog {
+	d.st.Padding, d.padSet = p, true
 	return d
 }
 
