@@ -165,7 +165,7 @@ myapp/
   assets/            # icons, images, fonts (embedded with //go:embed)
   locales/           # en.json, fa.json, ... (Config.Intl)
   internal/
-    <domain>/        # the app's logic: no giode imports, unit-tested on its own
+    <domain>/        # the app's logic: no Giode imports, unit-tested on its own
   ui/
     app.go           # the root view and the top-level state it owns
     theme.go         # palette, shared colors, sizes and style helpers
@@ -213,7 +213,7 @@ pixels where a GPU (or Mesa with `EGL_PLATFORM=surfaceless`) is available.
 ## The CLI
 
 Install: `go install github.com/mehran9675/giode-cli/cmd/giode@latest` (or the install
-scripts in the giode-cli README).
+scripts in the Giode CLI README).
 
 | Command | What it does |
 | --- | --- |
