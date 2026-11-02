@@ -31,10 +31,13 @@ const (
 // from the UI goroutine would wait on Gio's window thread, which may
 // be waiting on the UI goroutine.
 
-func (a *App) hideNativeWindow() {
-	if hwnd := a.NativeHandle(); hwnd != 0 {
-		procShowWindowAsync.Call(hwnd, swHide)
+func (a *App) hideNativeWindow() bool {
+	hwnd := a.NativeHandle()
+	if hwnd == 0 {
+		return false
 	}
+	procShowWindowAsync.Call(hwnd, swHide)
+	return true
 }
 
 func (a *App) showNativeWindow() {

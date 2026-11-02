@@ -57,3 +57,47 @@ func TestStripLoginArg(t *testing.T) {
 		t.Error("the program name taken as the login argument")
 	}
 }
+
+func TestTrayClickShowsHiddenWindowDirectly(t *testing.T) {
+	a := New(Config{Title: "t"})
+	a.windowHidden.Store(true)
+	a.Tray().clicked()
+	if a.windowHidden.Load() {
+		t.Error("the default tray click waited for the UI goroutine to show the window")
+	}
+	a.uiMu.Lock()
+	n := len(a.uiCalls)
+	a.uiMu.Unlock()
+	if n != 0 {
+		t.Errorf("the default tray click queued %d calls", n)
+	}
+}
+
+func TestSecondLaunchShowsHiddenWindowDirectly(t *testing.T) {
+	a := New(Config{Title: "t"})
+	a.windowHidden.Store(true)
+	a.handleLaunch([]string{"file.txt"})
+	if a.windowHidden.Load() {
+		t.Error("a second launch didn't show the hidden window straight away")
+	}
+}
+
+func TestHideWindowWithoutWindow(t *testing.T) {
+	a := New(Config{Title: "t"})
+	a.HideWindow()
+	if a.windowHidden.Load() {
+		t.Error("HideWindow marked a window hidden that it couldn't hide, so the tray would never show it again")
+	}
+}
+
+func TestRunUICallsReportsWork(t *testing.T) {
+	a := New(Config{Title: "t"})
+	if a.runUICalls() {
+		t.Error("ran calls with none queued")
+	}
+	ran := false
+	a.Post(func() { ran = true })
+	if !a.runUICalls() || !ran {
+		t.Error("queued call didn't run")
+	}
+}

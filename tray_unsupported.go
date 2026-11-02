@@ -10,7 +10,7 @@ func trayStart(*Tray)            {}
 func trayApply(*Tray, trayState) {}
 func trayRemove()                {}
 
-func (a *App) hideNativeWindow()      {}
+func (a *App) hideNativeWindow() bool { return false }
 func (a *App) showNativeWindow()      {}
 func (a *App) warnTrayLimits()        {}
 func (a *App) platformInit()          {}

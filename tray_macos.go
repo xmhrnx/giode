@@ -63,10 +63,13 @@ func setTrayIcon(icon []byte, template bool) {
 	}
 }
 
-func (a *App) hideNativeWindow() {
-	if v := a.NativeHandle(); v != 0 {
-		C.giodeHideWindow(C.uintptr_t(v))
+func (a *App) hideNativeWindow() bool {
+	v := a.NativeHandle()
+	if v == 0 {
+		return false
 	}
+	C.giodeHideWindow(C.uintptr_t(v))
+	return true
 }
 
 func (a *App) showNativeWindow() {

@@ -16,12 +16,20 @@ func setTrayIcon(icon []byte, _ bool) {
 	systray.SetIcon(icon)
 }
 
-func (a *App) hideNativeWindow() {
-	if !hideX11Window(a.NativeView()) {
-		// Wayland has no way to hide a window: minimize it.
-		a.window.Perform(system.ActionMinimize)
+// hideNativeWindow unmaps an X11 window. Wayland can't hide a window,
+// and a window minimized there can't be brought back by the app, so
+// the tray couldn't show it again: there it does nothing.
+func (a *App) hideNativeWindow() bool {
+	if hideX11Window(a.NativeView()) {
+		return true
 	}
+	if !trayWaylandWarned.Swap(true) {
+		a.logf(LogLevelWarning, "giode: Wayland can't hide windows; the window stays on screen")
+	}
+	return false
 }
+
+var trayWaylandWarned atomic.Bool
 
 func (a *App) showNativeWindow() {
 	showX11Window(a.NativeView())

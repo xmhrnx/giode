@@ -225,8 +225,14 @@ clicking the Dock icon brings it back on macOS. `Config.MenuBarApp` makes a macO
 menu bar utility, with no Dock icon or app menu. `Quit()` ends the app even with
 `CloseToTray`, as does `Close()`.
 
-Platform notes: on Linux, hiding works under X11; Wayland can't hide windows, so there the
-window minimizes, and `CloseToTray` isn't available (closing quits). Android, iOS and the
+Tray menu items and `OnClick` run on the UI goroutine even while the window is hidden and
+draws no frames, as does anything queued with `Post`. The default tray click and a second
+launch (with `SingleInstanceLock`) show the window directly, so a hidden window always
+comes back; `HideWindow`, `ShowWindow` and `Quit` may be called from any goroutine.
+
+Platform notes: on Linux, hiding works under X11. Wayland can't hide a window, nor bring a
+minimized one back, so there `HideWindow` and `StartInTray` leave the window on screen, and
+`CloseToTray` isn't available (closing quits). Android, iOS and the
 web have no tray: `TraySupported()` reports false and the calls do nothing.
 
 `SetCloseToTray(on)` and `SetMinimizeToTray(on)` change those options while the app runs,

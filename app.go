@@ -126,6 +126,14 @@ func (a *App) runLoop(view func() Element) error {
 			a.handleViewEvent(e)
 		case app.ConfigEvent:
 			a.handleConfig(e.Config)
+		default:
+			// A wakeup from Invalidate with no frame to follow, as while
+			// the window is hidden: run the queued calls now, and ask
+			// for a frame for what they changed (a visible window gets
+			// one; a hidden one just wakes again with nothing queued).
+			if a.runUICalls() {
+				a.window.Invalidate()
+			}
 		case app.FrameEvent:
 			start := time.Now()
 			a.frameGeom.Store(&frameGeom{pxPerDp: e.Metric.PxPerDp, size: e.Size})
