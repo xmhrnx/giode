@@ -1,7 +1,8 @@
 # Platform services
 
 Services apps reach outside their window: links, the safe area, the system theme, device
-details, haptics, notifications, staying awake, secure storage, pickers and dictation.
+details, haptics, notifications, staying awake, secure storage, pickers, the camera, text
+recognition, biometrics, printing, PDF pages and dictation.
 File dialogs, sharing, the Back button and background/foreground callbacks are in
 [window.md](window.md).
 
@@ -21,8 +22,15 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `PickFolder` | – | – | ✓ | ✓ | ✓ (portal, zenity, kdialog) | – |
 | `RestartElevated` | – | – | admin prompt | UAC | pkexec | – |
 | `PickPhoto` library / camera | ✓ / ✓ | ✓ / Info.plist key | file / – | file / – | file / – | file / – |
+| `PickPhotos` (several) | ✓ | ✓ (iOS 14+) | files | files | files | – |
+| `SaveToPhotos` | Pictures (Android 10+) | Photos, Info.plist key | ~/Pictures | Pictures | XDG Pictures | – |
+| `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | – | – | – |
+| `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
+| `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
+| `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
+| `pdfpages` package | PdfRenderer | Core Graphics | Core Graphics | – | – | – |
 | `Dictate` | ✓ | Info.plist keys | – | – | – | – |
-| `Share` | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
+| `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
 
 "–" means the call returns `ErrNotSupported` (or, for `Haptic`, does nothing). The iOS
 code is compiled in CI but hasn't run on a device.
@@ -135,7 +143,139 @@ it picks an image file (JPEG, PNG, GIF, WebP). The iOS camera needs
 without it `PickPhoto` returns an error wrapping `ErrNotSupported` rather than letting iOS
 end the app. Like `OpenFile`, these block: call them from a goroutine.
 
+`PickPhotos` picks several at once, up to a limit (0 for as many as the picker allows), in
+the order picked, each an upright JPEG scaled to `MaxSide`:
+
+```go
+pages, err := app.PickPhotos(ctx, giode.PhotoOptions{MaxSide: 2400}, 0)
+```
+
+On desktops both decode the file in Go and turn it upright by its EXIF orientation, as the
+phones' pickers do.
+
+`SaveToPhotos` adds a picture or video to the gallery: Android's Pictures (Movies for
+videos) through MediaStore, Android 10 or later and no permission; the iOS photo library,
+asking for add-only access the first time (`ios.usage.photos_add`); the Pictures folder on
+desktops. The second argument is the album folder, the app's name when empty.
+
+```go
+err := app.SaveToPhotos(ctx, "/path/page-1.jpg", "Scans")
+```
+
+`giode.ShareFiles{Paths: pages}` shares several files in one share sheet (`Share` above
+took one). The MIME type is the files' shared type, `image/*` for mixed images, or `*/*`.
+
 Reading an image from the clipboard isn't supported yet.
+
+## Camera
+
+`PickPhoto` with `Camera` hands over to the system camera app for one shot. For a
+viewfinder inside the app (a scanner outlining the page, auto-capture when it's steady, a
+QR reader) use the `camera` package:
+
+```go
+import "github.com/xmhrnx/giode/camera"
+
+cam, err := camera.Open(ctx, app, camera.Options{
+	// Small grey frames for analysis, on their own goroutine, at most 15 a second.
+	OnFrame: func(f camera.Frame) {
+		quad := findPage(f.Image) // f.Image is an upright *image.Gray, 640 px on its long side
+		app.Post(func() { outline = quad })
+	},
+})
+defer cam.Close()
+
+view := cam.Preview(camera.PreviewOptions{
+	Fill: true, // crop to fill, as camera apps do; tap to focus is on by default
+	Overlay: func(gtx layout.Context, toView func(f32.Point) f32.Point) {
+		drawQuad(gtx, outline, toView) // frame coordinates (0..1) to the element's pixels
+	},
+})
+
+jpeg, err := cam.Capture(ctx) // full resolution, upright; the preview keeps running
+cam.Torch(true)
+cam.Focus(f32.Pt(0.5, 0.3))
+```
+
+`Open` asks for the camera permission first if needed (`RequestPermission` asks at a moment
+of your choosing) and returns `camera.ErrPermissionDenied` when refused. Frames arrive
+upright whichever way the device is held; the front camera's are mirrored. The preview is
+drawn by Giode, so anything can be laid over it. `Options` sets the camera
+(`Back`/`Front`), the analysis size and rate, and `OnError` for errors while running
+(another app took the camera). On Android it uses Camera2 and closes the camera while the
+app is in the background, reopening it on return; the package adds the camera permission
+to the manifest. On iOS and macOS it uses AVFoundation; iOS needs `ios.usage.camera`.
+Windows and Linux return `ErrNotSupported`.
+
+## Text recognition
+
+```go
+import "github.com/xmhrnx/giode/ocr"
+
+res, err := ocr.Recognize(ctx, pageImage, ocr.Options{Languages: []string{"en-US"}})
+app.SetClipboard(res.Text)
+for _, line := range res.Lines {
+	for _, w := range line.Words {
+		pdf.AddInvisibleText(w.Text, w.Box) // a searchable layer, in the image's pixels
+	}
+}
+```
+
+Recognition runs on the device. iOS and macOS use Vision (accurate by default, `Fast` for
+camera frames), which reads many scripts; `Languages` lists the ones to expect. Android
+uses ML Kit with its Latin-script model bundled into the app (about 4 MB per architecture),
+so it works offline and without Google Play services; it needs the giode CLI, which adds
+ML Kit from the package's `android_dependencies.txt`. `RecognizeData` takes JPEG or PNG
+bytes. Elsewhere it returns `ErrNotSupported`.
+
+## Biometric unlock
+
+```go
+import "github.com/xmhrnx/giode/biometric"
+
+if biometric.Available() != biometric.None {
+	err := biometric.Authenticate(ctx, app, biometric.Options{
+		Reason:        "Unlock your documents",
+		AllowPasscode: true, // offer the device PIN as a fallback
+	})
+	if err == nil {
+		unlocked = true
+	}
+}
+```
+
+Android uses BiometricPrompt (Android 9 or later; the package adds `USE_BIOMETRIC` to the
+manifest); iOS and macOS use LocalAuthentication. Face ID needs `ios.usage.faceid`;
+without it `Authenticate` returns an error instead of letting iOS end the app. Errors:
+`ErrCanceled`, `ErrNotEnrolled`, `ErrLockout`, `ErrFailed`. The prompt only says the
+check passed; keep secrets in `SecureSet` and use the check to decide when to read them.
+
+## Printing
+
+```go
+import "github.com/xmhrnx/giode/printing"
+
+err := printing.Print(ctx, app, "scan.pdf", printing.Options{JobName: "Receipts"})
+```
+
+It opens the system's print dialog: Android's print service (PDFs), the print panel on iOS
+and macOS (PDFs and images), and on Windows the file's default app's Print command. Linux
+and the web return `ErrNotSupported`.
+
+## PDF pages as images
+
+```go
+import "github.com/xmhrnx/giode/pdfpages"
+
+doc, err := pdfpages.Open("contract.pdf")
+defer doc.Close()
+for i := 0; i < doc.PageCount(); i++ {
+	img, err := doc.Render(i, 1600) // *image.RGBA, 1600 px wide, on white
+}
+```
+
+Android uses PdfRenderer, iOS and macOS Core Graphics. Password-protected PDFs aren't
+supported. Windows and Linux return `ErrNotSupported`.
 
 `PickFolder` asks for a folder and returns its path: a destination for exported or
 recovered files.
