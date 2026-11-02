@@ -258,8 +258,24 @@ func (a *App) HideWindow() {
 	if !a.windowHidden.CompareAndSwap(false, true) {
 		return
 	}
+	a.viewMu.Lock()
+	early := a.view == nil || !a.view.Valid()
+	if early {
+		// Before the native window exists (OnReady can run first on
+		// Windows): hide it as soon as it does.
+		a.hidePending = true
+	}
+	a.viewMu.Unlock()
+	if !early {
+		a.hideNow()
+	}
+}
+
+// hideNow hides the native window for HideWindow, or undoes the hidden
+// state where the platform can't hide it, so the tray can always show
+// the window again.
+func (a *App) hideNow() {
 	if !a.hideNativeWindow() {
-		// No window yet, or none this platform can hide.
 		a.windowHidden.Store(false)
 		return
 	}
@@ -270,6 +286,9 @@ func (a *App) HideWindow() {
 // MinimizeToTray, CloseToTray), restores it from minimized, and brings
 // it to the front.
 func (a *App) ShowWindow() {
+	a.viewMu.Lock()
+	a.hidePending = false
+	a.viewMu.Unlock()
 	was := a.windowHidden.Swap(false)
 	a.showNativeWindow()
 	a.window.Invalidate()

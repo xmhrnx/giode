@@ -11,11 +11,18 @@ import (
 func (a *App) handleViewEvent(ev app.ViewEvent) {
 	a.viewMu.Lock()
 	a.view = ev
+	pending := a.hidePending && ev.Valid()
+	if pending {
+		a.hidePending = false
+	}
 	a.viewMu.Unlock()
 	a.platformView(ev)
 	a.trayView(ev)
 	a.placementView(ev)
 	a.startInTray(ev)
+	if pending && a.windowHidden.Load() {
+		a.hideNow()
+	}
 }
 
 // NativeView returns the platform view event Gio reported for the

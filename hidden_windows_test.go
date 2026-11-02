@@ -14,7 +14,9 @@ func TestPostWhileHidden_Windows(t *testing.T) {
 	ready := make(chan struct{})
 	a := New(Config{Title: "hidden post test", OnReady: func() { close(ready) }})
 	done := make(chan error, 1)
-	go func() { done <- a.Run(func() Element { return Text("hidden") }) }()
+	// The window loop itself: Run exits the process when the window
+	// closes.
+	go func() { done <- a.runLoop(func() Element { return Text("hidden") }) }()
 	select {
 	case <-ready:
 	case err := <-done:

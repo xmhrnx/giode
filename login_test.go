@@ -76,11 +76,21 @@ func TestSecondLaunchShowsHiddenWindowDirectly(t *testing.T) {
 	}
 }
 
-func TestHideWindowWithoutWindow(t *testing.T) {
+func TestHideWindowBeforeWindow(t *testing.T) {
 	a := New(Config{Title: "t"})
 	a.HideWindow()
-	if a.windowHidden.Load() {
-		t.Error("HideWindow marked a window hidden that it couldn't hide, so the tray would never show it again")
+	a.viewMu.Lock()
+	pending := a.hidePending
+	a.viewMu.Unlock()
+	if !pending || a.WindowVisible() {
+		t.Error("HideWindow before the window exists isn't kept for when it does")
+	}
+	a.ShowWindow()
+	a.viewMu.Lock()
+	pending = a.hidePending
+	a.viewMu.Unlock()
+	if pending || !a.WindowVisible() {
+		t.Error("ShowWindow didn't cancel the pending hide")
 	}
 }
 
