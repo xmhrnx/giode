@@ -7,7 +7,8 @@ The project file. Only `app.name` and `app.id` are required.
 name = "Pocket Agent"         # display name
 id = "com.example.agent"      # Android package name and Apple bundle ID
 version = "1.4.0"
-build = 12                    # Android versionCode, CFBundleVersion: raise per upload; giode.AppVersion and giode.AppBuild at run time
+build = 12                    # Android versionCode, CFBundleVersion: at least 1, raise per upload; giode.AppVersion and giode.AppBuild at run time
+                              # (a four-part version, "1.4.0.12", sets both)
 icon = "assets/icon.png"      # square PNG, 1024x1024 for the stores
 package = "."                 # main package
 publisher = "Example Ltd"     # shown by installers and Windows' app list
