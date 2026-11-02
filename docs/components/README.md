@@ -33,6 +33,7 @@ stateless elements.
 | Accordion | [accordion.md](accordion.md) | expanded sections |
 | Pagination | [pagination.md](pagination.md) | current page |
 | Swipeable | [swipeable.md](swipeable.md) | offset, open side |
+| Zoomable | [zoom.md](zoom.md) | scale, offset |
 | Sheet | [sheet.md](sheet.md) | external `*bool`, detent |
 | Input (switch) | [controls.md](controls.md#switch) | bool |
 | Input (segmented) | [controls.md](controls.md#segmented) | selection |

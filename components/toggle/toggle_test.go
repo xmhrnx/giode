@@ -2,6 +2,7 @@ package toggle
 
 import (
 	"image"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +11,10 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/styles"
 )
 
 func TestSwitch(t *testing.T) {
@@ -43,5 +48,28 @@ func TestSwitch(t *testing.T) {
 	s.Disabled(true).Toggle()
 	if !s.Checked() {
 		t.Error("a disabled switch toggled")
+	}
+}
+
+func TestSwitch_LongLabelKeepsSwitchBeside(t *testing.T) {
+	fonts.UseGofont()
+	measure := func(e interface {
+		Layout(layout.Context) layout.Dimensions
+	}, w int) layout.Dimensions {
+		var ops op.Ops
+		return e.Layout(layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(w, 2000)}})
+	}
+	track := measure(New(""), 400)
+	label := strings.Repeat("Remember this device and sign in without a code ", 4)
+	got := measure(New(label), 300)
+	if got.Size.X != 300 {
+		t.Errorf("labelled switch is %dpx wide, want the full 300", got.Size.X)
+	}
+	// The label wraps beside the switch: the row is as tall as the label
+	// at the width left of the switch, not that plus a line for the
+	// switch.
+	text := measure(elements.Text(label, styles.Styles{}), 300-track.Size.X-12)
+	if got.Size.Y > text.Size.Y+4 {
+		t.Errorf("row is %dpx tall, the label alone %dpx: the switch went onto its own line", got.Size.Y, text.Size.Y)
 	}
 }

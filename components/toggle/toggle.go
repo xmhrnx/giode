@@ -140,8 +140,11 @@ func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
 	track := elements.Raw(elements.RawFunc(s.track(st)))
 	var content elements.Element = track
 	if s.label != "" {
-		content = elements.Row(styles.Styles{Width: -1, Align: properties.AlignCenter, Gap: 12},
-			elements.Box(styles.Styles{FlexGrow: 1}, elements.Text(s.label, styles.Styles{Color: st.Color, FontSize: st.FontSize})),
+		// The row must not wrap: FlexGrow is ignored on wrapped lines, so
+		// the switch would sit right after the label, and a long label
+		// would push it onto a line of its own. The label wraps instead.
+		content = elements.Row(styles.Styles{Width: -1, Align: properties.AlignCenter, Gap: 12, Wrap: properties.WrapNoWrap},
+			elements.Box(styles.Styles{FlexGrow: 1, Width: -1}, elements.Text(s.label, styles.Styles{Color: st.Color, FontSize: st.FontSize})),
 			track)
 	}
 	dims := s.click.Layout(gtx, kit.Unselectable(func(gtx layout.Context) layout.Dimensions {

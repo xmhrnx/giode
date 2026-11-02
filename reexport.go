@@ -289,6 +289,9 @@ var (
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = ui.Swipeable
+	// Zoomable pinch-zooms and pans its content - a page, a photo, a
+	// crop editor - with a double tap and Ctrl+wheel too; see zoom.New.
+	Zoomable = ui.Zoomable
 	// Sheet is a modal bottom sheet, or with Adaptive a centered
 	// dialog on wide screens; see sheet.New.
 	Sheet = ui.Sheet
