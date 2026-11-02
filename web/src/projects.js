@@ -52,7 +52,7 @@ export const PROJECTS = [
 		tagline: "A speech studio - text to speech and speech to text - with no code and no setup.",
 		description: "Type some text or open a document, pick an engine and a voice, press Generate. Or record, press Transcribe and get the text back with timestamps. Sonora installs models like Kitten TTS, IndexTTS and Whisper with one click, and on Android runs them on the phone itself, offline.",
 		accent: "#8b5cf6",
-		platforms: ["windows", "macos", "linux", "android"],
+		platforms: ["windows", "macos", "linux", "android", "ios"],
 		category: "Audio & AI",
 		highlights: [
 			"One-click engines: Sonora installs its own Python, a private environment per engine and the right PyTorch for your GPU.",
