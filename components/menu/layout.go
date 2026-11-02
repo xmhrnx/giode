@@ -50,6 +50,9 @@ func (m *Menu) Layout(gtx layout.Context) layout.Dimensions {
 
 		// Back and Escape close the menu.
 		elements.HandleDismiss(m.Close)
+		if gtx.Source.Enabled() {
+			m.handleKeys(gtx)
+		}
 	}
 
 	register := elements.RegisterPortal

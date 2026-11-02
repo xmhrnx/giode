@@ -107,14 +107,22 @@ func (r *menuRow) Layout(gtx layout.Context) layout.Dimensions {
 		if hovered || item.click.Pressed() {
 			kit.MarkLive()
 		}
-		if hovered {
+		if hovered && (r.menu.active != r.index || r.menu.root().keyNav) {
+			// The pointer takes the highlight back from the keyboard.
+			r.menu.active = r.index
+			r.menu.root().keyNav = false
+		}
+		keyed := r.menu.root().keyNav && r.menu.active == r.index
+		if hovered || keyed {
 			st.Background = r.menu.hoverColor
 			if st.Background == "" {
 				st.Background = properties.CalcColorReverse(defaultHover)
 			}
-			pointer.CursorPointer.Add(gtx.Ops)
-			if item.submenu != nil {
-				r.menu.openSubmenu = r.index
+			if hovered {
+				pointer.CursorPointer.Add(gtx.Ops)
+				if item.submenu != nil {
+					r.menu.openSubmenu = r.index
+				}
 			}
 		}
 		var children []elements.Element
