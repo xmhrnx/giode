@@ -21,7 +21,7 @@
 
 @class GiodeCamera;
 
-@interface GiodePhotoDelegate : NSObject <AVCapturePhotoCaptureDelegate>
+@interface GiodeCameraPhotoDelegate : NSObject <AVCapturePhotoCaptureDelegate>
 @property(nonatomic) int req;
 @property(nonatomic, strong) GiodeCamera *camera;
 @end
@@ -41,7 +41,7 @@
 @property(nonatomic, strong) AVCapturePhotoOutput *photo;
 @property(nonatomic, strong) dispatch_queue_t sessionQueue;
 @property(nonatomic, strong) dispatch_queue_t videoQueue;
-@property(nonatomic, strong) NSMutableSet<GiodePhotoDelegate *> *captures;
+@property(nonatomic, strong) NSMutableSet<GiodeCameraPhotoDelegate *> *captures;
 @property(nonatomic, strong) id orientationObserver;
 @end
 
@@ -154,7 +154,7 @@ static AVCaptureVideoOrientation giodeVideoOrientation(void) {
 
 @end
 
-@implementation GiodePhotoDelegate
+@implementation GiodeCameraPhotoDelegate
 
 - (void)captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error {
 	GiodeCamera *cam = self.camera;
@@ -332,7 +332,7 @@ void giodeCameraCapture(int cid, int req) {
 		// Keep the torch's light rather than fire the flash.
 		settings.flashMode = AVCaptureFlashModeOff;
 #endif
-		GiodePhotoDelegate *d = [GiodePhotoDelegate new];
+		GiodeCameraPhotoDelegate *d = [GiodeCameraPhotoDelegate new];
 		d.req = req;
 		d.camera = cam;
 		[cam.captures addObject:d];
