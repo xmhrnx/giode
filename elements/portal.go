@@ -25,6 +25,9 @@ type portalEntry struct {
 	// overlay marks a full-window overlay (RegisterOverlay): laid out
 	// at the window's origin, never clamped or moved.
 	overlay bool
+	// fixed keeps the anchor where it was registered: a window position
+	// containers don't move (RegisterPortalAt).
+	fixed bool
 	// alignEnd lines an around entry's right edge up with its
 	// trigger's, for right-to-left layouts.
 	alignEnd bool
@@ -103,6 +106,20 @@ func RegisterPortal(gtx layout.Context, anchor image.Point, build func() Element
 	dims := Measure(mgtx, build())
 
 	portalQueue = append(portalQueue, portalEntry{anchor: anchor, size: dims.Size, win: win, build: build})
+}
+
+// RegisterPortalAt queues build like RegisterPortal at anchor, a
+// window position that stays put: containers that place their children
+// after laying them out don't move it, unlike RegisterPortal's anchor.
+// For content opened at a known window position - a context menu at the
+// pointer. With alignEnd, anchor is the content's top-right corner.
+func RegisterPortalAt(gtx layout.Context, anchor image.Point, alignEnd bool, build func() Element) {
+	RegisterPortal(gtx, anchor, build)
+	e := &portalQueue[len(portalQueue)-1]
+	e.fixed = true
+	if alignEnd {
+		e.anchor.X -= e.size.X
+	}
 }
 
 // RegisterPortalAround queues build like RegisterPortal, placed next to

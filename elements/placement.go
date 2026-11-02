@@ -73,7 +73,7 @@ func (t ChildTracker) Place(off image.Point) {
 		}
 	}
 	for i := t.portalStart; i < t.portalEnd && i < len(portalQueue); i++ {
-		if !portalQueue[i].overlay {
+		if !portalQueue[i].overlay && !portalQueue[i].fixed {
 			portalQueue[i].anchor = portalQueue[i].anchor.Add(off)
 		}
 	}

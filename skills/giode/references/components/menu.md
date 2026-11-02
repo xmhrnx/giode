@@ -27,9 +27,18 @@ menu.Close()
 menu.Opened()
 ```
 
-Without `SetContextMenu`, lay the menu out anywhere in the view - its panel renders via
-a portal (see [extending.md](../extending.md#rendering-above-everything-portals)), so it
-paints above everything else regardless of tree position.
+Without `SetContextMenu`, lay the menu out anywhere in the view: it takes no space there
+(like `Dialog`, its siblings keep their layout), its panel paints above everything else via
+a portal (see [extending.md](../extending.md#rendering-above-everything-portals)), and a
+press anywhere in the window outside it closes it. `OpenAt` takes window coordinates and
+the panel opens exactly there, whatever containers the menu sits in. To open a menu where a
+row was right-clicked, use the click's `WindowPosition`:
+
+```go
+row := giode.Pressable(content).OnSecondaryClick(func(e giode.ClickEvent) {
+	menu.OpenAt(f32.Pt(float32(e.WindowPosition.X), float32(e.WindowPosition.Y)))
+})
+```
 
 ## Dropdown menu: Trigger
 

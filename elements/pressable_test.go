@@ -219,3 +219,28 @@ func TestPressable_LongPress(t *testing.T) {
 		t.Errorf("then a click: %d long-presses, %d clicks; want 1, 1", longs, clicks)
 	}
 }
+
+func TestClickWindowPosition(t *testing.T) {
+	var got ClickEvent
+	p := NewPressable(func(PressState) Element { return Box(styles.Styles{Width: 50, Height: 20}) }).
+		OnClick(func(e ClickEvent) { got = e })
+	var r input.Router
+	frame := func() {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Constraints: layout.Exact(image.Pt(400, 300))}
+		Stack(styles.Styles{},
+			Box(styles.Styles{Height: 60}),
+			Row(styles.Styles{}, Box(styles.Styles{Width: 100}), p),
+		).Layout(gtx)
+		r.Frame(&ops)
+	}
+	frame()
+	frame()
+	pos := f32.Pt(110, 65)
+	r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: pos, Buttons: pointer.ButtonPrimary},
+		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: pos})
+	frame()
+	if got.WindowPosition != image.Pt(110, 65) || got.Position != image.Pt(10, 5) {
+		t.Errorf("click at %v: Position %v, WindowPosition %v", pos, got.Position, got.WindowPosition)
+	}
+}

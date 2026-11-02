@@ -14,10 +14,11 @@ import (
 )
 
 // Layout renders the open menu: a window-wide dismissal layer, plus
-// the panel itself queued as a portal (see elements.RegisterPortal)
+// the panel itself queued as a portal (see elements.RegisterPortalAt)
 // so it paints above everything else regardless of where Layout is
-// called from. A submenu (see SubMenu) skips the dismissal layer -
-// its own parent row's hover state controls it instead.
+// called from. It takes no space where it's laid out. A submenu (see
+// SubMenu) skips the dismissal layer - its own parent row's hover
+// state controls it instead.
 func (m *Menu) Layout(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
@@ -25,45 +26,51 @@ func (m *Menu) Layout(gtx layout.Context) layout.Dimensions {
 		return layout.Dimensions{}
 	}
 
-	if !m.isSubmenu {
-		// A press of any button outside the panel closes it, and goes
-		// no further: a right-click elsewhere only closes the menu
-		// rather than opening another under it.
-		closed := false
-		for {
-			ev, ok := gtx.Source.Event(pointer.Filter{Target: &m.scrim, Kinds: pointer.Press})
-			if !ok {
-				break
-			}
-			if _, ok := ev.(pointer.Event); ok {
-				closed = true
-			}
-		}
-		if closed {
-			m.Close()
-			kit.RequestFrame(gtx)
-			return layout.Dimensions{}
-		}
-		area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
-		event.Op(gtx.Ops, &m.scrim)
-		area.Pop()
-
-		// Back and Escape close the menu.
-		elements.HandleDismiss(m.Close)
-		if gtx.Source.Enabled() {
-			m.handleKeys(gtx)
-		}
+	if m.isSubmenu {
+		// Placed by its parent row (see submenuX), which moves with the
+		// panel.
+		elements.RegisterPortal(gtx, image.Pt(int(m.pos.X), int(m.pos.Y)), func() elements.Element {
+			return elements.Raw(m.panel)
+		})
+		return layout.Dimensions{}
 	}
 
-	register := elements.RegisterPortal
-	if !m.isSubmenu && kit.RTL(gtx) {
-		// Right to left, the menu extends leftward from where it opens
-		// (the pointer, or its trigger's right edge); submenus place
-		// themselves (see submenuX).
-		register = elements.RegisterPortalEnd
+	// Back and Escape close the menu.
+	elements.HandleDismiss(m.Close)
+	if gtx.Source.Enabled() {
+		m.handleKeys(gtx)
 	}
-	register(gtx, image.Pt(int(m.pos.X), int(m.pos.Y)), func() elements.Element {
+	// The dismissal layer covers the whole window, wherever the menu is
+	// laid out, and the panel opens at the window position it was given:
+	// neither follows the containers around the menu.
+	elements.RegisterOverlay(func() elements.Element { return elements.Raw(m.layoutScrim) })
+	// Right to left, the menu extends leftward from where it opens (the
+	// pointer, or its trigger's right edge).
+	elements.RegisterPortalAt(gtx, image.Pt(int(m.pos.X), int(m.pos.Y)), kit.RTL(gtx), func() elements.Element {
 		return elements.Raw(m.panel)
 	})
-	return layout.Dimensions{Size: gtx.Constraints.Max}
+	return layout.Dimensions{}
 }
+
+// layoutScrim covers the window under the open menu: a press of any
+// button there closes the menu and goes no further, so a right-click
+// elsewhere only closes it rather than opening another under it.
+func (m *Menu) layoutScrim(gtx layout.Context) layout.Dimensions {
+	for {
+		ev, ok := gtx.Source.Event(pointer.Filter{Target: &m.scrim, Kinds: pointer.Press})
+		if !ok {
+			break
+		}
+		if _, ok := ev.(pointer.Event); ok && m.open {
+			m.Close()
+			kit.RequestFrame(gtx)
+		}
+	}
+	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
+	event.Op(gtx.Ops, &m.scrim)
+	return layout.Dimensions{}
+}
+
+// OutOfFlow marks the menu as taking no space in a Box: it paints over
+// the window; see elements.OutOfFlow.
+func (m *Menu) OutOfFlow() {}
