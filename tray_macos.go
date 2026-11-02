@@ -92,10 +92,19 @@ func (a *App) trayView(app.ViewEvent) {
 	if v == 0 {
 		return
 	}
-	if a.cfg.CloseToTray {
+	if a.closeToTray.Load() {
 		C.giodeInterceptClose(C.uintptr_t(v))
 	}
 	C.giodeHandleReopen()
+}
+
+// applyTrayOptions intercepts closing once CloseToTray is turned on;
+// the interception asks closesToTray each time, so turning it off
+// needs nothing.
+func (a *App) applyTrayOptions() {
+	if v := a.NativeHandle(); v != 0 && a.closeToTray.Load() {
+		C.giodeInterceptClose(C.uintptr_t(v))
+	}
 }
 
 //export giodeShouldHideOnClose

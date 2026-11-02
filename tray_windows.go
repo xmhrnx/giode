@@ -99,3 +99,11 @@ func pngToICO(p []byte) []byte {
 func (a *App) warnTrayLimits()        {}
 func (a *App) platformInit()          {}
 func (a *App) trayView(app.ViewEvent) {}
+
+// applyTrayOptions subclasses the window, if it isn't yet, once a tray
+// option is turned on.
+func (a *App) applyTrayOptions() {
+	if hwnd := a.NativeHandle(); hwnd != 0 {
+		a.enableFileDrop(hwnd)
+	}
+}

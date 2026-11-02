@@ -15,3 +15,4 @@ func (a *App) showNativeWindow()      {}
 func (a *App) warnTrayLimits()        {}
 func (a *App) platformInit()          {}
 func (a *App) trayView(app.ViewEvent) {}
+func (a *App) applyTrayOptions()      {}

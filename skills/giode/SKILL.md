@@ -123,7 +123,9 @@ IconVG), `Markdown`, `RichText`, `Table`, `Canvas`. Constructors and options are
 
 File dialogs `OpenFile`/`OpenFiles`/`SaveFile`/`PickFiles` (`PickedFile.Path` on desktops),
 `PickFolder`, `PickPhoto`; `Share`; `Notify`; `OpenURL`; clipboard; `KeepAlive`,
-`KeepScreenOn`; `Tray`; window control (`Minimize`, `Maximize`, `SetFullscreen`,
+`KeepScreenOn`; `Tray` (`SetCloseToTray`, `SetMinimizeToTray` at runtime); start at login
+(`SetLaunchAtLogin`, `LaunchAtLogin`, `giode.LaunchedAtLogin()`, `Config.StartInTray`; MSIX
+needs `[windows] startup_task = true`); window control (`Minimize`, `Maximize`, `SetFullscreen`,
 `SetAlwaysOnTop`, `MoveTo`, `Screen`); `giode.IsElevated()` and `RestartElevated` (UAC,
 pkexec, macOS admin prompt); single-instance lock (`Config.SingleInstanceLock`); context
 actions in file managers; secure storage; push, in-app purchases and review prompts in

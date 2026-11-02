@@ -2,6 +2,8 @@ package giode
 
 import (
 	"sync"
+
+	"gioui.org/app"
 )
 
 // Tray is the app's icon in the system tray: the notification area on
@@ -289,12 +291,52 @@ func (a *App) Quit() {
 // closesToTray reports whether a close request should hide the window
 // instead.
 func (a *App) closesToTray() bool {
-	return a.cfg.CloseToTray && traySupported && !a.quitting.Load()
+	return a.closeToTray.Load() && traySupported && !a.quitting.Load()
 }
 
 // minimizesToTray reports whether minimizing should hide the window.
 func (a *App) minimizesToTray() bool {
-	return a.cfg.MinimizeToTray && traySupported
+	return a.minimizeToTray.Load() && traySupported
+}
+
+// SetCloseToTray turns Config.CloseToTray on or off while the app
+// runs: closing the window then hides it to the tray, or ends the app.
+// It may be called from any goroutine.
+func (a *App) SetCloseToTray(on bool) {
+	if a.closeToTray.Swap(on) != on && on {
+		a.applyTrayOptions()
+	}
+}
+
+// CloseToTray reports whether closing the window hides it to the tray.
+func (a *App) CloseToTray() bool {
+	return a.closeToTray.Load()
+}
+
+// SetMinimizeToTray turns Config.MinimizeToTray on or off while the
+// app runs. It may be called from any goroutine.
+func (a *App) SetMinimizeToTray(on bool) {
+	if a.minimizeToTray.Swap(on) != on && on {
+		a.applyTrayOptions()
+	}
+}
+
+// MinimizeToTray reports whether minimizing the window hides it to the
+// tray.
+func (a *App) MinimizeToTray() bool {
+	return a.minimizeToTray.Load()
+}
+
+// startInTray hides the window as soon as it exists when this launch
+// starts in the tray (Config.StartInTray).
+func (a *App) startInTray(ev app.ViewEvent) {
+	if a.startedInTray || !ev.Valid() {
+		return
+	}
+	a.startedInTray = true
+	if a.cfg.StartInTray.startsInTray() {
+		a.HideWindow()
+	}
 }
 
 // windowHiddenNatively records that the platform hid the window
