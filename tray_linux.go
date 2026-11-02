@@ -33,7 +33,8 @@ var trayWaylandWarned atomic.Bool
 
 func (a *App) showNativeWindow() {
 	showX11Window(a.NativeView())
-	a.window.Perform(system.ActionRaise)
+	// Gio's Perform must run on the UI goroutine; ShowWindow may not.
+	a.Post(func() { a.window.Perform(system.ActionRaise) })
 }
 
 // trayCloseWarned limits the CloseToTray warning to once.

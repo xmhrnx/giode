@@ -540,9 +540,13 @@ func (a *App) Raise() {
 
 // Close requests the window to close, ending the app - also with
 // CloseToTray, which only applies to the user closing it.
+//
+// It may be called from any goroutine: the close itself runs on the UI
+// goroutine (Gio's Perform isn't safe elsewhere), which Post reaches
+// even while the window is hidden.
 func (a *App) Close() {
 	a.quitting.Store(true)
-	a.window.Perform(system.ActionClose)
+	a.Post(func() { a.window.Perform(system.ActionClose) })
 }
 
 // Window exposes the underlying *app.Window for low-level
