@@ -13,7 +13,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // folder is a TreeView node whose children load on first expansion.

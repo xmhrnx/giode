@@ -12,8 +12,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/fonts"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/fonts"
 )
 
 type menuHarness struct {

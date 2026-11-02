@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // ResponsiveShowcase is stateless, so it can be built fresh every
 // frame like Text. Breakpoints are evaluated against the box's own

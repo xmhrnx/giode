@@ -5,7 +5,7 @@ package store
 import (
 	"context"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 func products(ctx context.Context, ids []string) ([]Product, error) {

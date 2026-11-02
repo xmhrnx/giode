@@ -17,11 +17,11 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/fonts"
-	"github.com/mehran9675/giode/internal/textrender"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/internal/textrender"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Span is one run of text in a RichText paragraph, with its own

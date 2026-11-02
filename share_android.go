@@ -5,7 +5,7 @@ import (
 
 	"gioui.org/app"
 
-	"github.com/mehran9675/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/mobile"
 )
 
 func (t ShareText) share(ctx context.Context, a *App) error {

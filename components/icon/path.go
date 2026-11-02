@@ -8,7 +8,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/op/clip"
 
-	"github.com/mehran9675/giode/internal/raster"
+	"github.com/xmhrnx/giode/internal/raster"
 )
 
 // segment is one command of a compiled path, in absolute coordinates.

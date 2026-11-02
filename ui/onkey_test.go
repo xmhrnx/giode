@@ -9,7 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/fonts"
+	"github.com/xmhrnx/giode/fonts"
 )
 
 // OnKey gets only the keys nothing else took, though the view

@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/mehran9675/giode"
-	giodemenu "github.com/mehran9675/giode/components/menu"
+	"github.com/xmhrnx/giode"
+	giodemenu "github.com/xmhrnx/giode/components/menu"
 )
 
 // NewShowcaseMenu builds the global right-click context menu. Unlike

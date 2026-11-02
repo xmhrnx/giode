@@ -13,8 +13,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // model is a list of rows with keys and heights.

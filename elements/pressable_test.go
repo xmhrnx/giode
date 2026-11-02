@@ -12,7 +12,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // harness lays out an element against a real Gio router, so tests can

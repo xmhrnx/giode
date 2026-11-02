@@ -4,7 +4,7 @@ import (
 	"image"
 	"log"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 var boxStyle = giode.Styles{

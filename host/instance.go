@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mehran9675/giode/update"
+	"github.com/xmhrnx/giode/update"
 )
 
 // The single-instance lock is a file in the temporary directory holding

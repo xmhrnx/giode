@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/mehran9675/giode"
-	giorouter "github.com/mehran9675/giode/router"
+	"github.com/xmhrnx/giode"
+	giorouter "github.com/xmhrnx/giode/router"
 )
 
 // routerPage holds the router, created once so the current path

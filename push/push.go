@@ -26,7 +26,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // Message is a received push message.

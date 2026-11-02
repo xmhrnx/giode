@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // layoutDrag registers a whole-window system-move area so pressing

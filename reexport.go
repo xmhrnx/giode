@@ -2,7 +2,7 @@
 
 package giode
 
-import "github.com/mehran9675/giode/ui"
+import "github.com/xmhrnx/giode/ui"
 
 // Frame lays out one frame of view into gtx the way App does, for a
 // custom host (a GLFW window, an embedded view): it starts the frame,

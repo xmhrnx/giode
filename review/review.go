@@ -12,7 +12,7 @@ package review
 import (
 	"context"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // Request asks the store to show its rating prompt. It returns once

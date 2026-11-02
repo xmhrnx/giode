@@ -15,11 +15,11 @@ import (
 	"gioui.org/widget"
 	"golang.org/x/image/math/fixed"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/fonts"
-	"github.com/mehran9675/giode/internal/textrender"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/internal/textrender"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // TextElement renders a single string with its styles. Chain OnHover

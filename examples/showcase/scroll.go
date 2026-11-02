@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // scrollPage holds the scroll container, created once so its offset

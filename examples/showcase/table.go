@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // TableShowcase is stateless: Table and its rows/cells are stateless
 // elements, so it can be built fresh every frame like Text.

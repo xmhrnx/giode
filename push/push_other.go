@@ -5,7 +5,7 @@ package push
 import (
 	"context"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 func start(a *giode.App) error { return giode.ErrNotSupported }

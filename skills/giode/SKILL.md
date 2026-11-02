@@ -1,6 +1,6 @@
 ---
 name: giode
-description: Build, debug and ship cross-platform Go apps with the Giode UI library (github.com/mehran9675/giode, on Gio) and the Giode CLI (`giode new/build/run/ci/release`, giode.toml). Use when code imports Giode or a project has a giode.toml, when the user asks for a Giode app, component, screen, layout, style, theme, platform feature (file pickers, notifications, tray, Android/iOS, Java bridge, elevation, i18n, RTL), MCP automation of a Giode app, or for building, signing and packaging one for Windows, macOS, Linux, Android, iOS or the web.
+description: Build, debug and ship cross-platform Go apps with the Giode UI library (github.com/xmhrnx/giode, on Gio) and the Giode CLI (`giode new/build/run/ci/release`, giode.toml). Use when code imports Giode or a project has a giode.toml, when the user asks for a Giode app, component, screen, layout, style, theme, platform feature (file pickers, notifications, tray, Android/iOS, Java bridge, elevation, i18n, RTL), MCP automation of a Giode app, or for building, signing and packaging one for Windows, macOS, Linux, Android, iOS or the web.
 ---
 
 # Giode
@@ -8,7 +8,7 @@ description: Build, debug and ship cross-platform Go apps with the Giode UI libr
 Giode is a Go UI library on top of [Gio](https://gioui.org): no webview, GPU-rendered,
 one codebase for Windows, macOS, Linux, Android, iOS and the web. UIs are composed from Go
 functions returning `giode.Element`s, styled with CSS-like `giode.Styles`. The Giode CLI
-(`github.com/mehran9675/giode-cli/cmd/giode`) creates, builds, runs, signs and packages
+(`github.com/xmhrnx/giode-cli/cmd/giode`) creates, builds, runs, signs and packages
 apps from a `giode.toml`.
 
 The full documentation is in `references/` next to this file (a copy of the repository's
@@ -61,7 +61,7 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 func main() {
@@ -129,7 +129,7 @@ needs `[windows.msix] startup_task = true`); window control (`Minimize`, `Maximi
 `SetAlwaysOnTop`, `MoveTo`, `Screen`); `giode.IsElevated()` and `RestartElevated` (UAC,
 pkexec, macOS admin prompt); single-instance lock (`Config.SingleInstanceLock`); context
 actions in file managers; secure storage; push, in-app purchases and review prompts in
-sub-packages; Android Java calls through `github.com/mehran9675/giode/android`
+sub-packages; Android Java calls through `github.com/xmhrnx/giode/android`
 (`android.CallBool(class, method, sig, args...)`).
 
 ## Translations and right-to-left
@@ -214,7 +214,7 @@ pixels where a GPU (or Mesa with `EGL_PLATFORM=surfaceless`) is available.
 
 ## The CLI
 
-Install: `go install github.com/mehran9675/giode-cli/cmd/giode@latest` (or the install
+Install: `go install github.com/xmhrnx/giode-cli/cmd/giode@latest` (or the install
 scripts in the Giode CLI README).
 
 | Command | What it does |

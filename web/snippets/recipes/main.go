@@ -14,8 +14,8 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
-	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // R1

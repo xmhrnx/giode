@@ -8,7 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 func TestRegisterPortal_DrainInvokesBuildOnce(t *testing.T) {

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // dialogShowcase holds the dialog and its own open state (owned by
 // the caller, per the dialog's external-state contract), created once

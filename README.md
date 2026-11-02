@@ -15,7 +15,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 func main() {
@@ -38,17 +38,17 @@ func main() {
 ## Install
 
 ```sh
-go get github.com/mehran9675/giode
+go get github.com/xmhrnx/giode
 ```
 
 Requires Go 1.26 or later. On Linux, Gio needs the usual development packages (Wayland,
 X11, EGL, Vulkan headers); see [Gio's install guide](https://gioui.org/doc/install).
 
-The [giode CLI](https://github.com/mehran9675/giode-cli) creates projects and builds and
+The [giode CLI](https://github.com/xmhrnx/giode-cli) creates projects and builds and
 runs them on every platform:
 
 ```sh
-go install github.com/mehran9675/giode-cli/cmd/giode@latest
+go install github.com/xmhrnx/giode-cli/cmd/giode@latest
 giode new myapp && cd myapp && giode run
 ```
 

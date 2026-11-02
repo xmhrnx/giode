@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/mehran9675/giode"
-	giodeslider "github.com/mehran9675/giode/components/slider"
+	"github.com/xmhrnx/giode"
+	giodeslider "github.com/xmhrnx/giode/components/slider"
 )
 
 // sliderPage holds the slider, created once so its dragged value

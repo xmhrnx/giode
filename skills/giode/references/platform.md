@@ -92,7 +92,7 @@ only runs a service the app's manifest declares:
 </application>
 ```
 
-The [giode CLI](https://github.com/mehran9675/giode-cli) adds them when `giode.toml` has
+The [giode CLI](https://github.com/xmhrnx/giode-cli) adds them when `giode.toml` has
 `keep_alive = true` under `[android]`; gogio alone can't. Without the declaration
 `KeepAlive` returns an error wrapping `ErrNotSupported`; keep the app open with
 `KeepScreenOn` and save progress in `OnBackground` as a fallback. Android 15
@@ -189,7 +189,7 @@ error wrapping `ErrNotSupported`.
 
 iOS ends an app that uses the camera, microphone or speech recognition without a line in
 its Info.plist explaining why, shown in the permission prompt. With the
-[giode CLI](https://github.com/mehran9675/giode-cli), list them in `giode.toml`:
+[giode CLI](https://github.com/xmhrnx/giode-cli), list them in `giode.toml`:
 
 ```toml
 [ios.usage]
@@ -241,7 +241,7 @@ The `update` package updates a desktop app from a feed you host: it checks for a
 version, downloads it, verifies it, replaces the app and restarts it.
 
 ```go
-import "github.com/mehran9675/giode/update"
+import "github.com/xmhrnx/giode/update"
 
 u := update.New() // feed URL, public key and version from giode.toml, via the giode CLI
 if rel, err := u.Check(ctx); err == nil && rel != nil {
@@ -275,7 +275,7 @@ The `crash` package records the app's crashes and hands them back on the next st
 every platform:
 
 ```go
-import "github.com/mehran9675/giode/crash"
+import "github.com/xmhrnx/giode/crash"
 
 func main() {
 	crash.Init(crash.Options{Version: "1.4.0"})
@@ -304,7 +304,7 @@ The `push` package receives remote notifications: Firebase Cloud Messaging on An
 APNs on iOS and macOS.
 
 ```go
-import "github.com/mehran9675/giode/push"
+import "github.com/xmhrnx/giode/push"
 
 func main() {
 	app := giode.New(giode.Config{Title: "Chat"})
@@ -345,7 +345,7 @@ The `store` package sells products and subscriptions through Google Play Billing
 App Store:
 
 ```go
-import "github.com/mehran9675/giode/store"
+import "github.com/xmhrnx/giode/store"
 
 store.OnUpdate(func(p store.Purchase) { grant(p) }) // early: purchases finishing later
 products, err := store.Products(ctx, "pro", "coins_100")

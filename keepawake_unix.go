@@ -5,7 +5,7 @@ package giode
 import (
 	"context"
 
-	"github.com/mehran9675/giode/host"
+	"github.com/xmhrnx/giode/host"
 )
 
 func (a *App) haptic(HapticKind) {}

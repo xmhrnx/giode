@@ -4,9 +4,9 @@ import (
 	"gioui.org/io/system"
 	"gioui.org/layout"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/i18n"
-	"github.com/mehran9675/giode/state"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/state"
 )
 
 // Frame lays out one frame of view into gtx the way App does, for a

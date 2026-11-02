@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/mehran9675/giode"
-	giodeinput "github.com/mehran9675/giode/components/input"
+	"github.com/xmhrnx/giode"
+	giodeinput "github.com/xmhrnx/giode/components/input"
 )
 
 // inputPage holds the text field, created once so its content

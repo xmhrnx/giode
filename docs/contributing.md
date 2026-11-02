@@ -5,7 +5,7 @@ examples.
 
 ## Reporting a bug
 
-Open an [issue](https://github.com/Mehran9675/giode/issues) with:
+Open an [issue](https://github.com/xmhrnx/giode/issues) with:
 
 - what you did, what you expected and what happened;
 - the platform (OS and version, phone model), Go version and Giode version;
@@ -14,7 +14,7 @@ Open an [issue](https://github.com/Mehran9675/giode/issues) with:
 ## Working on the code
 
 ```sh
-git clone https://github.com/Mehran9675/giode
+git clone https://github.com/xmhrnx/giode
 cd giode
 go test ./...
 ```
@@ -30,7 +30,7 @@ go test ./...
 
 ## Writing docs
 
-The docs are the Markdown files in [`docs/`](https://github.com/Mehran9675/giode/tree/main/docs);
+The docs are the Markdown files in [`docs/`](https://github.com/xmhrnx/giode/tree/main/docs);
 the website renders them. Run the site locally with:
 
 ```sh

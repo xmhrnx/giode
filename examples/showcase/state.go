@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // statePage demonstrates giode.State: counter is shared global state,

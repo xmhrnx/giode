@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // demoImage generates a small gradient so the example is

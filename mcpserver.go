@@ -20,10 +20,10 @@ import (
 	"gioui.org/gpu/headless"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/mcp"
-	"github.com/mehran9675/giode/state"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/mcp"
+	"github.com/xmhrnx/giode/state"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // MCPOptions configures the built-in MCP server enabled with

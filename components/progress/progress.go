@@ -4,7 +4,7 @@ package progress
 import (
 	"image/color"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 var (

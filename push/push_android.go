@@ -10,8 +10,8 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/internal/bridge"
+	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/internal/bridge"
 )
 
 //go:generate sh -c "javac --release 8 -nowarn -classpath $ANDROID_HOME/platforms/android-34/android.jar -d $TEMP/giode_push/stubs $(find ../internal/androidstubs -name '*.java')"

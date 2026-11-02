@@ -1,7 +1,7 @@
 package giode
 
 import (
-	"github.com/mehran9675/giode/ui"
+	"github.com/xmhrnx/giode/ui"
 
 	"context"
 	"fmt"
@@ -14,9 +14,9 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/paint"
 
-	"github.com/mehran9675/giode/components/menu"
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/menu"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // SetContextMenu registers a menu to open with a right-click anywhere

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // DividerShowcase is stateless, so it can be built fresh every frame
 // like Text.

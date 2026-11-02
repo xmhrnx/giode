@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 type demo struct {

@@ -3,7 +3,7 @@ package giode
 import (
 	"io/fs"
 
-	"github.com/mehran9675/giode/i18n"
+	"github.com/xmhrnx/giode/i18n"
 )
 
 // IntlOptions turns on translations (Config.Intl): message files named

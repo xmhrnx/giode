@@ -1,4 +1,4 @@
-module github.com/mehran9675/giode
+module github.com/xmhrnx/giode
 
 go 1.26.6
 

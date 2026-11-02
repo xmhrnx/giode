@@ -3,7 +3,7 @@ package giode
 import (
 	"runtime"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // DeviceClass is a device's form factor.

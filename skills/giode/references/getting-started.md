@@ -35,15 +35,15 @@ The [giode CLI](cli/index.md) creates projects, runs them on your computer, a ph
 simulator or the browser, and builds signed packages and installers.
 
 ```sh tab="macOS / Linux"
-curl -fsSL https://raw.githubusercontent.com/Mehran9675/giode-cli/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/xmhrnx/giode-cli/main/install.sh | sh
 ```
 
 ```powershell tab="Windows"
-irm https://raw.githubusercontent.com/Mehran9675/giode-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/xmhrnx/giode-cli/main/install.ps1 | iex
 ```
 
 ```sh tab="With Go"
-go install github.com/mehran9675/giode-cli/cmd/giode@latest
+go install github.com/xmhrnx/giode-cli/cmd/giode@latest
 ```
 
 Then let it check your computer:
@@ -111,7 +111,7 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 func main() {
@@ -169,7 +169,7 @@ publishes them for every tag.
 The CLI is optional on the desktop. In any Go module:
 
 ```sh
-go get github.com/mehran9675/giode@latest
+go get github.com/xmhrnx/giode@latest
 go run .
 ```
 

@@ -1,6 +1,6 @@
 package kit
 
-import "github.com/mehran9675/giode/styles/properties"
+import "github.com/xmhrnx/giode/styles/properties"
 
 // Hovered returns the hover highlight of c: slightly lighter.
 func Hovered(c properties.Color) properties.Color {

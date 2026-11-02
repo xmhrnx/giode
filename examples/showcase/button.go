@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // buttonPage holds the buttons and the counter, created once so the

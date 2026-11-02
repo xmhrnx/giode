@@ -9,7 +9,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // HoverTracker is the hover-tracking building block behind every

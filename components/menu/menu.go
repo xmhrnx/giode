@@ -7,9 +7,9 @@ import (
 	"gioui.org/f32"
 	"gioui.org/widget"
 
-	"github.com/mehran9675/giode/components/icon"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/icon"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Item is a single row of a menu.

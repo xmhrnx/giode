@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/fonts"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // TestTable_AlignsColumnWidthsAcrossRows checks the core promise:

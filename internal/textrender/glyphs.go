@@ -28,7 +28,7 @@ import (
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/image/vector"
 
-	"github.com/mehran9675/giode/fonts"
+	"github.com/xmhrnx/giode/fonts"
 )
 
 // vectorOnly makes every run fall back to Gio's paths, for comparing

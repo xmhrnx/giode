@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"unsafe"
 
-	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/internal/bridge"
+	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/internal/bridge"
 )
 
 var requests bridge.Requests[result]

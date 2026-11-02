@@ -6,10 +6,10 @@ import (
 
 	"gioui.org/widget"
 
-	"github.com/mehran9675/giode/components/scroll"
+	"github.com/xmhrnx/giode/components/scroll"
 
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 var (

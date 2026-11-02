@@ -7,8 +7,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // Glyph renders one of the built-in indicator shapes (chevrons, check,

@@ -1,6 +1,6 @@
 package kit
 
-import "github.com/mehran9675/giode/styles/properties"
+import "github.com/xmhrnx/giode/styles/properties"
 
 // Alpha returns c with its alpha multiplied by a.
 func Alpha(c properties.Color, a float32) properties.Color {

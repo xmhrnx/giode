@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // appShellPage holds the shell, created once so its Navbar's Section
 // (a Scroll under the hood) keeps its offset across frames instead of

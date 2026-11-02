@@ -10,7 +10,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 func TestLoadSVG_ViewBoxAndPaths(t *testing.T) {

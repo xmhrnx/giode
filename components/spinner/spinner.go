@@ -5,7 +5,7 @@ package spinner
 import (
 	"image/color"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 var defaultColor = color.NRGBA{R: 0x3b, G: 0x82, B: 0xf6, A: 0xff}

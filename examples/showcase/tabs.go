@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // tabsPage holds the tab bar, created once so the selected tab
 // persists across frames.
