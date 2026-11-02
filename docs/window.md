@@ -265,7 +265,7 @@ tray icon with it, or the user has no way to open the window.
 | Platform | Registration |
 | --- | --- |
 | Windows | A value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. Task Manager's Startup apps page can turn it off; `LaunchAtLogin` then reports false, and `SetLaunchAtLogin(true)` turns it back on. |
-| Windows, MSIX | The package's startup task. Set `startup_task = true` under `[windows]` in giode.toml so the CLI declares it in the manifest. If the user turned it off in Settings > Apps > Startup, only they can turn it back on: `SetLaunchAtLogin(true)` returns an error saying so. |
+| Windows, MSIX | The package's startup task. Set `startup_task = true` under `[windows.msix]` in giode.toml so the CLI declares it in the manifest. If the user turned it off in Settings > Apps > Startup, only they can turn it back on: `SetLaunchAtLogin(true)` returns an error saying so. |
 | macOS | A LaunchAgent, `~/Library/LaunchAgents/<id>.login.plist`, that opens the app bundle. |
 | Linux | An XDG autostart entry, `~/.config/autostart/<id>.desktop`. It runs the AppImage or the Flatpak (`flatpak run <id>`) when the app is one. A Flatpak needs `--filesystem=xdg-config/autostart:create` to write it. |
 | Android, iOS, web | `SetLaunchAtLogin` returns `ErrNotSupported`. |

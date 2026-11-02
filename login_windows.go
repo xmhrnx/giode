@@ -18,7 +18,7 @@ import (
 // under HKCU\...\Run; Task Manager's Startup apps page can turn it off,
 // which it records under Explorer\StartupApproved\Run. An MSIX package
 // can't use the Run key: it declares a startup task in its manifest
-// (the giode CLI adds one with windows.startup_task) and turns it on
+// (the giode CLI adds one with windows.msix.startup_task) and turns it on
 // and off through the WinRT StartupTask class.
 
 const (
@@ -42,7 +42,7 @@ var (
 	iidIStartupTaskStatics         = windows.GUID{Data1: 0xEE5B60BD, Data2: 0xA148, Data3: 0x41A7, Data4: [8]byte{0xB2, 0x6E, 0xE8, 0xB8, 0x8A, 0x1E, 0x62, 0xF8}}
 	iidIAppInstanceStatics         = windows.GUID{Data1: 0x9D11E77F, Data2: 0x9EA6, Data3: 0x47AF, Data4: [8]byte{0xA6, 0xEC, 0x46, 0x78, 0x4C, 0x5B, 0xA2, 0x54}}
 	iidIAsyncInfo                  = windows.GUID{Data1: 0x00000036, Data4: [8]byte{0xC0, 0, 0, 0, 0, 0, 0, 0x46}}
-	errStartupTaskMissing          = errors.New("giode: the package declares no startup task: set windows.startup_task in giode.toml")
+	errStartupTaskMissing          = errors.New("giode: the package declares no startup task: set windows.msix.startup_task in giode.toml")
 	errStartupTaskDisabledByUser   = errors.New("giode: the user turned off starting at login in Settings; only they can turn it back on")
 	errStartupTaskDisabledByPolicy = errors.New("giode: starting at login is turned off by policy")
 	errStartupTaskTimeout          = errors.New("giode: the startup task didn't answer")

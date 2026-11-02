@@ -125,7 +125,7 @@ File dialogs `OpenFile`/`OpenFiles`/`SaveFile`/`PickFiles` (`PickedFile.Path` on
 `PickFolder`, `PickPhoto`; `Share`; `Notify`; `OpenURL`; clipboard; `KeepAlive`,
 `KeepScreenOn`; `Tray` (`SetCloseToTray`, `SetMinimizeToTray` at runtime); start at login
 (`SetLaunchAtLogin`, `LaunchAtLogin`, `giode.LaunchedAtLogin()`, `Config.StartInTray`; MSIX
-needs `[windows] startup_task = true`); window control (`Minimize`, `Maximize`, `SetFullscreen`,
+needs `[windows.msix] startup_task = true`); window control (`Minimize`, `Maximize`, `SetFullscreen`,
 `SetAlwaysOnTop`, `MoveTo`, `Screen`); `giode.IsElevated()` and `RestartElevated` (UAC,
 pkexec, macOS admin prompt); single-instance lock (`Config.SingleInstanceLock`); context
 actions in file managers; secure storage; push, in-app purchases and review prompts in
