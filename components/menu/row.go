@@ -12,6 +12,7 @@ import (
 
 	"github.com/mehran9675/giode/components/kit"
 	"github.com/mehran9675/giode/elements"
+	"github.com/mehran9675/giode/shortcut"
 	"github.com/mehran9675/giode/styles"
 	"github.com/mehran9675/giode/styles/properties"
 )
@@ -153,7 +154,7 @@ func (r *menuRow) Layout(gtx layout.Context) layout.Dimensions {
 		if item.shortcut != "" {
 			children = append(children,
 				elements.Box(styles.Styles{Width: 24}),
-				elements.Text(item.shortcut, styles.Styles{Color: r.menu.disabledText()}),
+				elements.Text(shortcut.Format(item.shortcut), styles.Styles{Color: r.menu.disabledText()}),
 			)
 		}
 		if item.submenu != nil {

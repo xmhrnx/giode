@@ -86,7 +86,7 @@ Escape) closes every open submenu with it.
 | `IconItem(iconName, label string, action func()) *Menu` | Item with a material icon. |
 | `CheckItem(label string, checked func() bool, action func()) *Menu` | Item with a check mark while `checked` reports true (read every frame). |
 | `RadioItem(label string, selected func() bool, action func()) *Menu` | One of a group of choices, with a dot on the selected one. |
-| `Shortcut(text string) *Menu` | Shows a shortcut right-aligned on the last item added: `Item("Open File…", open).Shortcut("Ctrl+O")`. Display only; handle the key with the `shortcut` package. |
+| `Shortcut(spec string) *Menu` | Shows a shortcut right-aligned on the last item added, written the platform's way: `Item("Open File…", open).Shortcut("Mod+O")` shows `⌘O` on macOS and `Ctrl+O` elsewhere. Display only; register the key with `giode.Shortcuts` (see [window.md](../window.md#keyboard-shortcuts)). |
 | `DisabledItem(label string) *Menu` | Grayed-out item. |
 | `Separator() *Menu` | Horizontal line. |
 | `SubMenu(label string, submenu *Menu) *Menu` | Item that reveals submenu on hover. |

@@ -73,3 +73,43 @@ func TestOnKeyGetsLeftovers(t *testing.T) {
 		t.Errorf("the field has %q, want the typed xy", field.Text())
 	}
 }
+
+// Shortcuts fire while a text field has focus, unless it uses the key.
+func TestShortcutsWithFocusedField(t *testing.T) {
+	fonts.UseGofont()
+	var r input.Router
+	var ran []string
+	field := Input.Text("Search")
+	frame := func() {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Constraints: layout.Exact(image.Pt(640, 480))}
+		Frame(gtx, Raw(func(gtx layout.Context) layout.Dimensions {
+			Shortcuts(
+				Shortcut("Mod+T", func() { ran = append(ran, "tab") }),
+				Shortcut("F5", func() { ran = append(ran, "refresh") }),
+				Shortcut("Mod+1", func() { ran = append(ran, "page1") }),
+			)
+			return field.Layout(gtx)
+		}))
+		r.Frame(&ops)
+	}
+	press := func(name key.Name, mods key.Modifiers) {
+		r.Queue(key.Event{Name: name, Modifiers: mods, State: key.Press}, key.Event{Name: name, Modifiers: mods, State: key.Release})
+		frame()
+		frame()
+	}
+	frame()
+	field.Focus()
+	frame()
+	r.Queue(key.EditEvent{Text: "abc"})
+	frame()
+	press("T", key.ModShortcut)
+	press(key.NameF5, 0)
+	press("1", key.ModShortcut)
+	if len(ran) != 3 || ran[0] != "tab" || ran[1] != "refresh" || ran[2] != "page1" {
+		t.Errorf("shortcuts ran %v with a field focused", ran)
+	}
+	if field.Text() != "abc" {
+		t.Errorf("field %q: typing should stay in the field", field.Text())
+	}
+}

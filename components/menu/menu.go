@@ -159,9 +159,11 @@ func (m *Menu) RadioItem(label string, selected func() bool, action func()) *Men
 }
 
 // Shortcut sets the keyboard shortcut shown right-aligned on the last
-// item added ("Ctrl+O"): m.Item("Open File…", open).Shortcut("Ctrl+O").
-// It only shows the text; handle the key itself (see the shortcut
-// package). It returns m for chaining.
+// item added: m.Item("Open File…", open).Shortcut("Mod+O"). A spec the
+// shortcut package parses shows the way the platform writes it ("⌘O"
+// on macOS, "Ctrl+O" elsewhere); other text shows as it is. It only
+// shows the shortcut: register the key with giode.Shortcuts. It
+// returns m for chaining.
 func (m *Menu) Shortcut(text string) *Menu {
 	if n := len(m.items); n > 0 {
 		m.items[n-1].shortcut = text

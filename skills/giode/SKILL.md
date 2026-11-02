@@ -240,8 +240,8 @@ for every key before editing giode.toml.
 ## Gotchas (each cost real debugging time)
 
 - A stateful component recreated inside the view loses its state; create it once or use `Keyed`.
-- App-wide shortcuts belong in `Config.OnKey` / `giode.OnKey`, which only see keys nothing
-  else took; a catch-all `key.Filter` in the view steals keys from fields and dialogs.
+- App-wide shortcuts belong in `giode.Shortcuts(giode.Shortcut("Mod+T", fn), ...)` (or
+  `Config.OnKey` / `giode.OnKey` for raw keys), which only see keys nothing else took; a catch-all `key.Filter` in the view steals keys from fields and dialogs.
 - Blocking dialogs called from a click handler deadlock; call them from a goroutine and `Post` the result.
 - `Padding: UniformInset(0)` is "unset" on components with a default padding; use their setter.
 - Offsets of 0 are unset; use `giode.Flush`.

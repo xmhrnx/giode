@@ -316,8 +316,28 @@ the press back to the system.
 
 ## Keyboard shortcuts
 
-App-wide shortcuts go in `Config.OnKey`, or in `giode.OnKey(fn)` called from the view
-every frame (the way `HandleBack` is):
+Register app-wide shortcuts with `giode.Shortcuts`, from the view every frame:
+
+```go
+giode.Shortcuts(
+	giode.Shortcut("Mod+T", newTerminalTab), // Mod is Command on macOS, Ctrl elsewhere
+	giode.Shortcut("Mod+K", focusSearch),
+	giode.Shortcut("Mod+,", openSettings),
+	giode.Shortcut("Mod+Shift+W", closeWindow),
+	giode.Shortcut("F5", refresh),
+)
+```
+
+A spec is modifiers and a key joined by `+`. The modifiers are `Mod`, `Ctrl`, `Shift`,
+`Alt` (or `Option`) and `Super` (or `Cmd`, `Win`). The key is a letter, a digit,
+punctuation, `F1`–`F12`, `Enter`, `Esc`, `Tab`, `Space`, `Backspace`, `Delete`, `Home`,
+`End`, `PageUp`, `PageDown` or an arrow (`Up`, `Down`, `Left`, `Right`). A shortcut matches
+its exact modifiers. `giode.FormatShortcut("Mod+Shift+T")` shows it the platform's way
+(`⇧⌘T`, `Ctrl+Shift+T`). `Menu.Shortcut("Mod+O")` does the same for a menu item's label.
+The `shortcut` package parses specs entered by the user (`shortcut.Parse`).
+
+For anything else, `Config.OnKey`, or `giode.OnKey(fn)` called from the view every frame
+(the way `HandleBack` is), gets the raw key events:
 
 ```go
 app := giode.New(giode.Config{
@@ -338,7 +358,7 @@ app := giode.New(giode.Config{
 })
 ```
 
-The handler only gets the keys nothing else took. The focused text field, dialogs, menus
+Shortcuts and `OnKey` handlers only get the keys nothing else took. The focused text field, dialogs, menus
 and other portals, and the Escape and Back handlers (`HandleDismiss`, `HandleBack`) all come
 first, whatever order the view lays things out in. So Space typed into a search box stays
 there, and Escape closes an open dialog before it reaches the shortcut. The handler gets
