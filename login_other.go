@@ -2,7 +2,7 @@
 
 package giode
 
-func setLaunchAtLogin(name string, on bool) error { return ErrNotSupported }
+func setLaunchAtLogin(loginEntry, bool) error { return ErrNotSupported }
 
 func launchAtLogin(name string) bool { return false }
 

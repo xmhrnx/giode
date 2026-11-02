@@ -82,7 +82,8 @@ func packaged() bool {
 	return r == errorInsufficientBuffer
 }
 
-func setLaunchAtLogin(name string, on bool) error {
+func setLaunchAtLogin(e loginEntry, on bool) error {
+	name := e.name
 	if packaged() {
 		return setStartupTask(on)
 	}

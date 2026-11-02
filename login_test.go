@@ -65,12 +65,6 @@ func TestTrayClickShowsHiddenWindowDirectly(t *testing.T) {
 	if a.windowHidden.Load() {
 		t.Error("the default tray click waited for the UI goroutine to show the window")
 	}
-	a.uiMu.Lock()
-	n := len(a.uiCalls)
-	a.uiMu.Unlock()
-	if n != 0 {
-		t.Errorf("the default tray click queued %d calls", n)
-	}
 }
 
 func TestSecondLaunchShowsHiddenWindowDirectly(t *testing.T) {

@@ -30,7 +30,7 @@ func (a *App) handleLaunch(args []string) {
 // was hidden.
 func (a *App) showFromLaunch() {
 	a.ShowWindow()
-	go a.Raise()
+	a.Post(a.Raise)
 }
 
 func sanitizeID(id string) string {
