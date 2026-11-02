@@ -25,7 +25,10 @@ func (s Styles) Px(m unit.Metric) Styles {
 		return dp(v)
 	}
 	inset := func(i properties.Inset) properties.Inset {
-		return properties.Inset{Top: dp(i.Top), Right: dp(i.Right), Bottom: dp(i.Bottom), Left: dp(i.Left), Start: dp(i.Start), End: dp(i.End)}
+		// Copied so NoInset stays set.
+		o := i
+		o.Top, o.Right, o.Bottom, o.Left, o.Start, o.End = dp(i.Top), dp(i.Right), dp(i.Bottom), dp(i.Left), dp(i.Start), dp(i.End)
+		return o
 	}
 	s.Gap = properties.Gap(dp(int(s.Gap)))
 	s.Width = properties.Width(size(int(s.Width)))

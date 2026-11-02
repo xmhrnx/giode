@@ -130,7 +130,16 @@ published, adding the files to it, instead of on a pushed tag:
 [ci]
 trigger = "release"                    # default "tag"
 test = "go vet ./... && go test ./..." # default "go test ./..."; "" runs none
+build = "tag"                          # default "run": the build number is the run number
+dispatch = false                       # default true for "tag", false for "release"
 ```
+
+The tag sets the version. A four-part tag (`v1.4.2.7`) also carries the build number in its
+last part; with `build = "tag"` the workflow uses it instead of the run number. `dispatch`
+adds or removes the Actions tab's "Run workflow" button. App bundles (`giode build aab`)
+need bundletool, which the SDK doesn't include: giode uses one from the build tools folder,
+or downloads bundletool 1.17.2 into its cache on the first bundle build, so CI runners need
+nothing extra.
 
 Rerun `giode ci -f` after changing `[ci]` rather than editing the workflow: it's written
 from giode.toml and overwritten.

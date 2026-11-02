@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"gioui.org/io/key"
 	"github.com/mehran9675/giode/components/accordion"
 	"github.com/mehran9675/giode/components/appshell"
 	"github.com/mehran9675/giode/components/autocomplete"
@@ -43,6 +44,7 @@ import (
 	"github.com/mehran9675/giode/fonts"
 	"github.com/mehran9675/giode/i18n"
 	"github.com/mehran9675/giode/router"
+	"github.com/mehran9675/giode/shortcut"
 	"github.com/mehran9675/giode/state"
 	"github.com/mehran9675/giode/styles"
 	"github.com/mehran9675/giode/styles/properties"
@@ -148,6 +150,23 @@ func NewState[T any](initial T) *State[T] {
 	return state.New(initial)
 }
 
+// Shortcuts registers app-wide keyboard shortcuts for this frame: call
+// it from the view every frame. They fire whatever has focus, unless
+// the focused field (or anything else in the UI) takes the key first;
+// see OnKey.
+//
+//	giode.Shortcuts(
+//		giode.Shortcut("Mod+T", newTab),
+//		giode.Shortcut("Mod+,", openSettings),
+//		giode.Shortcut("F5", refresh),
+//	)
+func Shortcuts(list ...KeyShortcut) {
+	elements.OnKey(func(e key.Event) bool { return shortcut.Handle(e, list) })
+}
+
+// KeyShortcut is a keyboard shortcut made with Shortcut.
+type KeyShortcut = shortcut.Shortcut
+
 // Keyed returns the state stored under (scope, key), creating it with
 // init the first time - persistent per-item state (a Pressable, a text
 // field) for lists that change at runtime. Entries not asked for in a
@@ -240,6 +259,16 @@ var (
 	// OnKey registers, for this frame, a handler for the keys nothing
 	// else took (app shortcuts); see elements.OnKey.
 	OnKey = elements.OnKey
+	// NoInset is an explicit zero Padding or Margin: an all-zero Inset
+	// means unset (Merge keeps the base's, components use their default).
+	NoInset = properties.NoInset
+	// Shortcut returns a keyboard shortcut ("Mod+T", "Ctrl+Shift+P",
+	// "F5") running action; Mod is Command on macOS, Ctrl elsewhere.
+	// Register shortcuts with Shortcuts. See package shortcut.
+	Shortcut = shortcut.New
+	// FormatShortcut writes a shortcut spec the way this platform
+	// shows it: "⇧⌘T" on macOS, "Ctrl+Shift+T" elsewhere.
+	FormatShortcut = shortcut.Format
 	// TouchInput reports whether the user is interacting by touch.
 	TouchInput = elements.TouchInput
 
@@ -747,9 +776,10 @@ const (
 	WrapNoWrap = properties.WrapNoWrap
 	WrapWrap   = properties.WrapWrap
 
-	AlignStart  = properties.AlignStart
-	AlignCenter = properties.AlignCenter
-	AlignEnd    = properties.AlignEnd
+	AlignStart   = properties.AlignStart
+	AlignCenter  = properties.AlignCenter
+	AlignEnd     = properties.AlignEnd
+	AlignStretch = properties.AlignStretch
 
 	JustifyStart        = properties.JustifyStart
 	JustifyCenter       = properties.JustifyCenter

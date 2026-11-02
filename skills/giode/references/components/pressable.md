@@ -39,6 +39,7 @@ card := giode.Pressable(func(s giode.PressState) giode.Element {
 | `Source` | `ClickPointer`, `ClickKeyboard`, `ClickProgrammatic` |
 | `Position` | where the pointer was, relative to the pressable, in pixels |
 | `PositionDp` | the same in dp, the unit of `Styles` |
+| `WindowPosition` | where the pointer was in the window, in pixels (what `Menu.OpenAt` takes) |
 
 `OnLongPress(fn)` handles a touch held still on the element for half a second (the touch
 screen's way to open context actions; the release that follows isn't a click). With a

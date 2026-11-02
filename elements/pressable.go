@@ -66,6 +66,10 @@ type ClickEvent struct {
 	Position image.Point
 	// PositionDp is Position in dp, the unit of Styles.
 	PositionDp f32.Point
+	// WindowPosition is where the pointer was in the window, in pixels:
+	// what Menu.OpenAt takes, so a row can open a menu where it was
+	// right-clicked.
+	WindowPosition image.Point
 }
 
 // toDp converts a pixel position to dp.
@@ -127,10 +131,13 @@ type Pressable struct {
 	disabled                       bool
 	focusable                      bool
 
-	hovered    bool
-	pressed    bool
-	pressBtn   MouseButton
-	pressPos   f32.Point
+	hovered  bool
+	pressed  bool
+	pressBtn MouseButton
+	pressPos f32.Point
+	// origin is the pressable's window position, exact as of the last
+	// frame (TrackPosition).
+	origin     image.Point
 	focused    bool
 	pressedKey key.Name
 
@@ -356,6 +363,7 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 			p.fire(ClickEvent{
 				Clicks: p.clicks, Button: p.pressBtn, Modifiers: e.Modifiers,
 				Source: ClickPointer, Position: e.Position.Round(), PositionDp: toDp(e.Position, gtx),
+				WindowPosition: p.origin.Add(e.Position.Round()),
 			})
 		}
 	}
@@ -370,7 +378,7 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 				(*fn)()
 			}
 			p.fired++
-			p.onLongPress(ClickEvent{Clicks: 1, Source: ClickPointer, Position: p.pressPos.Round(), PositionDp: toDp(p.pressPos, gtx)})
+			p.onLongPress(ClickEvent{Clicks: 1, Source: ClickPointer, Position: p.pressPos.Round(), PositionDp: toDp(p.pressPos, gtx), WindowPosition: p.origin.Add(p.pressPos.Round())})
 		default:
 			kit.RequestFrameAt(gtx, p.pressAt.Add(LongPressDuration))
 		}
@@ -444,6 +452,7 @@ func (p *Pressable) Layout(gtx layout.Context) layout.Dimensions {
 		content = Box(p.st, content)
 	}
 
+	TrackPosition(&p.origin)
 	macro := op.Record(gtx.Ops)
 	dims := kit.Unselectable(content.Layout)(gtx)
 	call := macro.Stop()

@@ -53,6 +53,9 @@ func (b *BoxElement) layoutFlex(gtx layout.Context, st styles.Styles, children [
 	// for start alignment, but centered or end-aligned children must
 	// keep their own size or there is nothing to align.
 	unstretch := st.Align == properties.AlignCenter || st.Align == properties.AlignEnd
+	if st.Align == properties.AlignStretch {
+		gtx.Constraints = stretchCross(gtx, children, axis, mainMax)
+	}
 	// Children are laid out before Gio's flex places them; the tracker
 	// moves what each one registered (portals, semantic nodes, tracked
 	// positions) to where it lands.
@@ -65,6 +68,9 @@ func (b *BoxElement) layoutFlex(gtx layout.Context, st styles.Styles, children [
 		}
 		if unstretch {
 			w = unstretchCross(w, axis)
+		}
+		if st.Align == properties.AlignStretch {
+			w = stretchChild(child, w, axis)
 		}
 		w = track.wrap(i, w)
 		wt := flexWeightOf(child, axis)
@@ -272,8 +278,15 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		hugMain = st.Height == 0 && st.HeightPct == 0
 	}
 
+	// Stretched items are measured first, so each can be laid out once
+	// at its line's cross size.
+	var stretchTo []int
+	if st.Align == properties.AlignStretch {
+		stretchTo = wrapStretch(gtx, children, axis, mainMax, gap)
+	}
+
 	items := make([]wrapItem, 0, len(children))
-	for _, child := range children {
+	for ci, child := range children {
 		el := child
 		if pct := flexPercentOf(child, axis); pct > 0 {
 			el = &mainSized{el: child, axis: axis, size: mainMax * pct / 100}
@@ -285,6 +298,14 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		} else {
 			cgtx.Constraints.Min.Y = 0
 			cgtx.Constraints.Max.Y = mainMax
+		}
+		if stretchTo != nil {
+			if axis == layout.Horizontal {
+				cgtx.Constraints.Min.Y = stretchTo[ci]
+			} else {
+				cgtx.Constraints.Min.X = stretchTo[ci]
+			}
+			el = stretchedElement{child: el, box: child, axis: axis}
 		}
 		if st.Align == properties.AlignCenter || st.Align == properties.AlignEnd {
 			// See layoutFlex: aligned items keep their own cross size.
@@ -472,4 +493,107 @@ func axisPoint(axis layout.Axis, main, cross int) image.Point {
 		return image.Pt(main, cross)
 	}
 	return image.Pt(cross, main)
+}
+
+// stretchCross raises the cross-axis minimum to the largest child's
+// cross size, measured first, for AlignStretch: Gio's flex passes that
+// minimum to every child, so all of them grow to the largest.
+func stretchCross(gtx layout.Context, children []Element, axis layout.Axis, mainMax int) layout.Constraints {
+	cs := gtx.Constraints
+	mgtx := gtx
+	if axis == layout.Horizontal {
+		mgtx.Constraints = layout.Constraints{Max: image.Pt(mainMax, cs.Max.Y)}
+	} else {
+		mgtx.Constraints = layout.Constraints{Max: image.Pt(cs.Max.X, mainMax)}
+	}
+	cross := 0
+	for _, c := range children {
+		d := Measure(mgtx, c)
+		if axis == layout.Horizontal {
+			cross = max(cross, d.Size.Y)
+		} else {
+			cross = max(cross, d.Size.X)
+		}
+	}
+	if axis == layout.Horizontal {
+		cs.Min.Y = max(cs.Min.Y, min(cross, cs.Max.Y))
+	} else {
+		cs.Min.X = max(cs.Min.X, min(cross, cs.Max.X))
+	}
+	return cs
+}
+
+// stretchChild lays a child of an AlignStretch container out at exactly
+// the cross size stretchCross settled on: a Box without its own cross
+// size fills it, as an element sized by its content wouldn't.
+func stretchChild(child Element, w layout.Widget, axis layout.Axis) layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		box, _ := child.(*BoxElement)
+		if axis == layout.Horizontal {
+			if gtx.Constraints.Min.Y > 0 {
+				gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
+				if box != nil {
+					box.stretchY = true
+					defer func() { box.stretchY = false }()
+				}
+			}
+		} else if gtx.Constraints.Min.X > 0 {
+			gtx.Constraints.Max.X = gtx.Constraints.Min.X
+			if box != nil {
+				box.stretchX = true
+				defer func() { box.stretchX = false }()
+			}
+		}
+		return w(gtx)
+	}
+}
+
+// stretchedElement lays an element out with stretchChild.
+type stretchedElement struct {
+	child Element
+	box   Element
+	axis  layout.Axis
+}
+
+func (s stretchedElement) Layout(gtx layout.Context) layout.Dimensions {
+	return stretchChild(s.box, s.child.Layout, s.axis)(gtx)
+}
+
+// wrapStretch measures a wrapping container's children, breaks them
+// into lines as the layout will, and returns each child's cross size:
+// its line's thickest.
+func wrapStretch(gtx layout.Context, children []Element, axis layout.Axis, mainMax, gap int) []int {
+	mgtx := gtx
+	if axis == layout.Horizontal {
+		mgtx.Constraints = layout.Constraints{Max: image.Pt(mainMax, gtx.Constraints.Max.Y)}
+	} else {
+		mgtx.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, mainMax)}
+	}
+	out := make([]int, len(children))
+	start, used, thick := 0, 0, 0
+	end := func(i int) {
+		for j := start; j < i; j++ {
+			out[j] = thick
+		}
+	}
+	for i, c := range children {
+		el := c
+		if pct := flexPercentOf(c, axis); pct > 0 {
+			el = &mainSized{el: c, axis: axis, size: mainMax * pct / 100}
+		}
+		d := Measure(mgtx, el)
+		m, cr := axisMain(d.Size, axis), axisCross(d.Size, axis)
+		add := m
+		if i > start {
+			add += gap
+		}
+		if i > start && used+add > mainMax {
+			end(i)
+			start, used, thick, add = i, 0, 0, m
+		}
+		used += add
+		thick = max(thick, cr)
+	}
+	end(len(children))
+	return out
 }

@@ -100,6 +100,7 @@ size := giode.Input.Select(giode.Styles{}, "Small", "Medium", "Large").
 | `Selected() int` | Selected index. |
 | `Value() string` | Selected option text. |
 | `SetSelected(i int)` | Changes the selection without invoking OnChange. |
+| `SetOptions(options ...string)` | Replaces the options; the selection stays on the same text when it's still there, and otherwise moves to the first option (no OnChange). |
 | `OnChange(fn func(int))` | Change handler. |
 | `Opened() bool` | Whether the panel is open. |
 

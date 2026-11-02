@@ -27,9 +27,18 @@ menu.Close()
 menu.Opened()
 ```
 
-Without `SetContextMenu`, lay the menu out anywhere in the view - its panel renders via
-a portal (see [extending.md](../extending.md#rendering-above-everything-portals)), so it
-paints above everything else regardless of tree position.
+Without `SetContextMenu`, lay the menu out anywhere in the view: it takes no space there
+(like `Dialog`, its siblings keep their layout), its panel paints above everything else via
+a portal (see [extending.md](../extending.md#rendering-above-everything-portals)), and a
+press anywhere in the window outside it closes it. `OpenAt` takes window coordinates and
+the panel opens exactly there, whatever containers the menu sits in. To open a menu where a
+row was right-clicked, use the click's `WindowPosition`:
+
+```go
+row := giode.Pressable(content).OnSecondaryClick(func(e giode.ClickEvent) {
+	menu.OpenAt(f32.Pt(float32(e.WindowPosition.X), float32(e.WindowPosition.Y)))
+})
+```
 
 ## Dropdown menu: Trigger
 
@@ -77,7 +86,7 @@ Escape) closes every open submenu with it.
 | `IconItem(iconName, label string, action func()) *Menu` | Item with a material icon. |
 | `CheckItem(label string, checked func() bool, action func()) *Menu` | Item with a check mark while `checked` reports true (read every frame). |
 | `RadioItem(label string, selected func() bool, action func()) *Menu` | One of a group of choices, with a dot on the selected one. |
-| `Shortcut(text string) *Menu` | Shows a shortcut right-aligned on the last item added: `Item("Open File…", open).Shortcut("Ctrl+O")`. Display only; handle the key with the `shortcut` package. |
+| `Shortcut(spec string) *Menu` | Shows a shortcut right-aligned on the last item added, written the platform's way: `Item("Open File…", open).Shortcut("Mod+O")` shows `⌘O` on macOS and `Ctrl+O` elsewhere. Display only; register the key with `giode.Shortcuts` (see [window.md](../window.md#keyboard-shortcuts)). |
 | `DisabledItem(label string) *Menu` | Grayed-out item. |
 | `Separator() *Menu` | Horizontal line. |
 | `SubMenu(label string, submenu *Menu) *Menu` | Item that reveals submenu on hover. |

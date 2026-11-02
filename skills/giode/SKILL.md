@@ -85,13 +85,13 @@ func main() {
 
 ## Layout and styling essentials
 
-- `giode.Box(st, kids...)` is a flex container (`FlexDirection`, `Align`, `Justify`, `Gap`,
-  `Wrap`, `FlexGrow`); `Row` and `Stack` are horizontal and vertical boxes.
+- `giode.Box(st, kids...)` is a flex container (`FlexDirection`, `Align` incl.
+  `AlignStretch` for equal-height cards, `Justify`, `Gap`, `Wrap`, `FlexGrow`); `Row` and `Stack` are horizontal and vertical boxes.
 - Absolute positioning: `Position: giode.PositionAbsolute` with `Top/Left/Right/Bottom`.
   An offset of 0 means unset; use `giode.Flush` for an explicit 0. `ZIndex` orders paint
   and input.
 - **Zero means unset** throughout `Styles`. An all-zero `Padding` on a component falls back
-  to its default; components that allow zero have a setter (e.g. `Dialog.Padding(giode.Inset{})`).
+  to its default and `Merge` keeps the base's; use `giode.NoInset` for an explicit zero.
 - Insets: `giode.UniformInset(n)`, `giode.SymmetricInset(h, v)`, `giode.Inset{Top:, Right:,
   Bottom:, Left:}`; `Start`/`End` follow the reading direction (left/right, swapped right to left).
 - Colors are CSS strings (`"#1e293b"`, `"rgb(...)"`, named) or theme tokens
@@ -103,7 +103,7 @@ func main() {
 - Box shadows: `BoxShadow: giode.BoxShadow{Y: 8, Blur: 24, Color: "#00000066"}`.
 - Custom drawing: `giode.Canvas(st, func(p *giode.Painter) { p.Arc(...); p.Sector(...);
   p.Path()... })` in dp, angles clockwise from 12 o'clock.
-- Overlays: `Dialog`, `Sheet` and `Drawer` paint over the window and take no layout space;
+- Overlays: `Dialog`, `Sheet`, `Drawer` and `Menu` paint over the window and take no layout space;
   place them anywhere in the tree. Portals (`elements.RegisterPortal...`) render popups
   above everything.
 - Responsive: `giode.Responsive(giode.Breakpoint{MaxWidth: 600, Name: "compact", View: ...}, ...)`
@@ -240,10 +240,10 @@ for every key before editing giode.toml.
 ## Gotchas (each cost real debugging time)
 
 - A stateful component recreated inside the view loses its state; create it once or use `Keyed`.
-- App-wide shortcuts belong in `Config.OnKey` / `giode.OnKey`, which only see keys nothing
-  else took; a catch-all `key.Filter` in the view steals keys from fields and dialogs.
+- App-wide shortcuts belong in `giode.Shortcuts(giode.Shortcut("Mod+T", fn), ...)` (or
+  `Config.OnKey` / `giode.OnKey` for raw keys), which only see keys nothing else took; a catch-all `key.Filter` in the view steals keys from fields and dialogs.
 - Blocking dialogs called from a click handler deadlock; call them from a goroutine and `Post` the result.
-- `Padding: UniformInset(0)` is "unset" on components with a default padding; use their setter.
+- `Padding: UniformInset(0)` is "unset"; use `giode.NoInset`.
 - Offsets of 0 are unset; use `giode.Flush`.
 - Mixed colors computed once from fixed hex values don't follow theme switches; mix theme tokens.
 - Translucent overlays look too bright; use `Mix` for opaque tints.

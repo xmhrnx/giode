@@ -36,3 +36,21 @@ func TestMerge_Variadic(t *testing.T) {
 		t.Errorf("With = %+v", got)
 	}
 }
+
+func TestNoInset(t *testing.T) {
+	base := Styles{Padding: properties.UniformInset(16), Margin: properties.UniformInset(4)}
+	if got := Merge(base, Styles{Padding: properties.UniformInset(0)}).Padding; got != properties.UniformInset(16) {
+		t.Errorf("an all-zero Padding overrode the base: %+v", got)
+	}
+	m := Merge(base, Styles{Padding: properties.NoInset, Margin: properties.NoInset})
+	if m.Padding != properties.NoInset || m.Margin != properties.NoInset {
+		t.Errorf("NoInset didn't override: %+v %+v", m.Padding, m.Margin)
+	}
+	px := m.Px(unit.Metric{PxPerDp: 2})
+	if px.Padding != properties.NoInset {
+		t.Errorf("NoInset lost by Px: %+v", px.Padding)
+	}
+	if p := px.Padding; p.Top != 0 || p.Left != 0 || p.Right != 0 || p.Bottom != 0 {
+		t.Errorf("NoInset isn't zero: %+v", p)
+	}
+}

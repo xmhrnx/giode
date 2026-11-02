@@ -96,4 +96,13 @@ func TestZeroPadding(t *testing.T) {
 	if d.size != image.Pt(100, 50) {
 		t.Errorf("panel %v with Padding(Inset{}), want the content's 100x50", d.size)
 	}
+	d2 := New(&open, func() elements.Element { return elements.Box(styles.Styles{Width: 100, Height: 50}) }, styles.Styles{Padding: properties.NoInset})
+	for range 2 {
+		elements.BeginFrame()
+		d2.Layout(gtx)
+		elements.DrainPortals(gtx)
+	}
+	if d2.size != image.Pt(100, 50) {
+		t.Errorf("panel %v with Padding: NoInset, want the content's 100x50", d2.size)
+	}
 }

@@ -8,7 +8,15 @@ package properties
 type Inset struct {
 	Top, Right, Bottom, Left int
 	Start, End               int
+	// set marks NoInset: zero on every side, but set.
+	set bool
 }
+
+// NoInset is an explicit zero inset. An all-zero Inset means unset, so
+// Merge keeps the base's and components fall back to their default
+// padding; NoInset overrides both: Styles{Padding: NoInset} has no
+// padding at all.
+var NoInset = Inset{set: true}
 
 // Physical resolves Start and End into Left and Right for a layout
 // reading right to left or not.
