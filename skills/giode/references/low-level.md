@@ -39,9 +39,9 @@ property, the router, icons and fonts are window-agnostic: they only need a
 `layout.Context`. Rendering through a custom window (GLFW, Ebitengine, an embedded
 surface) therefore works unchanged.
 
-Import `github.com/mehran9675/giode/ui` instead of the root package: it has the same
+Import `github.com/xmhrnx/giode/ui` instead of the root package: it has the same
 names (`ui.Box`, `ui.Button`, `ui.Styles`, …; the root package's are generated from it)
-without `App`, so Gio's window layer isn't linked. `github.com/mehran9675/giode/host` has
+without `App`, so Gio's window layer isn't linked. `github.com/xmhrnx/giode/host` has
 the window-free services: `KeepScreenOn`, `KeepAwake`, `LockInstance` (the
 single-instance lock) and `ServeClipboard`.
 
@@ -52,8 +52,8 @@ toasts misbehave:
 
 ```go
 import (
-	"github.com/mehran9675/giode/host"
-	"github.com/mehran9675/giode/ui"
+	"github.com/xmhrnx/giode/host"
+	"github.com/xmhrnx/giode/ui"
 )
 
 ui.SetInvalidator(glfw.PostEmptyEvent) // State changes and toasts from other goroutines
@@ -109,8 +109,8 @@ natural package:
 
 ```go
 import (
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/components/menu"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/components/menu"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 ```

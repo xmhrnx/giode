@@ -3,7 +3,7 @@ package giode
 import (
 	"gioui.org/app"
 
-	"github.com/mehran9675/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/mobile"
 )
 
 func secureSet(service, name string, value []byte) error {

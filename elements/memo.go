@@ -12,10 +12,10 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/internal/textrender"
-	"github.com/mehran9675/giode/state"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/internal/textrender"
+	"github.com/xmhrnx/giode/state"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // MemoCache caches the painted output of a subtree across frames, so

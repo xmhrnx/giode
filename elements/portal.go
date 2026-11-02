@@ -8,7 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/components/kit"
+	"github.com/xmhrnx/giode/components/kit"
 )
 
 // portalEntry is one piece of content queued to render above

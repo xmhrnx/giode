@@ -3,7 +3,7 @@ package giode
 import (
 	"time"
 
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // SystemDarkMode reports whether the platform is set to a dark

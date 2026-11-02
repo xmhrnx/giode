@@ -8,8 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // BoxElement is a container element: a flex container and a

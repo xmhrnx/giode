@@ -3,7 +3,7 @@ package main
 import (
 	"embed"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // Giode ships no icon set: an app brings the icons it uses. These are

@@ -5,7 +5,7 @@ import (
 
 	"gioui.org/x/notify"
 
-	"github.com/mehran9675/giode/internal/bridge"
+	"github.com/xmhrnx/giode/internal/bridge"
 )
 
 var (

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // themePage demonstrates "theme.*" color tokens: everything below
 // follows giode.SetMode without its own styles changing.

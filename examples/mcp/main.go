@@ -13,8 +13,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/mcp"
+	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/mcp"
 )
 
 // todos is named so the MCP state tools can read and set it.

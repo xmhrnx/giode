@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // portalProbe registers a portal anchored at its own position, as a

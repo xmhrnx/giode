@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // paginationPage holds the control, created once so its current page

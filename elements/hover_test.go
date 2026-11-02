@@ -10,8 +10,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/fonts"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // TestBoxOnHover drives a real input router and checks that the hover

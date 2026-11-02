@@ -6,7 +6,7 @@ import (
 
 	"gioui.org/app"
 
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Orientation restricts how a mobile app may be rotated.

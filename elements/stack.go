@@ -1,8 +1,8 @@
 package elements
 
 import (
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Stack lays children out vertically. It is Box with flex direction

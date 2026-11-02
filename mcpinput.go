@@ -16,7 +16,7 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/mcp"
+	"github.com/xmhrnx/giode/mcp"
 )
 
 // errInjectUnpatched is what ui_pointer and ui_key return in apps not

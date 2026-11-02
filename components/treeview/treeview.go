@@ -8,12 +8,12 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/components/spinner"
-	"github.com/mehran9675/giode/components/virtuallist"
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/components/spinner"
+	"github.com/xmhrnx/giode/components/virtuallist"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Node is one item of the tree.

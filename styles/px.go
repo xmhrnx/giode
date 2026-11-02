@@ -3,7 +3,7 @@ package styles
 import (
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Px returns s with every length resolved from dp to physical pixels

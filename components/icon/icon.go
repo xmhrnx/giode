@@ -26,7 +26,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // defaultSize is the icon size, in dp, when styles leave it unset.

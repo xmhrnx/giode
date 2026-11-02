@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 func TestRevealStep(t *testing.T) {

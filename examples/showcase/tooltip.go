@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // tooltipPage holds the tooltip, created once so its hover state
 // persists across frames.

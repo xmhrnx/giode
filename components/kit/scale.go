@@ -6,7 +6,7 @@
 // See the "Extending the library" documentation for a full recipe.
 package kit
 
-import "github.com/mehran9675/giode/styles/properties"
+import "github.com/xmhrnx/giode/styles/properties"
 
 // Scale multiplies each channel of c by f, clamping to the valid
 // range.

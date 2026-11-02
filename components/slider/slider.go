@@ -9,10 +9,10 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // Slider is a stateful horizontal slider in the range [0, 1]. Create

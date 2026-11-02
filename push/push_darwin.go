@@ -18,8 +18,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/internal/bridge"
+	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/internal/bridge"
 )
 
 var (

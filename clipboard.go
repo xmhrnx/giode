@@ -10,7 +10,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 
-	"github.com/mehran9675/giode/components/kit"
+	"github.com/xmhrnx/giode/components/kit"
 )
 
 // maxClipboardRead bounds how much clipboard text ReadClipboard reads.

@@ -8,9 +8,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 
-	"github.com/mehran9675/giode/components/kit"
+	"github.com/xmhrnx/giode/components/kit"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // Layout renders the open menu: a window-wide dismissal layer, plus

@@ -15,10 +15,10 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/fonts"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 type selHarness struct {

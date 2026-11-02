@@ -16,9 +16,9 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/internal/textrender"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/internal/textrender"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // SelectionArea makes the Text and RichText elements inside child

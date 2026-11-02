@@ -27,15 +27,15 @@ platform tools and flags.
 ## Install
 
 ```sh tab="macOS / Linux"
-curl -fsSL https://raw.githubusercontent.com/Mehran9675/giode-cli/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/xmhrnx/giode-cli/main/install.sh | sh
 ```
 
 ```powershell tab="Windows"
-irm https://raw.githubusercontent.com/Mehran9675/giode-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/xmhrnx/giode-cli/main/install.ps1 | iex
 ```
 
 ```sh tab="With Go"
-go install github.com/mehran9675/giode-cli/cmd/giode@latest
+go install github.com/xmhrnx/giode-cli/cmd/giode@latest
 ```
 
 The install scripts download the latest release for your system and put `giode` on your PATH

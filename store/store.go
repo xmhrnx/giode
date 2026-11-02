@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mehran9675/giode"
+	"github.com/xmhrnx/giode"
 )
 
 // ErrCanceled is returned by Buy when the user cancels it.

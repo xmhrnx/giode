@@ -11,8 +11,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/components/menu"
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/components/menu"
+	"github.com/xmhrnx/giode/elements"
 )
 
 func TestWindowPointer_ContextMenuOpensOverAnyWidget(t *testing.T) {

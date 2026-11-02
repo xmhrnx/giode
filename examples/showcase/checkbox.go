@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // checkboxPage holds the checkbox, created once so its checked state
 // persists across frames.

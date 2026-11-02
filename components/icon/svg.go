@@ -7,10 +7,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/styles"
 
-	"github.com/mehran9675/giode/internal/raster"
+	"github.com/xmhrnx/giode/internal/raster"
 )
 
 // SVG renders SVG path data (commands M, L, H, V, C, S, Q, T, A, Z in

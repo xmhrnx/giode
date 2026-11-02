@@ -7,7 +7,7 @@ but fewer of the mobile APIs below are implemented there yet.
 
 ## Building
 
-The [giode CLI](https://github.com/mehran9675/giode-cli) wraps everything below:
+The [giode CLI](https://github.com/xmhrnx/giode-cli) wraps everything below:
 `giode build android` reads the app's name, ID, version, icon and permissions from
 `giode.toml`, `giode run android` builds, installs and launches on a connected device,
 and `giode doctor` checks the tools listed here. It also adds what gogio can't: the
@@ -107,13 +107,13 @@ backgrounded app without warning, and `OnShutdown` doesn't run then.
 
 ## Calling Java
 
-The `github.com/mehran9675/giode/android` package calls static Java methods through the
+The `github.com/xmhrnx/giode/android` package calls static Java methods through the
 app's class loader, so the app's own classes resolve as well as the SDK's. Put the compiled
 classes in a `.jar` in one of the app's packages (giode build adds it to the APK; with
 `android.java` in giode.toml it compiles the sources for you):
 
 ```go
-import "github.com/mehran9675/giode/android"
+import "github.com/xmhrnx/giode/android"
 
 ok, err := android.CallBool("com/example/usb/Usb", "hasPermission",
 	"(Landroid/content/Context;Ljava/lang/String;)Z", android.Context(), deviceName)

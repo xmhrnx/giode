@@ -12,13 +12,13 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/components/transition"
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/i18n"
-	"github.com/mehran9675/giode/state"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/components/transition"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/state"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Kind selects a toast's accent color.

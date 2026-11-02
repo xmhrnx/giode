@@ -201,7 +201,7 @@ export async function renderDocs(view, path) {
 	const crumbs = page ? `<div class="crumbs"><a href="#/docs/index">Docs</a><span>/</span>${page.section}</div>` : "";
 	const file = files.get(path) || path + ".md";
 	main.innerHTML = `${crumbs}<div class="prose">${html}</div>` +
-		`<div class="doc-foot"><a href="https://github.com/Mehran9675/giode/edit/main/docs/${file}" target="_blank" rel="noopener">Edit this page on GitHub</a></div>` +
+		`<div class="doc-foot"><a href="https://github.com/xmhrnx/giode/edit/main/docs/${file}" target="_blank" rel="noopener">Edit this page on GitHub</a></div>` +
 		prevNext(path);
 	main.querySelectorAll(".prose a[href]").forEach((a) => {
 		const r = resolve(a.getAttribute("href"), path);

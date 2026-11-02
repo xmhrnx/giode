@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // Trigger wraps el so clicking it toggles the menu, anchored just

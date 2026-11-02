@@ -7,11 +7,11 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/mehran9675/giode/components/kit"
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/i18n"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // DefaultFeedback is how long the check mark shows after copying.

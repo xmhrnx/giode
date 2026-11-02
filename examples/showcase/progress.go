@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // progressPage is stateless: it just reads another page's live value
 // every frame, so it needs no state of its own beyond that reference.

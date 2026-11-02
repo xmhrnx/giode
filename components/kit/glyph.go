@@ -8,7 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/internal/raster"
+	"github.com/xmhrnx/giode/internal/raster"
 )
 
 // Glyph is one of the few small indicator shapes components draw

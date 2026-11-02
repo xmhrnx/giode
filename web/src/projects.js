@@ -8,7 +8,7 @@ export const PROJECTS = [
 	{
 		slug: "goplay",
 		name: "GoPlay",
-		repo: "Mehran9675/goplay",
+		repo: "xmhrnx/goplay",
 		tagline: "A video player for people who just want to watch something.",
 		description: "GoPlay plays almost any file or stream with mpv's engine, in an interface built with Giode. Hardware decoding on every platform is drawn straight from the GPU with no copies, under a Giode UI that floats over fullscreen video and gets out of the way in a window.",
 		accent: "#f97316",
@@ -28,7 +28,7 @@ export const PROJECTS = [
 	{
 		slug: "touchup",
 		name: "TouchUp",
-		repo: "Mehran9675/touchup",
+		repo: "xmhrnx/touchup",
 		tagline: "Upscale images, video and audio with AI engines that run on your own computer.",
 		description: "TouchUp installs and drives open-source upscalers - SeedVR2, Real-ESRGAN, AudioSR and more - and takes care of everything around them: extracting and re-encoding video frames, keeping the soundtrack, converting audio, running jobs in a queue and comparing before and after. Nothing is uploaded.",
 		accent: "#06b6d4",
@@ -48,7 +48,7 @@ export const PROJECTS = [
 	{
 		slug: "sonora",
 		name: "Sonora",
-		repo: "Mehran9675/sonora",
+		repo: "xmhrnx/sonora",
 		tagline: "A speech studio - text to speech and speech to text - with no code and no setup.",
 		description: "Type some text or open a document, pick an engine and a voice, press Generate. Or record, press Transcribe and get the text back with timestamps. Sonora installs models like Kitten TTS, IndexTTS and Whisper with one click, and on Android runs them on the phone itself, offline.",
 		accent: "#8b5cf6",
@@ -73,7 +73,7 @@ export const PROJECTS = [
 	{
 		slug: "pocket-agent",
 		name: "Pocket Agent",
-		repo: "Mehran9675/pocket-agent",
+		repo: "xmhrnx/pocket-agent",
 		tagline: "A private AI workspace for Android, iPhone and iPad.",
 		description: "Chat with models running on the device or in the cloud, hand multi-step tasks to agents, and run deep research that reads dozens of sources and writes a cited report. One Go codebase with native rendering and no webview.",
 		accent: "#fb923c",
@@ -100,7 +100,7 @@ export const PROJECTS = [
 	{
 		slug: "anyfile",
 		name: "AnyFile",
-		repo: "Mehran9675/anyfile",
+		repo: "xmhrnx/anyfile",
 		tagline: "Tells you what any file really is, and lets you explore everything inside it.",
 		description: "AnyFile identifies files by their contents, not their names, explores nested containers - a zip inside an email, the spreadsheet inside that zip, the image inside that spreadsheet - and hands each item to the viewer your system already uses for its type.",
 		accent: "#0ea5e9",
@@ -119,7 +119,7 @@ export const PROJECTS = [
 	{
 		slug: "silicondb",
 		name: "Silicon DB",
-		repo: "Mehran9675/silicondb",
+		repo: "xmhrnx/silicondb",
 		tagline: "The specifications of every processing chip, from every manufacturer and era.",
 		description: "A mobile database of CPUs, GPUs, APUs, SoCs, AI accelerators, microcontrollers, DSPs and FPGAs. Browse by category and decade, open a chip for every spec, and compare up to four side by side - offline, with updates that fetch only what changed.",
 		accent: "#ef4444",

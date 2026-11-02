@@ -7,9 +7,9 @@ import { observeReveal } from "./examples.js";
 import { selectTab } from "../widgets.js";
 
 const INSTALL = [
-	{ label: "macOS / Linux", cmd: "curl -fsSL https://raw.githubusercontent.com/Mehran9675/giode-cli/main/install.sh | sh" },
-	{ label: "Windows", cmd: "irm https://raw.githubusercontent.com/Mehran9675/giode-cli/main/install.ps1 | iex" },
-	{ label: "Go", cmd: "go install github.com/mehran9675/giode-cli/cmd/giode@latest" },
+	{ label: "macOS / Linux", cmd: "curl -fsSL https://raw.githubusercontent.com/xmhrnx/giode-cli/main/install.sh | sh" },
+	{ label: "Windows", cmd: "irm https://raw.githubusercontent.com/xmhrnx/giode-cli/main/install.ps1 | iex" },
+	{ label: "Go", cmd: "go install github.com/xmhrnx/giode-cli/cmd/giode@latest" },
 ];
 
 const FEATURES = [
@@ -162,7 +162,7 @@ export function renderHome(view) {
 			<p>Install the CLI, run <code>giode new</code>, pick your platforms, and you're running.</p>
 			<div class="cta">
 				<a class="btn btn-primary btn-lg" href="#/docs/getting-started">Get started ${icon("arrow", 18)}</a>
-				<a class="btn btn-ghost btn-lg" href="https://github.com/Mehran9675/giode" target="_blank" rel="noopener">Star on GitHub</a>
+				<a class="btn btn-ghost btn-lg" href="https://github.com/xmhrnx/giode" target="_blank" rel="noopener">Star on GitHub</a>
 			</div>
 			<p class="alpha-note">Giode is in alpha: it's used in real apps, but the API will change before 1.0.</p>
 		</div>

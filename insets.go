@@ -9,8 +9,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/i18n"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // currentApp is the most recently created App, for the package-level

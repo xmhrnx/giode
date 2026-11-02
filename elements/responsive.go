@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
+	"github.com/xmhrnx/giode/components/kit"
 )
 
 // Breakpoint is a simplified media query: it matches when the

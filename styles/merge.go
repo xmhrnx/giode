@@ -1,6 +1,6 @@
 package styles
 
-import "github.com/mehran9675/giode/styles/properties"
+import "github.com/xmhrnx/giode/styles/properties"
 
 // Merge overlays the non-zero values of each of overs on top of base,
 // in order, and returns the result. It is used by components to apply

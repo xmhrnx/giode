@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // SpinnerShowcase is stateless: Spinner animates itself, so it can be
 // built fresh every frame like Text.

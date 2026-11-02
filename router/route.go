@@ -3,7 +3,7 @@
 // them with Link.
 package router
 
-import "github.com/mehran9675/giode/elements"
+import "github.com/xmhrnx/giode/elements"
 
 // View builds the element of a route on every frame it is shown.
 type View func() elements.Element

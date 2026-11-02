@@ -4,7 +4,7 @@ package imageutil
 import (
 	"image"
 
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // New renders img as a stateless element. Width and Height fix the

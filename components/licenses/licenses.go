@@ -13,11 +13,11 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/mehran9675/giode/components/lazylist"
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/i18n"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/lazylist"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // License is a module's license, as giode licenses writes it.

@@ -75,6 +75,6 @@ Apache 2.0, for the library and the CLI. Gio is MIT or Unlicense.
 
 ## Where do I report bugs or ask questions?
 
-On GitHub: [issues](https://github.com/Mehran9675/giode/issues) for bugs and requests,
-[giode-cli issues](https://github.com/Mehran9675/giode-cli/issues) for the CLI. Pull
+On GitHub: [issues](https://github.com/xmhrnx/giode/issues) for bugs and requests,
+[giode-cli issues](https://github.com/xmhrnx/giode-cli/issues) for the CLI. Pull
 requests are welcome; see [Contributing](contributing.md).

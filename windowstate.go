@@ -3,7 +3,7 @@ package giode
 import (
 	"gioui.org/app"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // WindowState is the current state of the window, as reported by the

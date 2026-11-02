@@ -13,8 +13,8 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/styles"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // Source is anything that renders as an icon: a *Document, a Path, an

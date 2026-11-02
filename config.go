@@ -2,7 +2,7 @@ package giode
 
 import (
 	"gioui.org/io/key"
-	"github.com/mehran9675/giode/host"
+	"github.com/xmhrnx/giode/host"
 
 	"image"
 	"image/color"
@@ -17,11 +17,11 @@ import (
 	"gioui.org/unit"
 	"gioui.org/x/explorer"
 
-	"github.com/mehran9675/giode/components/menu"
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/i18n"
-	"github.com/mehran9675/giode/state"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/components/menu"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/state"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Config configures the application window. The options cover the

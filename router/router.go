@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // Router is a stateful navigator. Create it once with New and lay it

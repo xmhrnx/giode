@@ -1,6 +1,6 @@
 package styles
 
-import "github.com/mehran9675/giode/styles/properties"
+import "github.com/xmhrnx/giode/styles/properties"
 
 // Styles is the set of CSS-like properties applied to an element.
 // Zero values mean "unset"; elements fall back to their defaults.

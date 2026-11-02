@@ -8,7 +8,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/components/kit"
+	"github.com/xmhrnx/giode/components/kit"
 )
 
 func TestResponsive_MaxWidthInDp(t *testing.T) {

@@ -6,12 +6,12 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"github.com/mehran9675/giode/components/kit"
+	"github.com/xmhrnx/giode/components/kit"
 
-	"github.com/mehran9675/giode/elements"
-	"github.com/mehran9675/giode/fonts"
-	"github.com/mehran9675/giode/styles"
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // unbounded mirrors the sentinel Gio uses for infinite constraints.

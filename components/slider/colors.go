@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/mehran9675/giode/styles/properties"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 var (

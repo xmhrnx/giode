@@ -1,6 +1,6 @@
 package bridge
 
-import "github.com/mehran9675/giode/android"
+import "github.com/xmhrnx/giode/android"
 
 // The Java helpers giode's platform packages use; see package android.
 var (

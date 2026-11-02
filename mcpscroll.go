@@ -8,7 +8,7 @@ import (
 
 	"gioui.org/op"
 
-	"github.com/mehran9675/giode/elements"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // scroller is a scroll container automation can move (Scroll,

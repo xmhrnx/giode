@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/mehran9675/giode/host"
+	"github.com/xmhrnx/giode/host"
 )
 
 // ErrDeclined is returned by RestartElevated when the user refuses the

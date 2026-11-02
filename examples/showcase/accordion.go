@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // accordionPage holds the accordion, created once so its expand/
 // collapse state persists across frames.

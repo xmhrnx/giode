@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // drawerPage holds the drawer and its own open state (owned by the
 // caller, per the drawer's external-state contract), created once so

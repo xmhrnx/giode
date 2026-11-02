@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 var fruitOptions = []string{
 	"Apple", "Apricot", "Banana", "Blueberry", "Cherry", "Cranberry", "Date", "Grape",

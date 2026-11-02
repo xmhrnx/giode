@@ -124,7 +124,7 @@ blurs anything.
 
 Gio as released renders Android apps at most at 60fps on 120Hz displays: it asks for the
 next frame only after presenting the current one, which misses the next vsync. Apps built
-with the [giode CLI](https://github.com/mehran9675/giode-cli) (`giode build android`)
+with the [giode CLI](https://github.com/xmhrnx/giode-cli) (`giode build android`)
 are built against a copy of Gio with that fixed and run at the display's full rate. The
 CLI's README describes how, and how to turn it off.
 

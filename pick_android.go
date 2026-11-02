@@ -6,7 +6,7 @@ import (
 
 	"gioui.org/app"
 
-	"github.com/mehran9675/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/mobile"
 )
 
 func (a *App) pickPhoto(ctx context.Context, opts PhotoOptions) (PickedFile, error) {

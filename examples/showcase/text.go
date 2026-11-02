@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mehran9675/giode"
+import "github.com/xmhrnx/giode"
 
 // textPage holds the hoverable label, created once so its hover state
 // persists across frames (Text.OnHover makes it stateful, like any
