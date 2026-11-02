@@ -30,6 +30,11 @@ func (h *sheetHarness) frame() {
 	h.r.Frame(&ops)
 }
 
+func (h *sheetHarness) ctx() layout.Context {
+	var ops op.Ops
+	return layout.Context{Ops: &ops, Source: h.r.Source(), Constraints: layout.Constraints{Max: h.win}}
+}
+
 func (h *sheetHarness) tap(x, y int) {
 	pos := f32.Pt(float32(x), float32(y))
 	h.r.Queue(

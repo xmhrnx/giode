@@ -33,6 +33,7 @@ func (s *Select) Layout(gtx layout.Context) layout.Dimensions {
 
 	if s.field.Clicked(gtx) {
 		s.open = !s.open
+		s.reveal = s.open
 		kit.RequestFrame(gtx)
 	}
 	if s.open {
@@ -93,13 +94,35 @@ func (s *Select) Layout(gtx layout.Context) layout.Dimensions {
 		fieldWidth := fieldDims.Size.X
 		at := elements.AbsolutePosition()
 		trigger := image.Rectangle{Min: at, Max: at.Add(fieldDims.Size)}
-		elements.RegisterPortalAround(gtx, trigger, 4, elements.PlaceAuto, func() elements.Element {
+		maxH := listHeight(gtx, trigger, elements.WindowSize())
+		elements.RegisterPortalAround(gtx, trigger, listGap, elements.PlaceAuto, func() elements.Element {
 			return elements.Raw(func(gtx layout.Context) layout.Dimensions {
-				return s.dropdown(gtx, st, fieldWidth)
+				return s.dropdown(gtx, st, fieldWidth, maxH)
 			})
 		})
 	}
 	return fieldDims
+}
+
+// listGap is the space between the field and its option list.
+const listGap = 4
+
+// listHeight is the most the option list may take: the larger of the
+// space below and above the field, so the list never covers the field
+// or leaves the window, and scrolls when the options need more. Where
+// both are cramped (a field in the middle of a short window) it may
+// take the window's height.
+func listHeight(gtx layout.Context, field image.Rectangle, win image.Point) int {
+	if win.Y <= 0 {
+		return 1 << 24
+	}
+	below := win.Y - field.Max.Y - listGap - kit.Margin
+	above := field.Min.Y - listGap - kit.Margin
+	h := max(below, above)
+	if h < gtx.Dp(120) {
+		h = win.Y - 2*kit.Margin
+	}
+	return max(h, 0)
 }
 
 // layoutOutside covers the window under the open list and closes it on

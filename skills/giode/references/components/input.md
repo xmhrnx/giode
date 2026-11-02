@@ -108,8 +108,9 @@ Styles: `Background` (field and panel fill), `Color` (text), `BorderColor` (fiel
 border), `BorderRadius` (corners), `Width` (fixed field width). The panel opens below
 the field via a portal (see [extending.md](../extending.md#rendering-above-everything-portals)),
 so it paints above everything else regardless of tree position, and lands below the field
-wherever it sits (in a row, a scroll, a dialog). Escape and the system Back button
-(Android) close it.
+wherever it sits (in a row, a scroll, a dialog), or above it when there's more room there.
+A list longer than that room scrolls, opening with the selected option in view. Escape and
+the system Back button (Android) close it.
 
 On phones, `Sheet(giode.SheetCompact)` opens the options as a bottom sheet instead - a
 panel along the bottom of the window over a dimmed scrim, with tall rows that are easy to

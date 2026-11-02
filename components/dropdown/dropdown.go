@@ -6,6 +6,8 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/mehran9675/giode/components/scroll"
+
 	"github.com/mehran9675/giode/styles"
 	"github.com/mehran9675/giode/styles/properties"
 )
@@ -34,6 +36,10 @@ type Select struct {
 	sheet     sheetState
 	// outside is the target of presses outside the open list.
 	outside struct{}
+	// list scrolls the options when they don't fit beside the field;
+	// reveal scrolls the selected one into view once the list opens.
+	list   *scroll.Scroll
+	reveal bool
 }
 
 // New returns a Select with the given styles and options: Background
