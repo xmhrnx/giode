@@ -12,7 +12,8 @@ import (
 // Frame lays out one frame of view into gtx the way App does, for a
 // custom host (a GLFW window, an embedded view): it starts the frame,
 // records the window size and metric, lays the view out, draws the
-// portals (menus, tooltips, toasts), delivers the Back key, runs the
+// portals (menus, tooltips, toasts), delivers the Back key and then the
+// keys nothing took to OnKey handlers, runs the
 // after-layout callbacks and ends the frame, sweeping keyed state and
 // memos no longer used. gtx's constraints are the window's size.
 //
@@ -37,6 +38,8 @@ func Frame(gtx layout.Context, view Element) (needsAnotherFrame bool) {
 	}
 	elements.DrainPortals(gtx)
 	elements.DispatchBack(gtx)
+	// Last, so app shortcuts get only the keys nothing else took.
+	elements.DispatchKeys(gtx)
 	return elements.RunAfterLayout()
 }
 

@@ -237,6 +237,9 @@ var (
 	// HandleBack registers a handler for the system Back button for the
 	// current frame; see elements.HandleBack.
 	HandleBack = elements.HandleBack
+	// OnKey registers, for this frame, a handler for the keys nothing
+	// else took (app shortcuts); see elements.OnKey.
+	OnKey = elements.OnKey
 	// TouchInput reports whether the user is interacting by touch.
 	TouchInput = elements.TouchInput
 

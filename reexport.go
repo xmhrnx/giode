@@ -7,7 +7,8 @@ import "github.com/mehran9675/giode/ui"
 // Frame lays out one frame of view into gtx the way App does, for a
 // custom host (a GLFW window, an embedded view): it starts the frame,
 // records the window size and metric, lays the view out, draws the
-// portals (menus, tooltips, toasts), delivers the Back key, runs the
+// portals (menus, tooltips, toasts), delivers the Back key and then the
+// keys nothing took to OnKey handlers, runs the
 // after-layout callbacks and ends the frame, sweeping keyed state and
 // memos no longer used. gtx's constraints are the window's size.
 //
@@ -218,6 +219,9 @@ var (
 	// HandleBack registers a handler for the system Back button for the
 	// current frame; see elements.HandleBack.
 	HandleBack = ui.HandleBack
+	// OnKey registers, for this frame, a handler for the keys nothing
+	// else took (app shortcuts); see elements.OnKey.
+	OnKey = ui.OnKey
 	// TouchInput reports whether the user is interacting by touch.
 	TouchInput = ui.TouchInput
 	// Pressable makes any content clickable; its content is rebuilt

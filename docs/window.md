@@ -314,6 +314,37 @@ Android decides whether the app handled Back the moment it's pressed, from the h
 registered in the last frame - a callback that returned false later could no longer hand
 the press back to the system.
 
+## Keyboard shortcuts
+
+App-wide shortcuts go in `Config.OnKey`, or in `giode.OnKey(fn)` called from the view
+every frame (the way `HandleBack` is):
+
+```go
+app := giode.New(giode.Config{
+	OnKey: func(e key.Event) bool {
+		if e.State != key.Press {
+			return false
+		}
+		switch {
+		case e.Name == "O" && e.Modifiers.Contain(key.ModShortcut):
+			openFile()
+		case e.Name == key.NameSpace:
+			togglePlay()
+		default:
+			return false
+		}
+		return true
+	},
+})
+```
+
+The handler only gets the keys nothing else took. The focused text field, dialogs, menus
+and other portals, and the Escape and Back handlers (`HandleDismiss`, `HandleBack`) all come
+first, whatever order the view lays things out in. So Space typed into a search box stays
+there, and Escape closes an open dialog before it reaches the shortcut. The handler gets
+presses and releases (check `e.State`) on the UI goroutine. It returns whether it used the
+key. A custom host gets the same behavior from `giode.Frame`.
+
 ## File drop
 
 ```go

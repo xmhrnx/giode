@@ -1,6 +1,7 @@
 package giode
 
 import (
+	"gioui.org/io/key"
 	"github.com/mehran9675/giode/host"
 
 	"image"
@@ -128,6 +129,11 @@ type Config struct {
 	// OnBeforeClose runs when a window close is requested. It cannot
 	// veto the close.
 	OnBeforeClose func()
+	// OnKey receives the keys nothing in the UI took - app-wide
+	// shortcuts - after the focused field, dialogs, menus and the
+	// Escape and Back handlers have had theirs; see giode.OnKey. It
+	// runs on the UI goroutine and returns whether it used the key.
+	OnKey func(e key.Event) bool
 	// OnWindowStateChange runs when the window is minimized,
 	// maximized, made fullscreen or restored - by the app or by the
 	// user.
