@@ -276,9 +276,12 @@ tray icon with it, or the user has no way to open the window.
 | Linux | An XDG autostart entry, `~/.config/autostart/<id>.desktop`. It runs the AppImage or the Flatpak (`flatpak run <id>`) when the app is one. A Flatpak needs `--filesystem=xdg-config/autostart:create` to write it. |
 | Android, iOS, web | `SetLaunchAtLogin` returns `ErrNotSupported`. |
 
-The entry is named after `app.id` from giode.toml, which the CLI builds into the app
-(`giode.AppID`); built without the CLI, set `giode.AppID` yourself, or the window title is
-used.
+The entry's file is named after `app.id` from giode.toml, and the startup apps list shows
+`app.name` with the app's icon: the CLI builds both into the app (`giode.AppID`,
+`giode.AppName`). Built without the CLI, set them yourself, or the window title is used. On
+Linux the icon is the Flatpak's, else the one a deb or rpm package installed under the app
+ID, else `Config.Icon` (saved to `~/.local/share/icons`). On macOS the LaunchAgent names the
+app's bundle ID, so Login Items lists it under the app.
 
 ## File manager context menu
 

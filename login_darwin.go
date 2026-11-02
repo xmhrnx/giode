@@ -17,7 +17,8 @@ func launchAgentFile(name string) (string, error) {
 	return filepath.Join(home, "Library", "LaunchAgents", name+".login.plist"), nil
 }
 
-func setLaunchAtLogin(name string, on bool) error {
+func setLaunchAtLogin(e loginEntry, on bool) error {
+	name := e.name
 	path, err := launchAgentFile(name)
 	if err != nil {
 		return err
@@ -41,6 +42,12 @@ func setLaunchAtLogin(name string, on bool) error {
 	for _, c := range cmd {
 		args.WriteString("\n\t\t<string>" + html.EscapeString(c) + "</string>")
 	}
+	// Login Items in System Settings lists the agent under the app
+	// (its name and icon) rather than under /usr/bin/open.
+	associated := ""
+	if AppID != "" {
+		associated = "\n\t<key>AssociatedBundleIdentifiers</key>\n\t<string>" + html.EscapeString(AppID) + "</string>"
+	}
 	plist := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -53,7 +60,7 @@ func setLaunchAtLogin(name string, on bool) error {
 	<key>RunAtLoad</key>
 	<true/>
 	<key>ProcessType</key>
-	<string>Interactive</string>
+	<string>Interactive</string>` + associated + `
 </dict>
 </plist>
 `

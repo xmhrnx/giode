@@ -83,13 +83,33 @@ func (s StartInTray) startsInTray() bool {
 // The user can also change it in the system's settings, so read
 // LaunchAtLogin for the current state rather than remembering it.
 func (a *App) SetLaunchAtLogin(on bool) error {
-	return setLaunchAtLogin(a.loginName(), on)
+	return setLaunchAtLogin(loginEntry{name: a.loginName(), display: a.displayName(), icon: a.cfg.Icon}, on)
+}
+
+// loginEntry is what a login registration is made from: the entry's
+// file or key name, the name shown for it, and the icon (PNG) shown
+// where the system shows one.
+type loginEntry struct {
+	name, display string
+	icon          []byte
 }
 
 // LaunchAtLogin reports whether the app is registered to start when the
 // user signs in (and, on Windows, the user hasn't turned it off).
 func (a *App) LaunchAtLogin() bool {
 	return launchAtLogin(a.loginName())
+}
+
+// displayName is the name the system's startup apps list shows:
+// app.name, else the window title, else the entry's name.
+func (a *App) displayName() string {
+	if AppName != "" {
+		return AppName
+	}
+	if t := a.Title(); t != "" {
+		return t
+	}
+	return a.loginName()
 }
 
 // loginName names the app's login entry: its ID, else its title.
