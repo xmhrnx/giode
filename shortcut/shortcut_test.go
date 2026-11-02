@@ -58,27 +58,29 @@ func TestHandle(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
+	// Explicit modifiers: Mod is Command or Ctrl depending on the host.
 	for _, c := range []struct {
 		spec string
 		mac  bool
 		want string
 	}{
-		{"Mod+Shift+T", false, "Ctrl+Shift+T"},
-		{"Mod+Shift+T", true, "⇧⌘T"},
+		{"Ctrl+Shift+T", false, "Ctrl+Shift+T"},
+		{"Cmd+Shift+T", true, "⇧⌘T"},
+		{"Ctrl+Alt+Shift+Cmd+K", true, "⌃⌥⇧⌘K"},
 		{"Alt+Enter", false, "Alt+Enter"},
 		{"F5", true, "F5"},
 		{"not a ++ spec", false, "not a ++ spec"},
 	} {
-		mods := c.spec
-		got := format(mods, c.mac)
-		if c.mac && key.ModShortcut != key.ModCommand {
-			// On a non-Apple host, Mod parses to Ctrl, shown as ⌃.
-			if c.spec == "Mod+Shift+T" {
-				c.want = "⌃⇧T"
-			}
-		}
-		if got != c.want {
+		if got := format(c.spec, c.mac); got != c.want {
 			t.Errorf("format(%q, mac=%v) = %q, want %q", c.spec, c.mac, got, c.want)
 		}
+	}
+	// Mod shows as the host's shortcut key.
+	want := "Ctrl+T"
+	if key.ModShortcut == key.ModCommand {
+		want = "⌘T"
+	}
+	if got := Format("Mod+T"); got != want {
+		t.Errorf("Format(Mod+T) = %q, want %q", got, want)
 	}
 }
