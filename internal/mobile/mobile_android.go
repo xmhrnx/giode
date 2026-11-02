@@ -2,11 +2,16 @@ package mobile
 
 /*
 #include <jni.h>
+
+static jsize giodeArrayLength(JNIEnv *env, jarray a) {
+	return (*env)->GetArrayLength(env, a);
+}
 */
 import "C"
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -97,6 +102,36 @@ func ShareURI(vm, ctx, view uintptr, uri, mime, title string) error {
 			jni.Value(jni.JavaString(env, mime)),
 			jni.Value(jni.JavaString(env, title)),
 		)
+	})
+}
+
+// ShareURIs opens the share sheet for several items published with
+// Publish. Call it on the main thread.
+func ShareURIs(vm, ctx, view uintptr, uris []string, mime, title string) error {
+	return call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "shareURIs", "(Landroid/view/View;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V")
+		return jni.CallStaticVoidMethod(env, cls, m,
+			jni.Value(view),
+			jni.Value(jni.JavaString(env, strings.Join(uris, "\n"))),
+			jni.Value(jni.JavaString(env, mime)),
+			jni.Value(jni.JavaString(env, title)),
+		)
+	})
+}
+
+// SaveToGallery copies the picture or video at path into the shared
+// Pictures (or Movies) collection, in album's folder. It copies the
+// whole file, so call it off the main thread. Android 10 or later.
+func SaveToGallery(vm, ctx uintptr, path, mime, album string) error {
+	return call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "saveToGallery", "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
+		_, err := jni.CallStaticObjectMethod(env, cls, m,
+			jni.Value(ctx),
+			jni.Value(jni.JavaString(env, path)),
+			jni.Value(jni.JavaString(env, mime)),
+			jni.Value(jni.JavaString(env, album)),
+		)
+		return err
 	})
 }
 
@@ -210,10 +245,11 @@ func SecureDelete(vm, ctx uintptr, name string) error {
 
 // requests tracks pending picker and dictation requests by id.
 var (
-	reqMu   sync.Mutex
-	nextReq = 0x4000
-	photos  = map[int]chan Photo{}
-	speech  = map[int]chan Speech{}
+	reqMu     sync.Mutex
+	nextReq   = 0x4000
+	photos    = map[int]chan Photo{}
+	photoSets = map[int]chan Photos{}
+	speech    = map[int]chan Speech{}
 )
 
 func newID() int {
@@ -245,6 +281,28 @@ func PickPhoto(vm, ctx, view uintptr, maxSide int, camera bool) (<-chan Photo, e
 	if err != nil {
 		reqMu.Lock()
 		delete(photos, id)
+		reqMu.Unlock()
+		return nil, err
+	}
+	return ch, nil
+}
+
+// PickPhotos opens the photo picker for up to limit photos (0 for no
+// limit) and returns a channel receiving them. Call it on the main
+// thread.
+func PickPhotos(vm, ctx, view uintptr, maxSide, limit int) (<-chan Photos, error) {
+	id := newID()
+	ch := make(chan Photos, 1)
+	reqMu.Lock()
+	photoSets[id] = ch
+	reqMu.Unlock()
+	err := callClass(vm, ctx, pickerClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "pickPhotos", "(Landroid/view/View;III)V")
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(view), jni.Value(id), jni.Value(maxSide), jni.Value(limit))
+	})
+	if err != nil {
+		reqMu.Lock()
+		delete(photoSets, id)
 		reqMu.Unlock()
 		return nil, err
 	}
@@ -308,6 +366,42 @@ func Java_org_giode_mobile_picker_1android_onPhoto(cenv *C.JNIEnv, cls C.jclass,
 		p.Name = goString(env, name)
 	}
 	ch <- p
+}
+
+//export Java_org_giode_mobile_picker_1android_onPhotos
+func Java_org_giode_mobile_picker_1android_onPhotos(cenv *C.JNIEnv, cls C.jclass, id C.jint, jpegs, names C.jobjectArray, errStr C.jstring) {
+	env := jni.EnvFor(uintptr(unsafe.Pointer(cenv)))
+	reqMu.Lock()
+	ch := photoSets[int(id)]
+	delete(photoSets, int(id))
+	reqMu.Unlock()
+	if ch == nil {
+		return
+	}
+	var ps Photos
+	switch msg := goString(env, errStr); {
+	case msg != "":
+		ps.Err = errors.New(msg)
+	case jpegs == 0:
+		ps.Err = ErrCanceled
+	default:
+		n := int(C.giodeArrayLength(cenv, C.jarray(jpegs)))
+		for i := 0; i < n; i++ {
+			jo, err := jni.GetObjectArrayElement(env, jni.ObjectArray(jpegs), jni.Size(i))
+			if err != nil {
+				ps.Err = err
+				break
+			}
+			no, _ := jni.GetObjectArrayElement(env, jni.ObjectArray(names), jni.Size(i))
+			ps.Photos = append(ps.Photos, Photo{
+				JPEG: append([]byte(nil), jni.GetByteArrayElements(env, jni.ByteArray(jo))...),
+				Name: jni.GoString(env, jni.String(no)),
+			})
+			jni.DeleteLocalRef(env, jo)
+			jni.DeleteLocalRef(env, no)
+		}
+	}
+	ch <- ps
 }
 
 //export Java_org_giode_mobile_picker_1android_onSpeech

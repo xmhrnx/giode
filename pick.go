@@ -234,13 +234,19 @@ func (a *App) photoFromFile(ctx context.Context, opts PhotoOptions) (PickedFile,
 	return jpegFile(f.Name, data), nil
 }
 
-// toJPEG decodes an image and re-encodes it as JPEG, scaled so its
-// longer side is at most maxSide.
+// toJPEG decodes an image and re-encodes it as JPEG, upright per its
+// EXIF orientation and scaled so its longer side is at most maxSide.
 func toJPEG(r io.Reader, maxSide int) ([]byte, error) {
-	img, _, err := image.Decode(r)
+	raw, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
+	img, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, err
+	}
+	// Turn it upright as the camera meant, as the phones' pickers do.
+	img = applyOrientation(img, jpegOrientation(raw))
 	b := img.Bounds()
 	if long := max(b.Dx(), b.Dy()); maxSide > 0 && long > maxSide {
 		w, h := b.Dx()*maxSide/long, b.Dy()*maxSide/long

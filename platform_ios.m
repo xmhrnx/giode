@@ -1,5 +1,6 @@
 #import <UIKit/UIKit.h>
 #import <PhotosUI/PhotosUI.h>
+#import <Photos/Photos.h>
 #import <AVFoundation/AVFoundation.h>
 #import <Speech/Speech.h>
 #include <stdint.h>
@@ -183,6 +184,146 @@ int giodePickPhoto(CFTypeRef vcRef, int rid, int maxSide) {
 		return 1;
 	}
 	return 0;
+}
+
+// GiodePhotosDelegate collects a multiple pick, in the order picked.
+@interface GiodePhotosDelegate : NSObject <PHPickerViewControllerDelegate>
+@property(nonatomic) int requestID;
+@property(nonatomic) int maxSide;
+@end
+
+@implementation GiodePhotosDelegate
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14)) {
+	[picker dismissViewControllerAnimated:YES completion:nil];
+	int rid = self.requestID;
+	int maxSide = self.maxSide;
+	[pending removeObject:self];
+	NSUInteger n = results.count;
+	if (n == 0) {
+		giodePhotosDone(rid, 0, NULL);
+		return;
+	}
+	NSMutableArray *jpegs = [NSMutableArray arrayWithCapacity:n];
+	NSMutableArray *names = [NSMutableArray arrayWithCapacity:n];
+	for (NSUInteger i = 0; i < n; i++) {
+		[jpegs addObject:[NSNull null]];
+		[names addObject:@"photo"];
+	}
+	dispatch_group_t group = dispatch_group_create();
+	__block NSString *failure = nil;
+	for (NSUInteger i = 0; i < n; i++) {
+		NSItemProvider *p = results[i].itemProvider;
+		if (p.suggestedName != nil) {
+			names[i] = p.suggestedName;
+		}
+		if (![p canLoadObjectOfClass:[UIImage class]]) {
+			continue;
+		}
+		dispatch_group_enter(group);
+		[p loadObjectOfClass:[UIImage class] completionHandler:^(id<NSItemProviderReading> obj, NSError *err) {
+			NSData *jpeg = nil;
+			if (obj != nil) {
+				jpeg = giodeJPEG((UIImage *)obj, maxSide);
+			}
+			@synchronized(jpegs) {
+				if (jpeg != nil) {
+					jpegs[i] = jpeg;
+				} else if (failure == nil) {
+					failure = err != nil ? err.localizedDescription : @"can't load an image";
+				}
+			}
+			dispatch_group_leave(group);
+		}];
+	}
+	dispatch_group_notify(group, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+		int count = 0;
+		for (NSUInteger i = 0; i < n; i++) {
+			if ([jpegs[i] isKindOfClass:[NSData class]]) {
+				NSData *d = jpegs[i];
+				giodePhotosItem(rid, (void *)d.bytes, (int)d.length, (char *)[names[i] UTF8String]);
+				count++;
+			}
+		}
+		giodePhotosDone(rid, count, count == 0 && failure != nil ? (char *)failure.UTF8String : NULL);
+	});
+}
+@end
+
+int giodePickPhotos(CFTypeRef vcRef, int rid, int maxSide, int limit) {
+	if (@available(iOS 14, *)) {
+		UIViewController *vc = (__bridge UIViewController *)vcRef;
+		onMain(^{
+			PHPickerConfiguration *cfg = [[PHPickerConfiguration alloc] init];
+			cfg.filter = [PHPickerFilter imagesFilter];
+			cfg.selectionLimit = limit;
+			if (@available(iOS 15, *)) {
+				cfg.selection = PHPickerConfigurationSelectionOrdered;
+			}
+			PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:cfg];
+			GiodePhotosDelegate *d = [[GiodePhotosDelegate alloc] init];
+			d.requestID = rid;
+			d.maxSide = maxSide;
+			if (pending == nil) {
+				pending = [NSMutableSet set];
+			}
+			[pending addObject:d];
+			picker.delegate = d;
+			[vc presentViewController:picker animated:YES completion:nil];
+		});
+		return 1;
+	}
+	return 0;
+}
+
+// giodeShareFiles opens the share sheet for several files, paths
+// separated by newlines.
+void giodeShareFiles(CFTypeRef vcRef, const char *paths) {
+	UIViewController *vc = (__bridge UIViewController *)vcRef;
+	NSMutableArray *items = [NSMutableArray array];
+	for (NSString *p in [[NSString stringWithUTF8String:paths] componentsSeparatedByString:@"\n"]) {
+		if (p.length > 0) {
+			[items addObject:[NSURL fileURLWithPath:p]];
+		}
+	}
+	onMain(^{
+		UIActivityViewController *a = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+		UIPopoverPresentationController *pop = a.popoverPresentationController;
+		if (pop != nil) {
+			pop.sourceView = vc.view;
+			CGRect b = vc.view.bounds;
+			pop.sourceRect = CGRectMake(CGRectGetMidX(b), CGRectGetMidY(b), 1, 1);
+			pop.permittedArrowDirections = 0;
+		}
+		[vc presentViewController:a animated:YES completion:nil];
+	});
+}
+
+// giodeSaveToPhotos adds a picture or video to the photo library, asking
+// for add-only access first, and answers giodeSavedToPhotos.
+void giodeSaveToPhotos(int rid, const char *path, int video) {
+	NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path]];
+	void (^save)(void) = ^{
+		[[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+			if (video) {
+				[PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:url];
+			} else {
+				[PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:url];
+			}
+		} completionHandler:^(BOOL ok, NSError *err) {
+			giodeSavedToPhotos(rid, ok ? NULL : (char *)(err.localizedDescription ?: @"can't save to Photos").UTF8String);
+		}];
+	};
+	if (@available(iOS 14, *)) {
+		[PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelAddOnly handler:^(PHAuthorizationStatus st) {
+			if (st == PHAuthorizationStatusAuthorized || st == PHAuthorizationStatusLimited) {
+				save();
+			} else {
+				giodeSavedToPhotos(rid, "adding to Photos isn't allowed for this app (Settings > Privacy & Security > Photos)");
+			}
+		}];
+	} else {
+		save();
+	}
 }
 
 int giodeHasInfoKey(const char *key) {

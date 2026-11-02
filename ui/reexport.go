@@ -40,6 +40,7 @@ import (
 	"github.com/xmhrnx/giode/components/transition"
 	"github.com/xmhrnx/giode/components/treeview"
 	"github.com/xmhrnx/giode/components/virtuallist"
+	"github.com/xmhrnx/giode/components/zoom"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/i18n"
@@ -318,6 +319,9 @@ var (
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = swipeable.New
+	// Zoomable pinch-zooms and pans its content - a page, a photo, a
+	// crop editor - with a double tap and Ctrl+wheel too; see zoom.New.
+	Zoomable = zoom.New
 	// Sheet is a modal bottom sheet, or with Adaptive a centered
 	// dialog on wide screens; see sheet.New.
 	Sheet = sheet.New

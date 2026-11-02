@@ -2,7 +2,7 @@ package giode
 
 /*
 #cgo CFLAGS: -Werror -fmodules -fobjc-arc -x objective-c
-#cgo LDFLAGS: -framework UIKit -framework PhotosUI -framework AVFoundation -framework Speech
+#cgo LDFLAGS: -framework UIKit -framework PhotosUI -framework Photos -framework AVFoundation -framework Speech
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -20,6 +20,9 @@ int giodeHasInfoKey(const char *key);
 int giodePickCamera(CFTypeRef vc, int id, int maxSide);
 void giodeDictate(int id, const char *lang);
 void giodeStopDictation(int id);
+int giodePickPhotos(CFTypeRef vc, int id, int maxSide, int limit);
+void giodeShareFiles(CFTypeRef vc, const char *paths);
+void giodeSaveToPhotos(int id, const char *path, int video);
 */
 import "C"
 
@@ -75,6 +78,149 @@ func (f ShareFile) share(ctx context.Context, a *App) error {
 	defer free()
 	C.giodeShare(vc, nil, cp, nil)
 	return nil
+}
+
+func (f ShareFiles) share(ctx context.Context, a *App) error {
+	if len(f.Paths) == 0 {
+		return nil
+	}
+	vc, err := a.viewController()
+	if err != nil {
+		return err
+	}
+	cp, free := cstr(strings.Join(f.Paths, "\n"))
+	defer free()
+	C.giodeShareFiles(vc, cp)
+	return nil
+}
+
+// photoSets collects multiple picks.
+var photoSets struct {
+	sync.Mutex
+	next int
+	m    map[int]*photoSet
+}
+
+type photoSet struct {
+	files []PickedFile
+	done  chan error
+}
+
+func (a *App) pickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]PickedFile, error) {
+	vc, err := a.viewController()
+	if err != nil {
+		return nil, err
+	}
+	photoSets.Lock()
+	if photoSets.m == nil {
+		photoSets.m = map[int]*photoSet{}
+	}
+	photoSets.next++
+	id := photoSets.next
+	set := &photoSet{done: make(chan error, 1)}
+	photoSets.m[id] = set
+	photoSets.Unlock()
+	forget := func() {
+		photoSets.Lock()
+		delete(photoSets.m, id)
+		photoSets.Unlock()
+	}
+	if C.giodePickPhotos(vc, C.int(id), C.int(opts.MaxSide), C.int(limit)) == 0 {
+		forget()
+		return nil, ErrNotSupported // PHPicker needs iOS 14
+	}
+	select {
+	case err := <-set.done:
+		if err != nil {
+			return nil, err
+		}
+		if len(set.files) == 0 {
+			return nil, ErrCanceled
+		}
+		return set.files, nil
+	case <-ctx.Done():
+		forget()
+		return nil, ctx.Err()
+	}
+}
+
+//export giodePhotosItem
+func giodePhotosItem(id C.int, data unsafe.Pointer, n C.int, name *C.char) {
+	photoSets.Lock()
+	set := photoSets.m[int(id)]
+	photoSets.Unlock()
+	if set != nil {
+		set.files = append(set.files, jpegFile(C.GoString(name), C.GoBytes(data, n)))
+	}
+}
+
+//export giodePhotosDone
+func giodePhotosDone(id C.int, count C.int, errMsg *C.char) {
+	photoSets.Lock()
+	set := photoSets.m[int(id)]
+	delete(photoSets.m, int(id))
+	photoSets.Unlock()
+	if set == nil {
+		return
+	}
+	var err error
+	if errMsg != nil {
+		err = errors.New(C.GoString(errMsg))
+	}
+	set.done <- err
+}
+
+var savedToPhotos struct {
+	sync.Mutex
+	next int
+	m    map[int]chan error
+}
+
+func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) error {
+	if err := requireInfoKeys("NSPhotoLibraryAddUsageDescription"); err != nil {
+		return err
+	}
+	savedToPhotos.Lock()
+	if savedToPhotos.m == nil {
+		savedToPhotos.m = map[int]chan error{}
+	}
+	savedToPhotos.next++
+	id := savedToPhotos.next
+	ch := make(chan error, 1)
+	savedToPhotos.m[id] = ch
+	savedToPhotos.Unlock()
+	cp, free := cstr(path)
+	defer free()
+	video := 0
+	if strings.HasPrefix(mime, "video/") {
+		video = 1
+	}
+	C.giodeSaveToPhotos(C.int(id), cp, C.int(video))
+	select {
+	case err := <-ch:
+		return err
+	case <-ctx.Done():
+		savedToPhotos.Lock()
+		delete(savedToPhotos.m, id)
+		savedToPhotos.Unlock()
+		return ctx.Err()
+	}
+}
+
+//export giodeSavedToPhotos
+func giodeSavedToPhotos(id C.int, errMsg *C.char) {
+	savedToPhotos.Lock()
+	ch := savedToPhotos.m[int(id)]
+	delete(savedToPhotos.m, int(id))
+	savedToPhotos.Unlock()
+	if ch == nil {
+		return
+	}
+	var err error
+	if errMsg != nil {
+		err = errors.New(C.GoString(errMsg))
+	}
+	ch <- err
 }
 
 var lifecycleApp struct {

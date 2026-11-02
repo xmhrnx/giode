@@ -27,6 +27,28 @@ func (f ShareFile) share(ctx context.Context, a *App) error {
 	})
 }
 
+func (f ShareFiles) share(ctx context.Context, a *App) error {
+	if len(f.Paths) == 0 {
+		return nil
+	}
+	uris := make([]string, len(f.Paths))
+	for i, p := range f.Paths {
+		uri, err := mobile.Publish(app.JavaVM(), app.AppContext(), p, ShareFile{Path: p}.mimeType())
+		if err != nil {
+			return err
+		}
+		uris[i] = uri
+	}
+	mime := f.mimeType()
+	return a.onAndroidMain(ctx, func(view uintptr) error {
+		return mobile.ShareURIs(app.JavaVM(), app.AppContext(), view, uris, mime, f.Title)
+	})
+}
+
+func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) error {
+	return mobile.SaveToGallery(app.JavaVM(), app.AppContext(), path, mime, album)
+}
+
 func (a *App) openURL(ctx context.Context, u string) error {
 	return a.onAndroidMain(ctx, func(view uintptr) error {
 		return mobile.OpenURL(app.JavaVM(), app.AppContext(), view, u)
