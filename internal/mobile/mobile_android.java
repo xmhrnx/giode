@@ -15,6 +15,7 @@ import android.view.View;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -87,6 +88,33 @@ public final class mobile_android {
 		start(view, send, title);
 	}
 
+	// shareURIs opens the share sheet for several items published with
+	// publish, uris separated by newlines. Call on the main thread.
+	public static void shareURIs(View view, String uris, String mime, String title) {
+		ArrayList<Uri> list = new ArrayList<>();
+		ClipData clip = null;
+		for (String s : uris.split("\n")) {
+			if (s.isEmpty()) {
+				continue;
+			}
+			Uri u = Uri.parse(s);
+			list.add(u);
+			if (clip == null) {
+				clip = ClipData.newRawUri("", u);
+			} else {
+				clip.addItem(new ClipData.Item(u));
+			}
+		}
+		Intent send = new Intent(Intent.ACTION_SEND_MULTIPLE);
+		send.setType(mime);
+		send.putParcelableArrayListExtra(Intent.EXTRA_STREAM, list);
+		if (clip != null) {
+			send.setClipData(clip);
+		}
+		send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		start(view, send, title);
+	}
+
 	private static void start(View view, Intent send, String title) {
 		Context ctx = view.getContext();
 		Intent chooser = Intent.createChooser(send, title == null || title.isEmpty() ? null : title);
@@ -106,16 +134,35 @@ public final class mobile_android {
 		if (Build.VERSION.SDK_INT < 29) {
 			throw new IOException("sharing files needs Android 10 or later");
 		}
+		return copyInto(ctx, "content://media/external/downloads", "Download", path, mime);
+	}
+
+	// saveToGallery copies a picture or video into the shared Pictures
+	// (or Movies) collection, in an album folder, where the gallery and
+	// photo apps show it. Android 10 or later; off the main thread.
+	public static String saveToGallery(Context ctx, String path, String mime, String album) throws IOException {
+		if (Build.VERSION.SDK_INT < 29) {
+			throw new IOException("saving to the gallery needs Android 10 or later");
+		}
+		boolean video = mime.startsWith("video/");
+		String dir = video ? "Movies" : "Pictures";
+		if (album != null && !album.isEmpty()) {
+			dir += "/" + album;
+		}
+		return copyInto(ctx, video ? "content://media/external/video/media" : "content://media/external/images/media", dir, path, mime);
+	}
+
+	private static String copyInto(Context ctx, String collection, String relPath, String path, String mime) throws IOException {
 		File src = new File(path);
 		ContentValues v = new ContentValues();
 		// MediaStore.MediaColumns names, spelled out: they're newer
 		// than the SDK this helper compiles against.
 		v.put("_display_name", src.getName());
 		v.put("mime_type", mime);
-		v.put("relative_path", "Download");
+		v.put("relative_path", relPath);
 		v.put("is_pending", 1);
 		ContentResolver resolver = ctx.getContentResolver();
-		Uri uri = resolver.insert(Uri.parse("content://media/external/downloads"), v);
+		Uri uri = resolver.insert(Uri.parse(collection), v);
 		if (uri == null) {
 			throw new IOException("MediaStore refused to create " + src.getName());
 		}

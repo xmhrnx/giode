@@ -1,0 +1,2 @@
+# ML Kit text recognition with its Latin model bundled, for giode/ocr.
+com.google.mlkit:text-recognition:16.0.1

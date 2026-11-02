@@ -14,6 +14,17 @@ func ShareText(vm, ctx, view uintptr, text, subject, title string) error { retur
 // ShareURI reports ErrUnsupported outside Android.
 func ShareURI(vm, ctx, view uintptr, uri, mime, title string) error { return ErrUnsupported }
 
+// ShareURIs reports ErrUnsupported outside Android.
+func ShareURIs(vm, ctx, view uintptr, uris []string, mime, title string) error { return ErrUnsupported }
+
+// SaveToGallery reports ErrUnsupported outside Android.
+func SaveToGallery(vm, ctx uintptr, path, mime, album string) error { return ErrUnsupported }
+
+// PickPhotos reports ErrUnsupported outside Android.
+func PickPhotos(vm, ctx, view uintptr, maxSide, limit int) (<-chan Photos, error) {
+	return nil, ErrUnsupported
+}
+
 // OpenURL reports ErrUnsupported outside Android.
 func OpenURL(vm, ctx, view uintptr, url string) error { return ErrUnsupported }
 

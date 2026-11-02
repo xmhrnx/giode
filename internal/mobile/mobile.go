@@ -50,6 +50,13 @@ type Photo struct {
 	Err  error
 }
 
+// Photos is the result of PickPhotos: the picked photos, or an error
+// (ErrCanceled when the user picked none).
+type Photos struct {
+	Photos []Photo
+	Err    error
+}
+
 // Speech is one dictation result: partial while Done is false, final
 // when it's true.
 type Speech struct {

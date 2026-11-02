@@ -36,6 +36,7 @@ import java.util.Map;
 public final class picker_android {
 	// Implemented in Go (mobile_android.go).
 	static native void onPhoto(int id, byte[] jpeg, String name, String err);
+	static native void onPhotos(int id, byte[][] jpegs, String[] names, String err);
 	static native void onSpeech(int id, String text, boolean done, String err);
 
 	private static final String TAG = "giode_picker";
@@ -45,6 +46,8 @@ public final class picker_android {
 
 	private static final class Request {
 		int maxSide;
+		boolean multi;
+		int limit;
 		Uri output; // the camera's output, in MediaStore
 		String lang;
 		SpeechRecognizer recognizer;
@@ -58,6 +61,10 @@ public final class picker_android {
 				return;
 			}
 			final Context ctx = getActivity().getApplicationContext();
+			if (r.multi) {
+				pickedMany(ctx, code, r, result, data);
+				return;
+			}
 			Uri uri = r.output != null ? r.output : (data != null ? data.getData() : null);
 			if (result != Activity.RESULT_OK || uri == null) {
 				if (r.output != null) {
@@ -141,6 +148,67 @@ public final class picker_android {
 		}
 		requests.put(id, r);
 		fragment(activity).startActivityForResult(intent, id);
+	}
+
+	// pickPhotos opens the photo picker for up to limit photos (0 for no
+	// limit) and reports them to onPhotos, each upright and re-encoded as
+	// JPEG no larger than maxSide. Call on the main thread.
+	public static void pickPhotos(View view, int id, int maxSide, int limit) throws Exception {
+		Activity activity = (Activity) view.getContext();
+		Request r = new Request();
+		r.maxSide = maxSide;
+		r.multi = true;
+		Intent intent;
+		if (Build.VERSION.SDK_INT >= 33) {
+			intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+			int most = MediaStore.getPickImagesMaxLimit();
+			intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, limit > 0 && limit < most ? Math.max(limit, 2) : most);
+		} else {
+			intent = new Intent(Intent.ACTION_GET_CONTENT);
+			intent.setType("image/*");
+			intent.addCategory(Intent.CATEGORY_OPENABLE);
+			intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+		}
+		r.limit = limit;
+		requests.put(id, r);
+		fragment(activity).startActivityForResult(intent, id);
+	}
+
+	// pickedMany converts the photos a multiple pick returned, off the
+	// main thread.
+	static void pickedMany(final Context ctx, final int code, final Request r, int result, Intent data) {
+		final ArrayList<Uri> uris = new ArrayList<>();
+		if (result == Activity.RESULT_OK && data != null) {
+			if (data.getClipData() != null) {
+				for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+					uris.add(data.getClipData().getItemAt(i).getUri());
+				}
+			} else if (data.getData() != null) {
+				uris.add(data.getData());
+			}
+		}
+		if (r.limit > 0 && uris.size() > r.limit) {
+			uris.subList(r.limit, uris.size()).clear();
+		}
+		if (uris.isEmpty()) {
+			onPhotos(code, null, null, "");
+			return;
+		}
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					byte[][] jpegs = new byte[uris.size()][];
+					String[] names = new String[uris.size()];
+					for (int i = 0; i < uris.size(); i++) {
+						jpegs[i] = toJPEG(ctx, uris.get(i), r.maxSide);
+						names[i] = displayName(ctx, uris.get(i));
+					}
+					onPhotos(code, jpegs, names, "");
+				} catch (Throwable e) {
+					onPhotos(code, null, null, e.toString());
+				}
+			}
+		}).start();
 	}
 
 	// toJPEG decodes the image at uri, applies its EXIF rotation, scales

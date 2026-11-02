@@ -3,10 +3,11 @@ package giode
 import (
 	"context"
 	"path/filepath"
+	"strings"
 )
 
-// Shareable is something App.Share can hand to the system: ShareText
-// or ShareFile.
+// Shareable is something App.Share can hand to the system: ShareText,
+// ShareFile or ShareFiles.
 type Shareable interface {
 	share(ctx context.Context, a *App) error
 }
@@ -28,6 +29,47 @@ type ShareFile struct {
 	MIME string
 	// Title heads the share sheet. Optional.
 	Title string
+}
+
+// ShareFiles shares several files at once: the pages of a scan as
+// JPEGs, a batch of exports. On desktops it shows the first in the file
+// manager.
+type ShareFiles struct {
+	Paths []string
+	// MIME is the files' common type, such as "image/jpeg". When empty
+	// it's guessed from the extensions: their shared type, else the
+	// shared kind ("image/*"), else any.
+	MIME string
+	// Title heads the share sheet. Optional.
+	Title string
+}
+
+func (f ShareFiles) mimeType() string {
+	if f.MIME != "" {
+		return f.MIME
+	}
+	common := ""
+	for i, p := range f.Paths {
+		t := ShareFile{Path: p}.mimeType()
+		switch {
+		case i == 0:
+			common = t
+		case common == t:
+		case kind(common) == kind(t):
+			common = kind(t) + "/*"
+		default:
+			return "*/*"
+		}
+	}
+	if common == "" || common == "application/octet-stream" {
+		return "*/*"
+	}
+	return common
+}
+
+func kind(mime string) string {
+	k, _, _ := strings.Cut(mime, "/")
+	return k
 }
 
 func (f ShareFile) mimeType() string {

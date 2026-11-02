@@ -11,3 +11,13 @@ func (f ShareFile) share(ctx context.Context, a *App) error { return ErrNotSuppo
 func (a *App) watchLifecycle() {}
 
 const lifecycleFromWindowState = false
+
+func (f ShareFiles) share(ctx context.Context, a *App) error { return ErrNotSupported }
+
+func (a *App) pickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]PickedFile, error) {
+	return nil, ErrNotSupported
+}
+
+func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) error {
+	return ErrNotSupported
+}
