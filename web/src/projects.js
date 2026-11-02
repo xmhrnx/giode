@@ -52,7 +52,7 @@ export const PROJECTS = [
 		tagline: "A speech studio - text to speech and speech to text - with no code and no setup.",
 		description: "Type some text or open a document, pick an engine and a voice, press Generate. Or record, press Transcribe and get the text back with timestamps. Sonora installs models like Kitten TTS, IndexTTS and Whisper with one click, and on Android runs them on the phone itself, offline.",
 		accent: "#8b5cf6",
-		platforms: ["windows", "macos", "linux", "android"],
+		platforms: ["windows", "macos", "linux", "android", "ios"],
 		category: "Audio & AI",
 		highlights: [
 			"One-click engines: Sonora installs its own Python, a private environment per engine and the right PyTorch for your GPU.",
@@ -163,7 +163,7 @@ export const PROJECTS = [
 		tagline: "Remux, encode and transcode media in batches with ffmpeg.",
 		description: "GoEncode is a front end for ffmpeg. Add any number of files, pick one set of settings for video, audio, subtitles, chapters, metadata and naming, and it applies them to the whole batch. It reads what the installed ffmpeg can do, so every encoder is offered, and shows only the choices that fit the chosen container and codec.",
 		accent: "#6366f1",
-		platforms: ["windows", "macos", "linux", "android"],
+		platforms: ["windows", "macos", "linux", "android", "ios"],
 		category: "Media",
 		highlights: [
 			"Every encoder the installed ffmpeg has, with curated settings for x264, x265, SVT-AV1, VP9, ProRes, Opus, FLAC and more.",
@@ -183,7 +183,7 @@ export const PROJECTS = [
 		tagline: "Manage remote servers: SSH terminals, files, monitoring, services and Docker in one app.",
 		description: "Serverus keeps any number of servers in a searchable sidebar and connects over SSH (password, key or agent, with jump hosts), Telnet or FTP, or manages this computer. Each server gets live monitoring, tabbed terminals, a file manager with background transfers, processes, systemd services, Docker containers, port forwarding and saved snippets - with passwords in the OS keychain and host keys checked.",
 		accent: "#22c55e",
-		platforms: ["windows", "macos", "linux", "android"],
+		platforms: ["windows", "macos", "linux", "android", "ios"],
 		category: "Developer tools",
 		highlights: [
 			"SSH with passwords, keys or the SSH agent, keyboard-interactive codes and jump hosts; Telnet, FTP/FTPS and this computer too.",
@@ -203,7 +203,7 @@ export const PROJECTS = [
 		tagline: "See every connection, know every device: a network monitor for your computer and your LAN.",
 		description: "MiddleLAN watches every app's network connections and shows where each one goes - host, owning company, country and city - on a world map. It tracks per-app traffic, finds and names the devices on your network, alerts on new apps and devices, and includes a toolbox of diagnostics, while running quietly from the tray.",
 		accent: "#c084fc",
-		platforms: ["windows", "macos", "linux", "android"],
+		platforms: ["windows", "macos", "linux", "android", "ios"],
 		category: "Networking",
 		highlights: [
 			"Per-app download and upload rates, today's and session totals, and a 7-day history.",
