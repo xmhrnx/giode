@@ -3,6 +3,8 @@
 package giode
 
 import (
+	"sync/atomic"
+
 	"gioui.org/app"
 	"gioui.org/io/system"
 
@@ -27,14 +29,14 @@ func (a *App) showNativeWindow() {
 }
 
 // trayCloseWarned limits the CloseToTray warning to once.
-var trayCloseWarned bool
+var trayCloseWarned atomic.Bool
 
 func (a *App) warnTrayLimits() {
-	if a.cfg.CloseToTray && !trayCloseWarned {
-		trayCloseWarned = true
+	if a.closeToTray.Load() && trayCloseWarned.CompareAndSwap(false, true) {
 		a.logf(LogLevelWarning, "giode: CloseToTray isn't supported on Linux; closing the window quits")
 	}
 }
 
 func (a *App) platformInit()          {}
 func (a *App) trayView(app.ViewEvent) {}
+func (a *App) applyTrayOptions()      { a.warnTrayLimits() }

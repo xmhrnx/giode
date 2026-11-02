@@ -229,6 +229,51 @@ Platform notes: on Linux, hiding works under X11; Wayland can't hide windows, so
 window minimizes, and `CloseToTray` isn't available (closing quits). Android, iOS and the
 web have no tray: `TraySupported()` reports false and the calls do nothing.
 
+`SetCloseToTray(on)` and `SetMinimizeToTray(on)` change those options while the app runs,
+from a settings screen say, and `CloseToTray()` and `MinimizeToTray()` read them back.
+They take effect straight away; no restart.
+
+## Start at login
+
+`app.SetLaunchAtLogin(true)` registers the app to start when the user signs in, and
+`SetLaunchAtLogin(false)` removes the registration. `app.LaunchAtLogin()` reports the
+current state: read it rather than remembering it, since the user can turn it off in the
+system's settings.
+
+```go
+a := giode.New(giode.Config{
+	Title:       "Pocket Agent",
+	CloseToTray: true,
+	StartInTray: giode.StartInTrayAtLogin, // started at login: no window, just the tray icon
+})
+
+// In Settings:
+login := giode.Input.Switch("Start at login").OnChange(func(on bool) {
+	if err := a.SetLaunchAtLogin(on); err != nil {
+		log.Printf("start at login: %v", err)
+	}
+})
+login.SetChecked(a.LaunchAtLogin())
+```
+
+`giode.LaunchedAtLogin()` reports whether this launch came from the registration, to start
+quietly: skip a welcome screen, don't steal focus. `Config.StartInTray` hides the window
+as soon as it exists: `StartInTrayAtLogin` only when started at login, `StartInTrayAlways`
+every time. `ShowWindow()` (a click on the tray icon by default) brings it up. Set up a
+tray icon with it, or the user has no way to open the window.
+
+| Platform | Registration |
+| --- | --- |
+| Windows | A value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. Task Manager's Startup apps page can turn it off; `LaunchAtLogin` then reports false, and `SetLaunchAtLogin(true)` turns it back on. |
+| Windows, MSIX | The package's startup task. Set `startup_task = true` under `[windows.msix]` in giode.toml so the CLI declares it in the manifest. If the user turned it off in Settings > Apps > Startup, only they can turn it back on: `SetLaunchAtLogin(true)` returns an error saying so. |
+| macOS | A LaunchAgent, `~/Library/LaunchAgents/<id>.login.plist`, that opens the app bundle. |
+| Linux | An XDG autostart entry, `~/.config/autostart/<id>.desktop`. It runs the AppImage or the Flatpak (`flatpak run <id>`) when the app is one. A Flatpak needs `--filesystem=xdg-config/autostart:create` to write it. |
+| Android, iOS, web | `SetLaunchAtLogin` returns `ErrNotSupported`. |
+
+The entry is named after `app.id` from giode.toml, which the CLI builds into the app
+(`giode.AppID`); built without the CLI, set `giode.AppID` yourself, or the window title is
+used.
+
 ## File manager context menu
 
 Context actions add entries to the file manager's right-click menu that open the app with

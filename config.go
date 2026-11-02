@@ -165,13 +165,20 @@ type Config struct {
 	// MinimizeToTray hides the window when it's minimized, so it leaves
 	// the taskbar or Dock and lives in the tray until ShowWindow (by
 	// default a click on the tray icon) brings it back. It needs a tray
-	// icon: set one up with App.Tray. Desktop only.
+	// icon: set one up with App.Tray. Desktop only. App.SetMinimizeToTray
+	// changes it while the app runs.
 	MinimizeToTray bool
 	// CloseToTray hides the window when the user closes it, instead of
 	// ending the app; Quit (a tray menu item, say) ends it. Windows and
 	// macOS; on Linux, where Gio can't keep a closed window, closing
-	// still quits.
+	// still quits. App.SetCloseToTray changes it while the app runs.
 	CloseToTray bool
+	// StartInTray starts the app with its window hidden, in the tray:
+	// StartInTrayAtLogin when the system started it at login (see
+	// App.SetLaunchAtLogin), StartInTrayAlways every time. The window
+	// shows with ShowWindow, from the tray icon. It needs a tray icon
+	// (App.Tray) and is ignored where TraySupported is false.
+	StartInTray StartInTray
 	// MenuBarApp makes a macOS app live in the menu bar: no Dock icon
 	// and no app menu, as menu bar utilities do. Pair it with App.Tray.
 	// Other platforms ignore it.
@@ -330,6 +337,10 @@ type App struct {
 	trayOnce     sync.Once
 	windowHidden atomic.Bool
 	quitting     atomic.Bool
+	// The tray options, from Config and the setters.
+	closeToTray    atomic.Bool
+	minimizeToTray atomic.Bool
+	startedInTray  bool
 }
 
 // New creates an App from cfg. The window is created and shown the
@@ -397,6 +408,8 @@ func New(cfg Config) *App {
 		opts = append(opts, cfg.Orientation.option())
 	}
 	a := &App{cfg: cfg, themeCheck: make(chan struct{}, 1)}
+	a.closeToTray.Store(cfg.CloseToTray)
+	a.minimizeToTray.Store(cfg.MinimizeToTray)
 	a.topMost.Store(cfg.AlwaysOnTop)
 	a.title.Store(&cfg.Title)
 	currentApp.Store(a)

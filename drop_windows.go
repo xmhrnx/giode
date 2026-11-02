@@ -64,7 +64,7 @@ type dropTarget struct {
 // DragAcceptFiles sends (not posts) a style-change message to that
 // thread, which would deadlock if sent from the event goroutine.
 func (a *App) enableFileDrop(hwnd uintptr) {
-	if (!a.fileDragWanted() && !a.cfg.CloseToTray && !a.cfg.MinimizeToTray) || hwnd == 0 {
+	if (!a.fileDragWanted() && !a.closeToTray.Load() && !a.minimizeToTray.Load()) || hwnd == 0 {
 		return
 	}
 	dropMu.Lock()
