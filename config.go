@@ -311,10 +311,14 @@ type App struct {
 
 	clip clipboardState
 
-	viewMu     sync.Mutex
-	view       app.ViewEvent
-	dropWarned bool
-	drag       fileDragState
+	viewMu sync.Mutex
+	view   app.ViewEvent
+	// hidePending is a HideWindow called before the native window
+	// existed (Gio can draw the first frame before reporting it),
+	// applied when it does. Guarded by viewMu.
+	hidePending bool
+	dropWarned  bool
+	drag        fileDragState
 
 	// The system bar colors last applied; see updateSystemBars.
 	barsApplied bool
