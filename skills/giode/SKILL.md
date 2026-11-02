@@ -132,7 +132,7 @@ pkexec, macOS admin prompt); single-instance lock (`Config.SingleInstanceLock`);
 actions in file managers; secure storage; push, in-app purchases and review prompts in
 sub-packages; a live camera viewfinder with analysis frames, capture, torch and focus in
 `camera`; on-device text recognition in `ocr`; fingerprint/Face ID in `biometric`; the print
-dialog in `printing`; PDF pages as images in `pdfpages` (all in `references/platform.md`);
+dialog in `printing` (all in `references/platform.md`);
 pinch-to-zoom and pan with `giode.Zoomable` (`references/components/zoom.md`); Android Java calls through `github.com/xmhrnx/giode/android`
 (`android.CallBool(class, method, sig, args...)`).
 

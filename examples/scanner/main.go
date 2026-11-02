@@ -1,5 +1,5 @@
 // Command scanner is a small document scanner built on Giode's camera,
-// OCR, PDF, printing and biometric packages. It's also what CI builds
+// OCR, printing and biometric packages. It's also what CI builds
 // for Android and iOS, so those packages' native code compiles there.
 package main
 
@@ -26,7 +26,6 @@ import (
 	"github.com/xmhrnx/giode/camera"
 	"github.com/xmhrnx/giode/components/zoom"
 	"github.com/xmhrnx/giode/ocr"
-	"github.com/xmhrnx/giode/pdfpages"
 	"github.com/xmhrnx/giode/printing"
 )
 
@@ -44,7 +43,6 @@ type scanner struct {
 	brightness float64 // of the last analysis frame, 0 to 1
 	locked     bool
 	viewer     *zoom.Zoom
-	lastPDF    string
 	buttons    map[string]giode.Element
 }
 
@@ -101,7 +99,6 @@ func (s *scanner) view() giode.Element {
 			s.button("Capture", s.capture),
 			s.button("Torch", s.torch),
 			s.button("Photos", s.importPhotos),
-			s.button("PDF", s.importPDF),
 		),
 		giode.Row(giode.Styles{Gap: 8},
 			s.button("Text", s.recognize),
@@ -218,41 +215,6 @@ func (s *scanner) importPhotos() {
 	}
 }
 
-func (s *scanner) importPDF() {
-	files, err := s.app.PickFiles(context.Background(), giode.PickOptions{Types: []string{".pdf"}})
-	if err != nil {
-		s.setStatus("pdf: %v", err)
-		return
-	}
-	f := files[0]
-	defer f.Close()
-	tmp := filepath.Join(os.TempDir(), "giode-scanner-import.pdf")
-	out, err := os.Create(tmp)
-	if err != nil {
-		s.setStatus("pdf: %v", err)
-		return
-	}
-	io.Copy(out, f)
-	out.Close()
-	doc, err := pdfpages.Open(tmp)
-	if err != nil {
-		s.setStatus("pdf: %v", err)
-		return
-	}
-	defer doc.Close()
-	s.app.Post(func() { s.lastPDF = tmp })
-	for i := 0; i < doc.PageCount(); i++ {
-		img, err := doc.Render(i, 1600)
-		if err != nil {
-			s.setStatus("pdf page %d: %v", i+1, err)
-			return
-		}
-		var buf bytes.Buffer
-		jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})
-		s.addJPEG(buf.Bytes(), fmt.Sprintf("pdf-page-%d.jpg", i+1))
-	}
-}
-
 func (s *scanner) recognize() {
 	if len(s.pages) == 0 {
 		return
@@ -291,13 +253,10 @@ func (s *scanner) save() {
 }
 
 func (s *scanner) print() {
-	target := s.lastPDF
-	if target == "" && len(s.pages) > 0 {
-		target = s.pages[len(s.pages)-1].path
-	}
-	if target == "" {
+	if len(s.pages) == 0 {
 		return
 	}
+	target := s.pages[len(s.pages)-1].path
 	if err := printing.Print(context.Background(), s.app, target, printing.Options{JobName: "Scan"}); err != nil {
 		s.setStatus("print: %v", err)
 	}

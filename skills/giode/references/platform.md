@@ -2,7 +2,7 @@
 
 Services apps reach outside their window: links, the safe area, the system theme, device
 details, haptics, notifications, staying awake, secure storage, pickers, the camera, text
-recognition, biometrics, printing, PDF pages and dictation.
+recognition, biometrics, printing and dictation.
 File dialogs, sharing, the Back button and background/foreground callbacks are in
 [window.md](window.md).
 
@@ -28,7 +28,6 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
-| `pdfpages` package | PdfRenderer | Core Graphics | Core Graphics | – | – | – |
 | `Dictate` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
 
@@ -261,35 +260,6 @@ err := printing.Print(ctx, app, "scan.pdf", printing.Options{JobName: "Receipts"
 It opens the system's print dialog: Android's print service (PDFs), the print panel on iOS
 and macOS (PDFs and images), and on Windows the file's default app's Print command. Linux
 and the web return `ErrNotSupported`.
-
-## PDF pages as images
-
-```go
-import "github.com/xmhrnx/giode/pdfpages"
-
-doc, err := pdfpages.Open("contract.pdf")
-defer doc.Close()
-for i := 0; i < doc.PageCount(); i++ {
-	img, err := doc.Render(i, 1600) // *image.RGBA, 1600 px wide, on white
-}
-```
-
-Android uses PdfRenderer, iOS and macOS Core Graphics. Password-protected PDFs aren't
-supported. Windows and Linux return `ErrNotSupported`.
-
-`PickFolder` asks for a folder and returns its path: a destination for exported or
-recovered files.
-
-```go
-dir, err := app.PickFolder(ctx, giode.FolderOptions{Title: "Where should recovered files go?"})
-if errors.Is(err, giode.ErrCanceled) {
-	return
-}
-```
-
-It uses IFileOpenDialog on Windows, NSOpenPanel on macOS and the XDG desktop portal on
-Linux, falling back to zenity, qarma or kdialog when no portal runs. Android, iOS and the
-web return `ErrNotSupported`: apps there get no plain paths to the user's folders.
 
 ## Administrator rights
 

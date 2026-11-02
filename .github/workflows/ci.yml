@@ -54,14 +54,14 @@ jobs:
       - name: Check giode's Java helper is packed
         run: unzip -p showcase.apk 'classes*.dex' | grep -aq 'Lorg/giode/mobile/mobile_android;'
       - name: Build the scanner example APK
-        # Compiles the camera, OCR, biometric, printing and PDF packages'
+        # Compiles the camera, OCR, biometric and printing packages'
         # cgo and packs their Java helpers. Upstream gogio leaves out
         # ML Kit (the giode CLI adds it from android_dependencies.txt),
         # so OCR itself only works in CLI builds.
         run: |
           export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
           gogio -target android -arch arm64 -appid org.giode.scanner -o scanner.apk ./examples/scanner
-          for c in camera/camera_android biometric/biometric_android printing/printing_android pdfpages/pdfpages_android ocr/ocr_android; do
+          for c in camera/camera_android biometric/biometric_android printing/printing_android ocr/ocr_android; do
             unzip -p scanner.apk 'classes*.dex' | grep -aq "Lorg/giode/$c;" || { echo "missing $c"; exit 1; }
           done
       - uses: actions/upload-artifact@v4
@@ -90,7 +90,7 @@ jobs:
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.showcase -o showcase.app ./examples/showcase
       - name: Build the scanner example for the simulator
-        # Compiles the camera, OCR, biometric, printing and PDF packages'
+        # Compiles the camera, OCR, biometric and printing packages'
         # Objective-C with the iOS SDK.
         env:
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
