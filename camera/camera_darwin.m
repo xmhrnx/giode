@@ -21,7 +21,7 @@
 
 @class GiodeCamera;
 
-@interface GiodePhotoDelegate : NSObject <AVCapturePhotoCaptureDelegate>
+@interface GiodeCameraPhotoDelegate : NSObject <AVCapturePhotoCaptureDelegate>
 @property(nonatomic) int req;
 @property(nonatomic, strong) GiodeCamera *camera;
 @end
@@ -41,7 +41,7 @@
 @property(nonatomic, strong) AVCapturePhotoOutput *photo;
 @property(nonatomic, strong) dispatch_queue_t sessionQueue;
 @property(nonatomic, strong) dispatch_queue_t videoQueue;
-@property(nonatomic, strong) NSMutableSet<GiodePhotoDelegate *> *captures;
+@property(nonatomic, strong) NSMutableSet<GiodeCameraPhotoDelegate *> *captures;
 @property(nonatomic, strong) id orientationObserver;
 @end
 
@@ -154,7 +154,7 @@ static AVCaptureVideoOrientation giodeVideoOrientation(void) {
 
 @end
 
-@implementation GiodePhotoDelegate
+@implementation GiodeCameraPhotoDelegate
 
 - (void)captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(NSError *)error {
 	GiodeCamera *cam = self.camera;
@@ -190,13 +190,13 @@ static AVCaptureVideoOrientation giodeVideoOrientation(void) {
 
 @end
 
-static GiodeCamera *giodeCamera(int id) {
+static GiodeCamera *giodeCamera(int cid) {
 	@synchronized(giodeCameras) {
-		return giodeCameras[@(id)];
+		return giodeCameras[@(cid)];
 	}
 }
 
-const char *giodeCameraOpen(int id, int front, int maxSide) {
+const char *giodeCameraOpen(int cid, int front, int maxSide) {
 	AVCaptureDevicePosition pos = front ? AVCaptureDevicePositionFront : AVCaptureDevicePositionBack;
 	AVCaptureDevice *dev = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:pos];
 	if (dev == nil) {
@@ -211,7 +211,7 @@ const char *giodeCameraOpen(int id, int front, int maxSide) {
 		return giodeErr(err.localizedDescription ?: @"can't open the camera");
 	}
 	GiodeCamera *cam = [GiodeCamera new];
-	cam.camID = id;
+	cam.camID = cid;
 	cam.maxSide = maxSide;
 	cam.front = front != 0;
 	cam.device = dev;
@@ -228,7 +228,8 @@ const char *giodeCameraOpen(int id, int front, int maxSide) {
 	}
 	[s addInput:in];
 	AVCaptureVideoDataOutput *video = [AVCaptureVideoDataOutput new];
-	video.videoSettings = @{(id)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)};
+	video.videoSettings = [NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedInt:kCVPixelFormatType_32BGRA]
+	                                                  forKey:(__bridge NSString *)kCVPixelBufferPixelFormatTypeKey];
 	video.alwaysDiscardsLateVideoFrames = YES;
 	[video setSampleBufferDelegate:cam queue:cam.videoQueue];
 	if ([s canAddOutput:video]) {
@@ -255,7 +256,7 @@ const char *giodeCameraOpen(int id, int front, int maxSide) {
 		if (giodeCameras == nil) {
 			giodeCameras = [NSMutableDictionary dictionary];
 		}
-		giodeCameras[@(id)] = cam;
+		giodeCameras[@(cid)] = cam;
 	}
 #if TARGET_OS_IPHONE
 	dispatch_async(dispatch_get_main_queue(), ^{
@@ -273,7 +274,7 @@ const char *giodeCameraOpen(int id, int front, int maxSide) {
 	});
 	[[NSNotificationCenter defaultCenter] addObserverForName:AVCaptureSessionRuntimeErrorNotification object:s queue:nil usingBlock:^(NSNotification *n) {
 		NSError *e = n.userInfo[AVCaptureSessionErrorKey];
-		giodeCameraOnError(id, (char *)(e.localizedDescription ?: @"camera error").UTF8String);
+		giodeCameraOnError(cid, (char *)(e.localizedDescription ?: @"camera error").UTF8String);
 	}];
 #endif
 	dispatch_async(cam.sessionQueue, ^{
@@ -282,11 +283,11 @@ const char *giodeCameraOpen(int id, int front, int maxSide) {
 	return NULL;
 }
 
-void giodeCameraClose(int id) {
+void giodeCameraClose(int cid) {
 	GiodeCamera *cam;
 	@synchronized(giodeCameras) {
-		cam = giodeCameras[@(id)];
-		[giodeCameras removeObjectForKey:@(id)];
+		cam = giodeCameras[@(cid)];
+		[giodeCameras removeObjectForKey:@(cid)];
 	}
 	if (cam == nil) {
 		return;
@@ -309,8 +310,8 @@ void giodeCameraClose(int id) {
 	});
 }
 
-void giodeCameraCapture(int id, int req) {
-	GiodeCamera *cam = giodeCamera(id);
+void giodeCameraCapture(int cid, int req) {
+	GiodeCamera *cam = giodeCamera(cid);
 	if (cam == nil) {
 		giodeCameraOnCapture(req, NULL, 0, "camera closed");
 		return;
@@ -331,7 +332,7 @@ void giodeCameraCapture(int id, int req) {
 		// Keep the torch's light rather than fire the flash.
 		settings.flashMode = AVCaptureFlashModeOff;
 #endif
-		GiodePhotoDelegate *d = [GiodePhotoDelegate new];
+		GiodeCameraPhotoDelegate *d = [GiodeCameraPhotoDelegate new];
 		d.req = req;
 		d.camera = cam;
 		[cam.captures addObject:d];
@@ -339,13 +340,13 @@ void giodeCameraCapture(int id, int req) {
 	});
 }
 
-int giodeCameraHasTorch(int id) {
-	GiodeCamera *cam = giodeCamera(id);
+int giodeCameraHasTorch(int cid) {
+	GiodeCamera *cam = giodeCamera(cid);
 	return cam != nil && cam.device.hasTorch && [cam.device isTorchModeSupported:AVCaptureTorchModeOn];
 }
 
-const char *giodeCameraTorch(int id, int on) {
-	GiodeCamera *cam = giodeCamera(id);
+const char *giodeCameraTorch(int cid, int on) {
+	GiodeCamera *cam = giodeCamera(cid);
 	if (cam == nil) {
 		return giodeErr(@"camera closed");
 	}
@@ -362,8 +363,8 @@ const char *giodeCameraTorch(int id, int on) {
 	return NULL;
 }
 
-const char *giodeCameraFocus(int id, float x, float y) {
-	GiodeCamera *cam = giodeCamera(id);
+const char *giodeCameraFocus(int cid, float x, float y) {
+	GiodeCamera *cam = giodeCamera(cid);
 	if (cam == nil) {
 		return giodeErr(@"camera closed");
 	}
