@@ -101,8 +101,9 @@ func (a *App) handleConfig(cfg app.Config) {
 		a.logf(LogLevelDebug, "giode: window %s", s)
 		if s == WindowMinimized && a.minimizesToTray() && !a.windowHidden.Load() {
 			// Minimized to the tray: off the taskbar or Dock too.
-			a.windowHidden.Store(true)
-			a.hideNativeWindow()
+			if a.windowHidden.CompareAndSwap(false, true) && !a.hideNativeWindow() {
+				a.windowHidden.Store(false)
+			}
 		}
 		if a.cfg.OnWindowStateChange != nil {
 			a.cfg.OnWindowStateChange(s)

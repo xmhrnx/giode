@@ -216,23 +216,22 @@ func (t *Tray) apply() {
 	trayApply(t, trayState{icon: icon, template: template, title: title, tooltip: tooltip, items: items, customClick: custom})
 }
 
-// clicked runs the click action on the UI goroutine.
+// clicked runs OnClick on the UI goroutine, or shows or hides the
+// window right away: ShowWindow and HideWindow are safe from the
+// tray's goroutine, so a hidden window always comes back.
 func (t *Tray) clicked() {
 	t.mu.Lock()
 	fn := t.onClick
 	t.mu.Unlock()
 	a := t.app
-	a.Post(func() {
-		if fn != nil {
-			fn()
-			return
-		}
-		if a.WindowVisible() {
-			a.HideWindow()
-		} else {
-			a.ShowWindow()
-		}
-	})
+	switch {
+	case fn != nil:
+		a.Post(fn)
+	case a.WindowVisible():
+		a.HideWindow()
+	default:
+		a.ShowWindow()
+	}
 }
 
 // trayState is what the platform tray shows.
@@ -251,13 +250,19 @@ type trayState struct {
 // HideWindow hides the window without closing it: it leaves the screen
 // and the taskbar or Dock, and ShowWindow brings it back as it was.
 // With a tray icon it's how an app keeps running in the background.
-// On Linux it works under X11; Wayland can't hide windows, so there it
-// minimizes. On Android, iOS and the web it does nothing.
+// On Linux it works under X11; Wayland can't hide windows (nor bring a
+// minimized one back), so there it does nothing, as on Android, iOS
+// and the web. It may be called from any goroutine, as may ShowWindow
+// and Quit.
 func (a *App) HideWindow() {
-	if a.windowHidden.Swap(true) {
+	if !a.windowHidden.CompareAndSwap(false, true) {
 		return
 	}
-	a.hideNativeWindow()
+	if !a.hideNativeWindow() {
+		// No window yet, or none this platform can hide.
+		a.windowHidden.Store(false)
+		return
+	}
 	a.leftScreen()
 }
 

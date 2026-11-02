@@ -15,20 +15,22 @@ func (a *App) handleLaunch(args []string) {
 	if len(args) == 1 && strings.Contains(args[0], "://") && a.cfg.OnOpenURL != nil {
 		if u, err := url.Parse(args[0]); err == nil && u.Scheme != "" {
 			a.openedURL(u)
-			a.Post(func() {
-				a.ShowWindow()
-				a.Raise()
-			})
+			a.showFromLaunch()
 			return
 		}
 	}
-	a.Post(func() {
-		if l := a.cfg.SingleInstanceLock; l != nil && l.OnLaunchArgs != nil {
-			l.OnLaunchArgs(args)
-		}
-		a.ShowWindow()
-		a.Raise()
-	})
+	if l := a.cfg.SingleInstanceLock; l != nil && l.OnLaunchArgs != nil {
+		a.Post(func() { l.OnLaunchArgs(args) })
+	}
+	a.showFromLaunch()
+}
+
+// showFromLaunch brings the window back for a second launch, directly
+// rather than through the UI goroutine, so it works however the window
+// was hidden.
+func (a *App) showFromLaunch() {
+	a.ShowWindow()
+	go a.Raise()
 }
 
 func sanitizeID(id string) string {
