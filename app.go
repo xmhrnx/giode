@@ -142,6 +142,9 @@ func (a *App) runLoop(view func() Element) error {
 			// window's own layers around the view.
 			root := elements.Raw(func(gtx layout.Context) layout.Dimensions {
 				layoutDrag(a, gtx)
+				if a.cfg.OnKey != nil {
+					elements.OnKey(a.cfg.OnKey)
+				}
 				dims := view().Layout(gtx)
 				a.winPointer.layout(a, gtx)
 				a.layoutClipboard(gtx)

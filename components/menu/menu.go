@@ -82,6 +82,19 @@ type Menu struct {
 	// scrim is the tag of the window-wide area that closes the menu on
 	// a press of any button outside it.
 	scrim bool
+
+	// scroll scrolls rows that don't fit in the window (scroll.go).
+	scroll scrollState
+	// active is the item the keyboard highlights, or -1; keyNav (on
+	// the root menu) records that the keyboard moved last, so the
+	// highlight shows; keyboardIn marks a submenu the keyboard entered.
+	active     int
+	keyNav     bool
+	keyboardIn bool
+	// keyTag is a root menu's keyboard focus target; hasFocus records
+	// that it asked for focus since opening (keys.go).
+	keyTag   bool
+	hasFocus bool
 }
 
 // root returns the menu at the top of a chain of submenus.
@@ -96,7 +109,7 @@ func (m *Menu) root() *Menu {
 // Background, BorderRadius, Padding and Color (item text) are
 // honored; the rest fall back to defaults.
 func New(st ...styles.Styles) *Menu {
-	m := &Menu{openSubmenu: -1}
+	m := &Menu{openSubmenu: -1, active: -1}
 	if len(st) > 0 {
 		m.styles = st[0]
 	}
@@ -263,6 +276,8 @@ func (m *Menu) Toggle(p f32.Point) {
 func (m *Menu) Close() {
 	m.open = false
 	m.openSubmenu = -1
+	m.active, m.keyNav, m.keyboardIn, m.hasFocus = -1, false, false, false
+	m.scroll.offset = 0
 	for i := range m.items {
 		if sub := m.items[i].submenu; sub != nil {
 			sub.Close()

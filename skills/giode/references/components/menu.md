@@ -92,6 +92,13 @@ the labels line up. Panels are as wide as their widest row.
 
 - Opens at the cursor position (or below the `Trigger` element), measured and clamped to
   the window with an 8px margin.
+- A menu (or submenu) taller than the window scrolls: with the mouse wheel, a touch drag,
+  or the keyboard, and a thin indicator shows the position.
+- The keyboard works while a menu is open: Up and Down move the highlight (skipping
+  separators and disabled items, wrapping around, and scrolling it into view), Home and
+  End jump to the ends, Right (or Enter) opens the highlighted submenu on its first item,
+  Left goes back out of it (swapped right to left), and Enter or Space chooses. Moving the
+  pointer takes the highlight back.
 - Clicking an item runs its action and closes the menu.
 - Clicking outside, pressing Escape or pressing the system Back button (Android) closes it - submenus don't have this dismissal
   layer of their own; they close with whichever ancestor menu has it.
