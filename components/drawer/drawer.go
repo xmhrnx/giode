@@ -71,6 +71,9 @@ type Drawer struct {
 	// *open, and last when it was advanced.
 	progress float32
 	last     time.Time
+	// duration is the slide's length; 0 shows and hides the drawer at
+	// once (see Duration).
+	duration time.Duration
 
 	scrim widget.Clickable
 	// drag follows a finger or mouse moving the panel (or, while
@@ -87,7 +90,7 @@ type Drawer struct {
 // fresh every frame the drawer is shown, so it can reflect state that
 // changed since the drawer opened. The styles argument is optional.
 func New(open *bool, side Side, width int, content func() elements.Element, st ...styles.Styles) *Drawer {
-	d := &Drawer{open: open, side: side, width: width, content: content}
+	d := &Drawer{open: open, side: side, width: width, content: content, duration: animDuration}
 	if len(st) > 0 {
 		d.st = st[0]
 	}
@@ -98,6 +101,25 @@ func New(open *bool, side Side, width int, content func() elements.Element, st .
 // be mid slide-out animation after *open turns false).
 func (d *Drawer) Opened() bool {
 	return d.open != nil && *d.open
+}
+
+// Duration sets how long the drawer takes to slide in or out (200ms by
+// default); 0 shows and hides it at once. It returns d for chaining.
+func (d *Drawer) Duration(t time.Duration) *Drawer {
+	d.duration = max(0, t)
+	return d
+}
+
+// Animated turns the slide on (the default) or off: Animated(false)
+// shows and hides the drawer at once, like Duration(0). It returns d
+// for chaining.
+func (d *Drawer) Animated(on bool) *Drawer {
+	if !on {
+		d.duration = 0
+	} else if d.duration == 0 {
+		d.duration = animDuration
+	}
+	return d
 }
 
 // Dismissible controls whether the drawer closes itself when the scrim

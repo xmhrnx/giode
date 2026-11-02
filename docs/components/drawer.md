@@ -27,6 +27,8 @@ whole window as an overlay, so it can sit anywhere in the tree.
 | `Drawer(open *bool, side Side, width int, content func() Element, st ...Styles) *Drawer` | Creates the drawer; `side` is `SideLeft` or `SideRight`, or `SideStart`/`SideEnd`, which follow the reading direction (`SideStart` is the right in a right-to-left locale). |
 | `Opened() bool` | Whether the drawer is open. |
 | `Dismissible(on bool) *Drawer` | Whether the scrim, Back, Escape and dragging close it (on by default). |
+| `Duration(d time.Duration) *Drawer` | How long the slide takes (200ms by default); 0 shows and hides it at once. |
+| `Animated(on bool) *Drawer` | `Animated(false)` turns the slide off, like `Duration(0)`. |
 | `SwipeToOpen(on bool) *Drawer` | Drag from the window edge to open it (off by default). |
 | `Styles(st Styles) *Drawer` | Replaces the panel styles from the next frame. |
 

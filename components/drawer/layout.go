@@ -35,17 +35,22 @@ func (d *Drawer) Layout(gtx layout.Context) layout.Dimensions {
 
 	// Advance the animation toward the open state, unless a drag holds
 	// the panel.
+	dur := d.duration
 	dt := gtx.Now.Sub(d.last)
-	if d.last.IsZero() || dt < 0 || dt > animDuration {
-		dt = animDuration / 10
+	if d.last.IsZero() || dt < 0 || dt > dur {
+		dt = dur / 10
 	}
 	d.last = gtx.Now
 	target := float32(0)
 	if isOpen {
 		target = 1
 	}
+	if !d.dragging && d.progress != target && dur <= 0 {
+		// No animation: straight to open or closed.
+		d.progress = target
+	}
 	if !d.dragging && d.progress != target {
-		step := float32(dt) / float32(animDuration)
+		step := float32(dt) / float32(dur)
 		if d.progress < target {
 			d.progress = min(target, d.progress+step)
 		} else {

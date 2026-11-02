@@ -106,3 +106,36 @@ func TestDrawer_SwipeToOpen(t *testing.T) {
 		t.Error("edge swipe didn't open the drawer")
 	}
 }
+
+func TestNotAnimated(t *testing.T) {
+	open := false
+	for _, d := range []*Drawer{
+		New(&open, Left, 200, func() elements.Element { return elements.Box(styles.Styles{}) }).Animated(false),
+		New(&open, Left, 200, func() elements.Element { return elements.Box(styles.Styles{}) }).Duration(0),
+	} {
+		h := &harness{d: d}
+		h.frame()
+		open = true
+		h.frame()
+		if d.progress != 1 {
+			t.Errorf("one frame after opening: progress %v, want 1", d.progress)
+		}
+		open = false
+		h.frame()
+		if d.progress != 0 {
+			t.Errorf("one frame after closing: progress %v, want 0", d.progress)
+		}
+	}
+	// The default still slides.
+	d := New(&open, Left, 200, func() elements.Element { return elements.Box(styles.Styles{}) })
+	h := &harness{d: d}
+	h.frame()
+	open = true
+	h.frame()
+	if d.progress <= 0 || d.progress >= 1 {
+		t.Errorf("the default drawer jumped to %v in one frame", d.progress)
+	}
+	if d.Animated(false).Animated(true).duration != animDuration {
+		t.Error("Animated(true) didn't restore the default duration")
+	}
+}
