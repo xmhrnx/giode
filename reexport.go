@@ -237,6 +237,9 @@ var (
 	// OnKey registers, for this frame, a handler for the keys nothing
 	// else took (app shortcuts); see elements.OnKey.
 	OnKey = ui.OnKey
+	// NoInset is an explicit zero Padding or Margin: an all-zero Inset
+	// means unset (Merge keeps the base's, components use their default).
+	NoInset = ui.NoInset
 	// Shortcut returns a keyboard shortcut ("Mod+T", "Ctrl+Shift+P",
 	// "F5") running action; Mod is Command on macOS, Ctrl elsewhere.
 	// Register shortcuts with Shortcuts. See package shortcut.
@@ -680,6 +683,7 @@ const (
 	AlignStart           = ui.AlignStart
 	AlignCenter          = ui.AlignCenter
 	AlignEnd             = ui.AlignEnd
+	AlignStretch         = ui.AlignStretch
 	JustifyStart         = ui.JustifyStart
 	JustifyCenter        = ui.JustifyCenter
 	JustifyEnd           = ui.JustifyEnd

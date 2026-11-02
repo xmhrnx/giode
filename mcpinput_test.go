@@ -3,6 +3,7 @@ package giode
 import (
 	"testing"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 )
@@ -34,5 +35,26 @@ func TestParseModifiers(t *testing.T) {
 	}
 	if b, err := parseButton("right"); err != nil || b != pointer.ButtonSecondary {
 		t.Errorf("parseButton(right) = %v, %v", b, err)
+	}
+}
+
+func TestPointerEventsCarryTheButton(t *testing.T) {
+	evs, held, err := pointerEvents("click", f32.Pt(0, 0), f32.Pt(10, 10), 0, pointer.ButtonSecondary, 0, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evs) != 3 || held != 0 {
+		t.Fatalf("click: %d events, %v held after", len(evs), held)
+	}
+	press, release := evs[1].(pointer.Event), evs[2].(pointer.Event)
+	if press.Kind != pointer.Press || press.Buttons != pointer.ButtonSecondary {
+		t.Errorf("press %v with buttons %v, want secondary", press.Kind, press.Buttons)
+	}
+	if release.Kind != pointer.Release || release.Buttons != 0 {
+		t.Errorf("release %v with buttons %v", release.Kind, release.Buttons)
+	}
+	evs, held, _ = pointerEvents("press", f32.Pt(10, 10), f32.Pt(10, 10), 0, pointer.ButtonSecondary, 0, 0, 0)
+	if len(evs) != 1 || held != pointer.ButtonSecondary {
+		t.Errorf("press: %d events, %v held", len(evs), held)
 	}
 }

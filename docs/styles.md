@@ -59,7 +59,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | Property | Type | Values | Notes |
 | --- | --- | --- | --- |
 | `FlexDirection` | string | `FlexDirectionRow` (default), `FlexDirectionColumn` | Main axis (CSS flex-direction). |
-| `Align` | string | `AlignStart`, `AlignCenter`, `AlignEnd` | Cross-axis alignment (align-items). |
+| `Align` | string | `AlignStart`, `AlignCenter`, `AlignEnd`, `AlignStretch` | Cross-axis alignment (align-items). `AlignStretch` makes every child as tall as the tallest in its row (as wide as the widest in a column), so cards side by side share a bottom edge. |
 | `Justify` | string | `JustifyStart` (default), `JustifyCenter`, `JustifyEnd`, `JustifySpaceBetween`, `JustifySpaceAround`, `JustifySpaceEvenly` | Main-axis distribution. |
 | `Wrap` | string | `WrapWrap`, `WrapNoWrap` | Whether children continue onto new lines. Unset: Row wraps, Stack does not. |
 | `Gap` | int | dp | Space between children and between wrapped lines. |
@@ -68,7 +68,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `WidthPct` / `HeightPct` | int | 1–100 | Percent of available space; takes precedence over `Width`/`Height`. |
 | `MinWidth` / `MaxWidth` / `MinHeight` / `MaxHeight` | int | dp | Clamp the resolved size, including for expanding boxes (`Width: -1`, `FlexGrow`): `Width: -1, MaxWidth: 760` is a column at most 760dp wide, placed by the parent's `Justify`/`Align`. A minimum beats a maximum. |
 | `AspectRatio` | float | w/h | Derives the hugging axis from the resized axis. |
-| `Padding` / `Margin` | Inset | dp per side | `UniformInset(v)`, `SymmetricInset(h, v)` or `giode.Inset{Top, Right, Bottom, Left}`. |
+| `Padding` / `Margin` | Inset | dp per side | `UniformInset(v)`, `SymmetricInset(h, v)` or `giode.Inset{Top, Right, Bottom, Left}`; `Start`/`End` follow the reading direction. An all-zero inset means unset (`Merge` keeps the base's, components use their default); `giode.NoInset` is an explicit zero. |
 | `Position` | string | `PositionStatic` (default), `PositionRelative`, `PositionAbsolute` | Absolute removes the element from the flow; see below. |
 | `Top` / `Right` / `Bottom` / `Left` | int | dp | Offsets of absolute children. |
 | `ZIndex` | int | any | Stacking order of siblings, flow and positioned alike. |

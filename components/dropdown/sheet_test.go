@@ -132,3 +132,25 @@ func TestSelect_PressOutsideCloses(t *testing.T) {
 		t.Errorf("picking an option: open=%v chosen=%v", h.s.Opened(), chosen)
 	}
 }
+
+func TestSelect_SetOptions(t *testing.T) {
+	changes := 0
+	s := New(styles.Styles{}, "alpha", "beta", "gamma").OnChange(func(int) { changes++ })
+	s.SetSelected(1)
+	s.SetOptions("delta", "beta", "epsilon", "zeta")
+	if s.Value() != "beta" || s.Selected() != 1 {
+		t.Errorf("after SetOptions keeping beta: %q at %d", s.Value(), s.Selected())
+	}
+	s.SetOptions("one", "two")
+	if s.Value() != "one" {
+		t.Errorf("selection gone: %q, want the first option", s.Value())
+	}
+	s.SetOptions("a", "b", "c", "d", "e", "f")
+	s.Choose(5)
+	if s.Value() != "f" || changes != 1 {
+		t.Errorf("Choose after growing: %q, %d changes", s.Value(), changes)
+	}
+	if len(s.Options()) != 6 {
+		t.Errorf("options %v", s.Options())
+	}
+}

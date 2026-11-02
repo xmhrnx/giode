@@ -79,6 +79,24 @@ func (s *Select) Options() []string {
 	return s.options
 }
 
+// SetOptions replaces the options. The selection stays on the same text
+// when it's still among them, and otherwise moves to the first option;
+// OnChange isn't called. An open list shows the new options.
+func (s *Select) SetOptions(options ...string) {
+	cur := s.Value()
+	s.options = options
+	for len(s.itemClick) < len(options) {
+		s.itemClick = append(s.itemClick, new(widget.Clickable))
+	}
+	s.selected = 0
+	for i, o := range options {
+		if o == cur {
+			s.selected = i
+			break
+		}
+	}
+}
+
 // Choose selects option i and invokes OnChange, as picking it from the
 // list would. Out-of-range indexes are ignored.
 func (s *Select) Choose(i int) {

@@ -76,48 +76,20 @@ func (b *mcpBridge) registerInputTools(a *App) {
 					pos.Y = *in.Y
 				}
 			}
-			ev := func(kind pointer.Kind) pointer.Event {
-				return pointer.Event{Kind: kind, Source: pointer.Mouse, Position: pos, Buttons: ptr.buttons,
-					Modifiers: mods, Time: time.Since(inputEpoch)}
+			evs, buttons, err := pointerEvents(in.Action, ptr.pos, pos, ptr.buttons, btn, mods, in.DX, in.DY)
+			if err != nil {
+				return nil, err
 			}
-			var evs []event.Event
-			if pos != ptr.pos || in.Action == "move" {
-				evs = append(evs, ev(pointer.Move))
-			}
-			press := func() {
-				ptr.buttons |= btn
-				evs = append(evs, ev(pointer.Press))
-			}
-			release := func() {
-				ptr.buttons &^= btn
-				evs = append(evs, ev(pointer.Release))
-			}
-			switch in.Action {
-			case "move":
-			case "press":
-				press()
-			case "release":
-				release()
-			case "click":
-				press()
-				release()
-			case "double_click":
-				press()
-				release()
-				press()
-				release()
-			case "scroll":
-				e := ev(pointer.Scroll)
-				e.Scroll = f32.Pt(in.DX, in.DY)
-				evs = append(evs, e)
-			default:
-				return nil, fmt.Errorf("unknown action %q: use move, press, release, click, double_click or scroll", in.Action)
-			}
+			ptr.buttons = buttons
 			ptr.pos = pos
 			if err := b.inject(ctx, a, evs...); err != nil {
 				return nil, err
 			}
-			return map[string]any{"action": in.Action, "position": [2]int{int(pos.X), int(pos.Y)}, "buttons": ptr.buttons.String()}, nil
+			res := map[string]any{"action": in.Action, "position": [2]int{int(pos.X), int(pos.Y)}, "buttons_held": ptr.buttons.String()}
+			if in.Action != "move" && in.Action != "scroll" {
+				res["button"] = btn.String()
+			}
+			return res, nil
 		}))
 
 	b.srv.AddTool(mcp.Func("ui_key", "Presses and releases a key with modifiers, delivered to the focused element as the keyboard would: "+
@@ -240,6 +212,51 @@ func (b *mcpBridge) inject(ctx context.Context, a *App, evs ...event.Event) erro
 		}
 	}
 	return b.afterFrame(ctx, a, func(*op.Ops, image.Point) {})
+}
+
+// pointerEvents builds the events for a ui_pointer action at pos, from
+// the pointer at prev with held buttons, using button btn: a move when
+// the pointer moved, then the presses and releases, each carrying the
+// buttons held at that moment. It returns the buttons held afterwards.
+func pointerEvents(action string, prev, pos f32.Point, held, btn pointer.Buttons, mods key.Modifiers, dx, dy float32) ([]event.Event, pointer.Buttons, error) {
+	ev := func(kind pointer.Kind) pointer.Event {
+		return pointer.Event{Kind: kind, Source: pointer.Mouse, Position: pos, Buttons: held,
+			Modifiers: mods, Time: time.Since(inputEpoch)}
+	}
+	var evs []event.Event
+	if pos != prev || action == "move" {
+		evs = append(evs, ev(pointer.Move))
+	}
+	press := func() {
+		held |= btn
+		evs = append(evs, ev(pointer.Press))
+	}
+	release := func() {
+		held &^= btn
+		evs = append(evs, ev(pointer.Release))
+	}
+	switch action {
+	case "move":
+	case "press":
+		press()
+	case "release":
+		release()
+	case "click":
+		press()
+		release()
+	case "double_click":
+		press()
+		release()
+		press()
+		release()
+	case "scroll":
+		e := ev(pointer.Scroll)
+		e.Scroll = f32.Pt(dx, dy)
+		evs = append(evs, e)
+	default:
+		return nil, held, fmt.Errorf("unknown action %q: use move, press, release, click, double_click or scroll", action)
+	}
+	return evs, held, nil
 }
 
 func parseButton(s string) (pointer.Buttons, error) {
