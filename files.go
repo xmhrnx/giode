@@ -66,7 +66,11 @@ func extensions(filters []FileFilter) []string {
 func (a *App) OpenFile(ctx context.Context, filter ...FileFilter) (io.ReadCloser, error) {
 	exts := extensions(filter)
 	return await(ctx, func() (io.ReadCloser, error) {
-		return a.explorer.ChooseFile(exts...)
+		fs, err := a.chooseFiles(exts, false)
+		if err != nil {
+			return nil, err
+		}
+		return fs[0], nil
 	}, closeFile[io.ReadCloser])
 }
 
@@ -74,7 +78,7 @@ func (a *App) OpenFile(ctx context.Context, filter ...FileFilter) (io.ReadCloser
 func (a *App) OpenFiles(ctx context.Context, filter ...FileFilter) ([]io.ReadCloser, error) {
 	exts := extensions(filter)
 	return await(ctx, func() ([]io.ReadCloser, error) {
-		return a.explorer.ChooseFiles(exts...)
+		return a.chooseFiles(exts, true)
 	}, func(fs []io.ReadCloser) {
 		for _, f := range fs {
 			f.Close()
