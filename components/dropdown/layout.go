@@ -91,13 +91,18 @@ func (s *Select) Layout(gtx layout.Context) layout.Dimensions {
 		elements.RegisterOverlay(func() elements.Element {
 			return elements.Raw(s.layoutOutside)
 		})
-		fieldWidth := fieldDims.Size.X
-		at := elements.AbsolutePosition()
-		trigger := image.Rectangle{Min: at, Max: at.Add(fieldDims.Size)}
-		maxH := listHeight(gtx, trigger, elements.WindowSize())
+		fieldSize := fieldDims.Size
+		// The field's position is only final once enclosing containers
+		// have placed it (a Scroll moves its content after laying it
+		// out), so the list's height is worked out from the tracked
+		// position when the portal is built, not from where the field
+		// was laid out.
+		elements.TrackPosition(&s.at)
+		trigger := image.Rectangle{Min: s.at, Max: s.at.Add(fieldSize)}
 		elements.RegisterPortalAround(gtx, trigger, listGap, elements.PlaceAuto, func() elements.Element {
 			return elements.Raw(func(gtx layout.Context) layout.Dimensions {
-				return s.dropdown(gtx, st, fieldWidth, maxH)
+				field := image.Rectangle{Min: s.at, Max: s.at.Add(fieldSize)}
+				return s.dropdown(gtx, st, fieldSize.X, listHeight(gtx, field, elements.WindowSize()))
 			})
 		})
 	}

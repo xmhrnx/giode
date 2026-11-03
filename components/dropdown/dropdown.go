@@ -2,6 +2,8 @@
 package dropdown
 
 import (
+	"image"
+
 	"image/color"
 
 	"gioui.org/widget"
@@ -38,7 +40,9 @@ type Select struct {
 	outside struct{}
 	// list scrolls the options when they don't fit beside the field;
 	// reveal scrolls the selected one into view once the list opens.
-	list   *scroll.Scroll
+	list *scroll.Scroll
+	// at is the field's window position, tracked as containers place it.
+	at     image.Point
 	reveal bool
 }
 
