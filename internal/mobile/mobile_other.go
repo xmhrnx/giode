@@ -72,3 +72,6 @@ func StartKeepAlive(vm, ctx uintptr, reason string) error { return ErrUnsupporte
 
 // StopKeepAlive reports ErrUnsupported outside Android.
 func StopKeepAlive(vm, ctx uintptr) error { return ErrUnsupported }
+
+// ListenShares reports ErrUnsupported outside Android.
+func ListenShares(vm, ctx uintptr, handler func(Shared)) error { return ErrUnsupported }

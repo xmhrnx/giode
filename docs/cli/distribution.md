@@ -27,6 +27,30 @@ current user into `%LOCALAPPDATA%\Programs`, without an administrator prompt;
 `per_machine = true` installs for everyone into Program Files. It runs silently with
 `/S`. The uninstaller isn't signed yet.
 
+`firewall = true` adds an inbound Windows Firewall rule for the app's executable on
+private and domain networks (`firewall_public = true` adds public ones), so a server or
+LAN discovery in the app works without Windows asking, and the uninstaller removes it. A
+per-machine installer adds it while elevated; a per-user one asks for administrator
+rights once, for the rule alone, and installs anyway if that's declined.
+
+## Launch screen colour
+
+`splash_color` fills the screen from launch until the app's first frame, instead of white:
+Android's window background and its Android 12+ splash screen (with the app icon on it),
+and iOS's launch screen, through a named colour in the app's asset catalog.
+`splash_color_light` is the light mode colour; `splash_color` is then the dark mode one.
+
+## Share target
+
+`share_target = true` puts the app in the system share sheet for any files and text,
+received by `giode.Config.OnShareReceived`. Android gets an activity registered for
+`ACTION_SEND` and `ACTION_SEND_MULTIPLE`. iOS gets a share extension, `Share.appex` with
+bundle ID `<app.id>.share`, built, signed and embedded in the app, sharing the App Group
+`group.<app.id>` (`ios.app_group`) with it. For device builds, register the extension's
+App ID and the App Group in the developer portal, enable the group on both App IDs, and
+point `ios.share_profile` at the extension's provisioning profile. Simulator builds are
+signed ad hoc and need neither.
+
 ## Native libraries
 
 A cgo app linking shared libraries (libmpv and the dozens it brings) needs them in its

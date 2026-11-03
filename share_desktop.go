@@ -26,6 +26,8 @@ func (f ShareFile) share(ctx context.Context, a *App) error {
 
 func (a *App) watchLifecycle() {}
 
+func (a *App) listenShares() {}
+
 // On desktops, minimizing the window counts as going to the
 // background; see handleConfig.
 const lifecycleFromWindowState = true

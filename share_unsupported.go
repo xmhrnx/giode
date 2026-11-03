@@ -10,6 +10,8 @@ func (f ShareFile) share(ctx context.Context, a *App) error { return ErrNotSuppo
 
 func (a *App) watchLifecycle() {}
 
+func (a *App) listenShares() {}
+
 const lifecycleFromWindowState = false
 
 func (f ShareFiles) share(ctx context.Context, a *App) error { return ErrNotSupported }

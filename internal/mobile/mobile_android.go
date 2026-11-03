@@ -18,7 +18,7 @@ import (
 	"git.wow.st/gmp/jni"
 )
 
-//go:generate javac --release 8 -classpath $ANDROID_HOME/platforms/android-34/android.jar -d $TEMP/giode_mobile/classes mobile_android.java services_android.java picker_android.java KeepAliveService.java
+//go:generate javac --release 8 -classpath $ANDROID_HOME/platforms/android-34/android.jar -d $TEMP/giode_mobile/classes mobile_android.java services_android.java picker_android.java KeepAliveService.java ShareActivity.java
 //go:generate jar cf mobile_android.jar -C $TEMP/giode_mobile/classes .
 
 const (

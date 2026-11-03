@@ -51,7 +51,8 @@ app := giode.New(giode.Config{
 
 When a second instance launches, its `OnSecondInstanceLaunch` callback runs and the
 instance exits without showing a window. The lock survives crashes (a dead owner's lock
-is reclaimed).
+is reclaimed). Android and iOS ignore the lock (the system runs one copy of an app), and
+a lock file that can't be created counts as no other copy running, so the app starts.
 
 ## Runtime window actions
 
@@ -223,7 +224,9 @@ The window can hide without closing: `HideWindow()`, `ShowWindow()` and `WindowV
 A hidden window leaves the screen and the taskbar or Dock, and comes back as it was;
 clicking the Dock icon brings it back on macOS. `Config.MenuBarApp` makes a macOS app a
 menu bar utility, with no Dock icon or app menu. `Quit()` ends the app even with
-`CloseToTray`, as does `Close()`.
+`CloseToTray`, as does `Close()`. `RequestClose()` closes the way the system close
+button does: it hides the window with `CloseToTray`, and closes it otherwise. A `TitleBar`'s
+close button calls it.
 
 Tray menu items and `OnClick` run on the UI goroutine even while the window is hidden and
 draws no frames, as does anything queued with `Post`. The default tray click and a second

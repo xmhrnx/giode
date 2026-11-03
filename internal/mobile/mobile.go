@@ -10,6 +10,7 @@ package mobile
 
 import (
 	"errors"
+	"os"
 	"sync/atomic"
 )
 
@@ -63,4 +64,18 @@ type Speech struct {
 	Text string
 	Done bool
 	Err  error
+}
+
+// Shared is what another app shared with this one through the share
+// target.
+type Shared struct {
+	Text, Subject string
+	Files         []SharedFile
+}
+
+// SharedFile is one shared file, already open.
+type SharedFile struct {
+	File       *os.File
+	Name, MIME string
+	Size       int64 // -1 when unknown
 }

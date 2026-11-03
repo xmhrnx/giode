@@ -94,6 +94,21 @@ func (a *App) watchLifecycle() {
 	}
 }
 
+// listenShares hands what other apps share with this one (through
+// ShareActivity, which app.share_target declares) to OnShareReceived.
+func (a *App) listenShares() {
+	err := mobile.ListenShares(app.JavaVM(), app.AppContext(), func(s mobile.Shared) {
+		c := SharedContent{Text: s.Text, Subject: s.Subject}
+		for _, f := range s.Files {
+			c.Files = append(c.Files, sharedFile(f.File, f.Name, f.MIME, f.Size))
+		}
+		a.shareReceived(c)
+	})
+	if err != nil {
+		a.logf(LogLevelWarning, "giode: can't receive shares: %v", err)
+	}
+}
+
 // Android reports going to the background through the activity
 // lifecycle, not the window state.
 const lifecycleFromWindowState = false

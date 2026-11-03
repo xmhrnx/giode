@@ -10,12 +10,15 @@ version = "1.4.0"
 build = 12                    # Android versionCode, CFBundleVersion: at least 1, raise per upload; giode.AppVersion and giode.AppBuild at run time
                               # (a four-part version, "1.4.0.12", sets both)
 icon = "assets/icon.png"      # square PNG, 1024x1024 for the stores
+splash_color = "#0A0A0B"      # Android/iOS launch background (dark mode with the next)
+splash_color_light = "#F4F4F6"  # light mode's; Android 12+ shows the icon on it
 package = "."                 # main package
 publisher = "Example Ltd"     # shown by installers and Windows' app list
 description = "An AI agent in your pocket."
 website = "https://example.com"
 schemes = ["agent"]           # URL schemes the app opens
 links = ["https://example.com/app/*"]   # universal links / App Links; see giode links
+share_target = true           # in the share sheet for files and text; see distribution.md
 tags = ""                     # Go build tags
 renderer = "opengl"           # Gio's OpenGL renderer on macOS and iOS (Config.Renderer)
 gio_patches = true            # build against Gio with giode's patches (default true)

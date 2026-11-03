@@ -153,6 +153,13 @@ type Config struct {
 	// App Links (app.links). With a SingleInstanceLock, a link that
 	// starts a second desktop instance reaches the running one here.
 	OnOpenURL func(u *url.URL)
+	// OnShareReceived runs on the UI goroutine with what another app
+	// shared with this one from the system share sheet - files, text or
+	// both - whether the share started the app or reached it while
+	// running. The app must be a share target: giode.toml's
+	// app.share_target, which registers it on Android and builds iOS's
+	// share extension. The receiver closes the files.
+	OnShareReceived func(SharedContent)
 	// ContextActions add entries to the file manager's right-click menu
 	// that open the app with the chosen paths; see ContextAction. The
 	// giode CLI adds the ones in giode.toml too.
