@@ -17,6 +17,14 @@ func ShareURI(vm, ctx, view uintptr, uri, mime, title string) error { return Err
 // ShareURIs reports ErrUnsupported outside Android.
 func ShareURIs(vm, ctx, view uintptr, uris []string, mime, title string) error { return ErrUnsupported }
 
+// SaveToDownloads reports ErrUnsupported outside Android.
+func SaveToDownloads(vm, ctx uintptr, path, mime, folder string) (string, error) {
+	return "", ErrUnsupported
+}
+
+// OpenDownloads reports ErrUnsupported outside Android.
+func OpenDownloads(vm, ctx, view uintptr) error { return ErrUnsupported }
+
 // SaveToGallery reports ErrUnsupported outside Android.
 func SaveToGallery(vm, ctx uintptr, path, mime, album string) error { return ErrUnsupported }
 

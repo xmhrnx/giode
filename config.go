@@ -3,6 +3,7 @@ package giode
 import (
 	"gioui.org/io/key"
 	"github.com/xmhrnx/giode/host"
+	"runtime"
 
 	"image"
 	"image/color"
@@ -184,7 +185,9 @@ type Config struct {
 	// Other platforms ignore it.
 	MenuBarApp bool
 	// SingleInstanceLock, when set, ensures only one instance of the
-	// application runs.
+	// application runs on desktops. Android and iOS ignore it: they run
+	// one copy of an app anyway. When the lock can't be written (no
+	// usable temporary directory), the app runs as if it were alone.
 	SingleInstanceLock *SingleInstanceLock
 	// OnFileDrop runs with the paths of files dropped onto the window
 	// from the file manager, on the UI goroutine. It works on Windows
@@ -438,6 +441,12 @@ func New(cfg Config) *App {
 		host.WaitForUpdate()
 	}
 	a.setIconBytes(cfg.Icon)
+	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+		// Phones run one copy of an app anyway; the system brings it
+		// back rather than starting another.
+		cfg.SingleInstanceLock = nil
+		a.cfg.SingleInstanceLock = nil
+	}
 	if cfg.SingleInstanceLock != nil {
 		a.instance = host.LockInstance(cfg.SingleInstanceLock.UniqueID)
 		a.secondInstance = a.instance.Running()
@@ -551,6 +560,18 @@ func (a *App) Raise() {
 func (a *App) Close() {
 	a.quitting.Store(true)
 	a.Post(func() { a.window.Perform(system.ActionClose) })
+}
+
+// RequestClose closes the window as the system's close button does:
+// with CloseToTray it hides the window to the tray, otherwise it ends
+// the app, as Close does. TitleBar's close button calls it. It may be
+// called from any goroutine.
+func (a *App) RequestClose() {
+	if a.closesToTray() {
+		a.HideWindow()
+		return
+	}
+	a.Close()
 }
 
 // Window exposes the underlying *app.Window for low-level

@@ -49,6 +49,18 @@ func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) erro
 	return mobile.SaveToGallery(app.JavaVM(), app.AppContext(), path, mime, album)
 }
 
+func (a *App) saveToDownloads(ctx context.Context, path, mime, folder string) (string, error) {
+	return mobile.SaveToDownloads(app.JavaVM(), app.AppContext(), path, mime, folder)
+}
+
+func (a *App) openDownloads(ctx context.Context, folder string) error {
+	return a.onAndroidMain(ctx, func(view uintptr) error {
+		return mobile.OpenDownloads(app.JavaVM(), app.AppContext(), view)
+	})
+}
+
+func (a *App) openFolder(ctx context.Context, path string) error { return ErrNotSupported }
+
 func (a *App) openURL(ctx context.Context, u string) error {
 	return a.onAndroidMain(ctx, func(view uintptr) error {
 		return mobile.OpenURL(app.JavaVM(), app.AppContext(), view, u)

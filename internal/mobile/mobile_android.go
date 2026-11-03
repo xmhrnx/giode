@@ -119,6 +119,36 @@ func ShareURIs(vm, ctx, view uintptr, uris []string, mime, title string) error {
 	})
 }
 
+// SaveToDownloads copies the file at path into the shared Downloads
+// collection, in folder when it isn't empty, and returns its content
+// URI. Off the main thread; Android 10 or later.
+func SaveToDownloads(vm, ctx uintptr, path, mime, folder string) (string, error) {
+	var uri string
+	err := call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "saveToDownloads", "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
+		obj, err := jni.CallStaticObjectMethod(env, cls, m,
+			jni.Value(ctx),
+			jni.Value(jni.JavaString(env, path)),
+			jni.Value(jni.JavaString(env, mime)),
+			jni.Value(jni.JavaString(env, folder)),
+		)
+		if err != nil {
+			return err
+		}
+		uri = jni.GoString(env, jni.String(obj))
+		return nil
+	})
+	return uri, err
+}
+
+// OpenDownloads shows the Downloads app. Call it on the main thread.
+func OpenDownloads(vm, ctx, view uintptr) error {
+	return call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "openDownloads", "(Landroid/view/View;)V")
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(view))
+	})
+}
+
 // SaveToGallery copies the picture or video at path into the shared
 // Pictures (or Movies) collection, in album's folder. It copies the
 // whole file, so call it off the main thread. Android 10 or later.

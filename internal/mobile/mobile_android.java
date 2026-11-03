@@ -137,6 +137,30 @@ public final class mobile_android {
 		return copyInto(ctx, "content://media/external/downloads", "Download", path, mime);
 	}
 
+	// saveToDownloads copies a file into the shared Downloads collection,
+	// in a subfolder when folder isn't empty, where the Files and
+	// Downloads apps show it. Android 10 or later; off the main thread.
+	public static String saveToDownloads(Context ctx, String path, String mime, String folder) throws IOException {
+		if (Build.VERSION.SDK_INT < 29) {
+			throw new IOException("saving to Downloads needs Android 10 or later");
+		}
+		String dir = "Download";
+		if (folder != null && !folder.isEmpty()) {
+			dir += "/" + folder;
+		}
+		return copyInto(ctx, "content://media/external/downloads", dir, path, mime);
+	}
+
+	// openDownloads shows the Downloads app. Call on the main thread.
+	public static void openDownloads(View view) {
+		Intent i = new Intent("android.intent.action.VIEW_DOWNLOADS");
+		Context ctx = view.getContext();
+		if (!(ctx instanceof Activity)) {
+			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		}
+		ctx.startActivity(i);
+	}
+
 	// saveToGallery copies a picture or video into the shared Pictures
 	// (or Movies) collection, in an album folder, where the gallery and
 	// photo apps show it. Android 10 or later; off the main thread.

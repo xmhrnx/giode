@@ -24,6 +24,7 @@ type Checkbox struct {
 	st       styles.Styles
 	icon     icon.Source
 	iconSt   styles.Styles
+	outlined bool
 }
 
 // New returns a Checkbox. label is optional: pass "" for a bare
@@ -49,6 +50,14 @@ func (c *Checkbox) Icon(src icon.Source, st ...styles.Styles) *Checkbox {
 	if len(st) > 0 {
 		c.iconSt = st[0]
 	}
+	return c
+}
+
+// Outlined draws a checked box as an outline in the Background colour
+// with a check mark of the same colour, instead of filling it: for
+// outline-only designs. It returns c for chaining.
+func (c *Checkbox) Outlined(on bool) *Checkbox {
+	c.outlined = on
 	return c
 }
 

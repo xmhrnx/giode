@@ -98,3 +98,15 @@ func TestTakeWaitArg(t *testing.T) {
 		t.Errorf("second call gave %d", pid)
 	}
 }
+
+func TestLockInstance_UnwritableTempDir(t *testing.T) {
+	// A temporary directory the lock can't be written in (Android's
+	// /data/local/tmp, for apps) mustn't read as another instance.
+	t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "missing"))
+	l := LockInstance("com.example.unwritable")
+	if l.Running() {
+		t.Fatal("a lock that couldn't be written was taken for another instance")
+	}
+	l.Serve(func([]string) {})
+	l.Release()
+}

@@ -107,8 +107,14 @@ func acquireInstanceLock(id string) (second bool, path string, owner *InstanceLo
 
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
-		// Lost the race with another instance.
-		return true, path, nil
+		if os.IsExist(err) {
+			// Lost the race with another instance.
+			return true, path, nil
+		}
+		// The lock can't be written (a read-only or missing temporary
+		// directory): that says nothing about other copies, so run
+		// without the lock rather than exit as if one held it.
+		return false, "", &InstanceLock{}
 	}
 	defer f.Close()
 	owner = &InstanceLock{}
