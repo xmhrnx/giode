@@ -163,6 +163,8 @@ func (t *TitleBar) Hide(buttons ...Button) *TitleBar {
 
 // OnClose sets a handler run when the close button is clicked; return
 // false to keep the window open (to ask about unsaved changes, say).
+// Otherwise the button then closes the window as the system's would:
+// to the tray with Config.CloseToTray, else ending the app.
 // It returns t for chaining.
 func (t *TitleBar) OnClose(fn func() bool) *TitleBar {
 	t.onClose = fn
@@ -177,7 +179,14 @@ func (t *TitleBar) Press(b Button) {
 	case ButtonMaximize:
 		t.win.ToggleMaximize()
 	case ButtonClose:
-		if t.onClose == nil || t.onClose() {
+		if t.onClose != nil && !t.onClose() {
+			return
+		}
+		// Close as the system's close button would: a window that closes
+		// to the tray hides there (*giode.App's RequestClose).
+		if r, ok := t.win.(interface{ RequestClose() }); ok {
+			r.RequestClose()
+		} else {
 			t.win.Close()
 		}
 	}

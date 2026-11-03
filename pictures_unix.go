@@ -24,6 +24,21 @@ func picturesDir() (string, error) {
 	return filepath.Join(home, "Pictures"), nil
 }
 
+// downloadsDir is the user's Downloads folder: XDG_DOWNLOAD_DIR on
+// Linux.
+func downloadsDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	if runtime.GOOS != "darwin" {
+		if d := xdgUserDir(home, "XDG_DOWNLOAD_DIR"); d != "" {
+			return d, nil
+		}
+	}
+	return filepath.Join(home, "Downloads"), nil
+}
+
 // xdgUserDir reads a folder from ~/.config/user-dirs.dirs.
 func xdgUserDir(home, key string) string {
 	cfg := os.Getenv("XDG_CONFIG_HOME")

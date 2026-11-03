@@ -60,7 +60,7 @@ Android gives the app the whole screen, so these `Config` fields have no effect 
 | `Frameless`, `Draggable`, `Center`, `AlwaysOnTop`, `WindowStartState` and the start-state flags | There's no desktop window to decorate or place. |
 | `Icon` | The launcher icon comes from gogio's `-icon` at build time. |
 | `Title` | The label under the icon comes from gogio's `-name`. |
-| `SingleInstanceLock` | Android already runs one instance per app. |
+| `SingleInstanceLock` | Android already runs one instance per app; the lock is ignored. |
 | `OnFileDrop` | Windows only. Use `OpenFile` instead. |
 
 Fields that matter more on a phone: `StatusBar`/`NavigationBar` (system bar colors, by

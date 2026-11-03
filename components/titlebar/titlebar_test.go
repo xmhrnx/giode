@@ -206,3 +206,26 @@ func TestRTLButtonsOnTheLeft(t *testing.T) {
 		t.Errorf("menu at %v, want right of the buttons", f)
 	}
 }
+
+type trayWindow struct {
+	closed, requested int
+}
+
+func (w *trayWindow) Minimize()       {}
+func (w *trayWindow) ToggleMaximize() {}
+func (w *trayWindow) Close()          { w.closed++ }
+func (w *trayWindow) Maximized() bool { return false }
+func (w *trayWindow) Focused() bool   { return true }
+func (w *trayWindow) RequestClose()   { w.requested++ }
+
+func TestCloseButtonClosesLikeTheSystem(t *testing.T) {
+	w := &trayWindow{}
+	New(w, "x").Press(ButtonClose)
+	if w.requested != 1 || w.closed != 0 {
+		t.Errorf("close button: RequestClose %d, Close %d; want the system close (RequestClose)", w.requested, w.closed)
+	}
+	New(w, "x").OnClose(func() bool { return false }).Press(ButtonClose)
+	if w.requested != 1 {
+		t.Error("closed although OnClose returned false")
+	}
+}

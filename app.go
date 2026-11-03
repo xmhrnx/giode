@@ -62,6 +62,7 @@ func (a *App) Run(view func() Element) error {
 		a.startupURL(os.Args[1:])
 	}
 	a.watchLifecycle()
+	a.listenShares()
 	ctx, cancel := context.WithCancel(context.Background())
 	a.watchSystemTheme(ctx.Done())
 	if a.mcp != nil {

@@ -9,6 +9,9 @@ import (
 // openedURL hands a link that opened the app to OnOpenURL, on the UI
 // goroutine.
 func (a *App) openedURL(u *url.URL) {
+	if isShareScheme(u.Scheme) {
+		return // the share extension's; listenShares delivers the share
+	}
 	if a.cfg.OnOpenURL == nil {
 		a.logf(LogLevelWarning, "giode: opened with %s but Config.OnOpenURL isn't set", u.Redacted())
 		return

@@ -49,6 +49,18 @@ func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) erro
 	return mobile.SaveToGallery(app.JavaVM(), app.AppContext(), path, mime, album)
 }
 
+func (a *App) saveToDownloads(ctx context.Context, path, mime, folder string) (string, error) {
+	return mobile.SaveToDownloads(app.JavaVM(), app.AppContext(), path, mime, folder)
+}
+
+func (a *App) openDownloads(ctx context.Context, folder string) error {
+	return a.onAndroidMain(ctx, func(view uintptr) error {
+		return mobile.OpenDownloads(app.JavaVM(), app.AppContext(), view)
+	})
+}
+
+func (a *App) openFolder(ctx context.Context, path string) error { return ErrNotSupported }
+
 func (a *App) openURL(ctx context.Context, u string) error {
 	return a.onAndroidMain(ctx, func(view uintptr) error {
 		return mobile.OpenURL(app.JavaVM(), app.AppContext(), view, u)
@@ -79,6 +91,21 @@ func (a *App) watchLifecycle() {
 	mobile.SetLifecycleHandlers(a.cfg.OnBackground, a.cfg.OnForeground)
 	if err := mobile.WatchLifecycle(app.JavaVM(), app.AppContext()); err != nil {
 		a.logf(LogLevelWarning, "giode: can't watch the app lifecycle: %v", err)
+	}
+}
+
+// listenShares hands what other apps share with this one (through
+// ShareActivity, which app.share_target declares) to OnShareReceived.
+func (a *App) listenShares() {
+	err := mobile.ListenShares(app.JavaVM(), app.AppContext(), func(s mobile.Shared) {
+		c := SharedContent{Text: s.Text, Subject: s.Subject}
+		for _, f := range s.Files {
+			c.Files = append(c.Files, sharedFile(f.File, f.Name, f.MIME, f.Size))
+		}
+		a.shareReceived(c)
+	})
+	if err != nil {
+		a.logf(LogLevelWarning, "giode: can't receive shares: %v", err)
 	}
 }
 

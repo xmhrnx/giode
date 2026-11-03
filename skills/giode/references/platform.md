@@ -30,6 +30,10 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
 | `Dictate` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
+| `OnShareReceived` (share target) | `app.share_target` | share extension, `app.share_target` | – | – | – | – |
+| `SaveToDownloads` | Download (Android 10+) | Documents, in Files | Downloads | Downloads | XDG Downloads | – |
+| `OpenDownloads` / `OpenFolder` | ✓ / – | Files app | Finder | Explorer | `xdg-open` | – |
+| `multicast` package | Wi-Fi multicast lock | not needed | not needed | not needed | not needed | – |
 
 "–" means the call returns `ErrNotSupported` (or, for `Haptic`, does nothing). The iOS
 code is compiled in CI but hasn't run on a device.
@@ -165,6 +169,76 @@ err := app.SaveToPhotos(ctx, "/path/page-1.jpg", "Scans")
 took one). The MIME type is the files' shared type, `image/*` for mixed images, or `*/*`.
 
 Reading an image from the clipboard isn't supported yet.
+
+## Downloads and folders
+
+`SaveToDownloads` copies a file into the Downloads folder, in a subfolder (the app's name
+when empty), and returns where it went; a name that's taken gets " (2)" and so on:
+
+```go
+dst, err := app.SaveToDownloads(ctx, "/tmp/received/photo.jpg", "EasySend")
+```
+
+Android 10 and later put it in Download/EasySend through MediaStore, no permission needed,
+and return its content URI. iOS has no Downloads: the file goes to the app's Documents
+folder, which the Files app shows under On My iPhone when Info.plist has
+`UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace` (`[ios.plist]` in
+giode.toml, both `true`). Desktops use the user's Downloads folder.
+
+`OpenDownloads(ctx, folder)` shows that folder: the Downloads app on Android, the Files app
+on iOS, Finder, Explorer or the file manager on desktops. `OpenFolder(ctx, path)` opens any
+folder on desktops and iOS (inside the app's sandbox); Android has no way to open a folder
+and returns `ErrNotSupported`.
+
+## Receiving shares
+
+An app can appear in the system share sheet, for any files and text, and receive what's
+shared in `Config.OnShareReceived`, on the UI goroutine:
+
+```go
+app := giode.New(giode.Config{
+	OnShareReceived: func(s giode.SharedContent) {
+		for _, f := range s.Files {
+			// f is an open giode.PickedFile: Name, MIME, Size.
+			go upload(f) // closes f when done
+		}
+		if s.Text != "" {
+			note.SetText(s.Text) // shared text or a link; s.Subject is a title some apps add
+		}
+	},
+})
+```
+
+It runs whether the share started the app or reached it while running. Giode opens the
+files as they arrive, so they stay readable after Android's permission to read them ends;
+`Path` is empty, and the receiver closes each file.
+
+Turn it on with `share_target = true` under `[app]` in giode.toml:
+
+- Android: the build registers a small activity for `ACTION_SEND` and
+  `ACTION_SEND_MULTIPLE`, any MIME type and text. It opens the files, hands them to the app
+  and brings it to the front without showing itself.
+- iOS: the build compiles, signs and embeds a share extension (bundle ID `<app id>.share`).
+  It copies what's shared into an App Group folder (`group.<app id>` by default,
+  `ios.app_group` to change it) and opens the app, which picks the share up as it becomes
+  active. Device builds need a second provisioning profile for the extension,
+  `ios.share_profile`, and both App IDs need the App Group in the developer portal.
+
+## Multicast on Android
+
+Android drops Wi-Fi multicast and broadcast packets (mDNS discovery, LAN game lobbies)
+unless an app holds a multicast lock. The `multicast` package takes one; elsewhere it does
+nothing:
+
+```go
+release, err := multicast.Acquire("discovery")
+if err == nil {
+	defer release()
+}
+```
+
+The package adds `CHANGE_WIFI_MULTICAST_STATE` to the manifest itself. Hold the lock only
+while discovering: it costs battery.
 
 ## Camera
 

@@ -70,8 +70,9 @@ notify.SetChecked(true)
 | `SetChecked(v bool)` | Sets the state without invoking OnChange. |
 | `OnChange(fn func(bool))` | Change handler. |
 | `Icon(name string, st ...Styles)` | Replaces the check mark with a material icon. |
+| `Outlined(on bool)` | Draws a checked box as an outline with a tick in the fill colour, instead of a solid fill. |
 
-Styles: `Color` (label), `Background` (checked fill), `BorderColor` (unchecked border).
+Styles: `Color` (label), `Background` (checked fill; outline and tick when outlined), `BorderColor` (unchecked border).
 
 ## Slider
 

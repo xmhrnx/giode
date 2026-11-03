@@ -43,7 +43,7 @@ Create it once and lay it out every frame at the top of the window. Don't set
 | `Trailing(els...)` | Elements before the window buttons. |
 | `Variant(v)` | `TitleBarWindows` (default: square buttons on the right, red close hover) or `TitleBarMac` (traffic lights on the left, centered title). |
 | `Hide(buttons...)` | Removes `TitleBarMinimize`, `TitleBarMaximize` and/or `TitleBarClose`. |
-| `OnClose(fn func() bool)` | Runs on close; return `false` to keep the window open (unsaved changes). |
+| `OnClose(fn func() bool)` | Runs on close; return `false` to keep the window open (unsaved changes). Otherwise the button closes as the system's does (`App.RequestClose`), hiding to the tray with `CloseToTray`. |
 | `Title(s)` | Replaces the title. |
 | `Styles(st)` | Replaces the styles: solid in a window, a transparent fade over fullscreen video. |
 | `Press(button)` | Performs a button's action programmatically. |

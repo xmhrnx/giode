@@ -56,20 +56,29 @@ func (c *Checkbox) box() elements.Element {
 		}
 
 		defer clip.UniformRRect(image.Rectangle{Max: size}, radius).Push(gtx.Ops).Pop()
+		if checked && c.outlined {
+			// The border and the mark in the accent, the inside clear.
+			properties.PaintBorder(gtx.Ops, size, properties.BorderWidth(borderWidth), fill, properties.BorderRadius(radius))
+		}
 		if checked {
-			paint.Fill(gtx.Ops, properties.CalcColor(fill))
+			markColor := properties.Color(defaultIcon)
+			if c.outlined {
+				markColor = fill
+			} else {
+				paint.Fill(gtx.Ops, properties.CalcColor(fill))
+			}
 			if c.icon != nil {
 				// Icon sizes are in dp: convert the box's pixel size.
 				dpSize := properties.Width(float32(size.X) / max(gtx.Metric.PxPerDp, 1))
 				iconSt := styles.Merge(styles.Styles{
-					Color:  defaultIcon,
+					Color:  markColor,
 					Width:  dpSize,
 					Height: properties.Height(dpSize),
 				}, c.iconSt)
 				gtx.Constraints = layout.Exact(size)
 				c.icon.Icon(iconSt).Layout(gtx)
 			} else {
-				col := properties.ResolveColor(stOrDefault(c.iconSt.Color, defaultIcon))
+				col := properties.ResolveColor(stOrDefault(c.iconSt.Color, markColor))
 				gtx.Constraints = layout.Exact(size)
 				kit.DrawGlyph(gtx, kit.GlyphCheck, unit.Dp(float32(size.X)/max(gtx.Metric.PxPerDp, 1)), col)
 			}
