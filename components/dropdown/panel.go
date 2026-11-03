@@ -84,9 +84,12 @@ func (s *Select) optionRow(i int, st styles.Styles) elements.Element {
 			kit.RequestFrame(gtx)
 		}
 		dims := click.Layout(gtx, kit.Unselectable(func(gtx layout.Context) layout.Dimensions {
+			// The row spans the list, so all of it takes the click
+			// and the hover, not just its text.
 			rowSt := styles.Styles{
 				Padding:      properties.SymmetricInset(12, 8),
 				BorderRadius: 4,
+				Width:        -1,
 			}
 			if click.Hovered() {
 				rowSt.Background = s.hover

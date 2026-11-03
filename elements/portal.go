@@ -38,6 +38,11 @@ type portalEntry struct {
 	hasAround bool
 	gap       int
 	place     Placement
+	// registered is where anchor was when the entry was queued: an
+	// around entry that containers moved since is measured again, as
+	// its content may size itself from the trigger's final position
+	// (a dropdown's list fills the room beside its field).
+	registered image.Point
 }
 
 // Placement says on which side of its trigger a portal goes.
@@ -105,7 +110,7 @@ func RegisterPortal(gtx layout.Context, anchor image.Point, build func() Element
 	mgtx.Constraints = layout.Constraints{Max: win}
 	dims := Measure(mgtx, build())
 
-	portalQueue = append(portalQueue, portalEntry{anchor: anchor, size: dims.Size, win: win, build: build})
+	portalQueue = append(portalQueue, portalEntry{anchor: anchor, registered: anchor, size: dims.Size, win: win, build: build})
 }
 
 // RegisterPortalAt queues build like RegisterPortal at anchor, a
@@ -196,6 +201,11 @@ func DrainPortals(gtx layout.Context) {
 		entries := portalQueue
 		portalQueue = nil
 		for _, e := range entries {
+			if e.hasAround && e.anchor != e.registered {
+				mgtx := gtx
+				mgtx.Constraints = layout.Constraints{Max: e.win}
+				e.size = Measure(mgtx, e.build()).Size
+			}
 			pos := e.pos()
 			off := op.Offset(pos).Push(gtx.Ops)
 			pop := PushOffset(pos)
