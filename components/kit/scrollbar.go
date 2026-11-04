@@ -159,11 +159,11 @@ func (s *Scrollbar) Layout(gtx layout.Context, viewport image.Point, contentH in
 	switch {
 	case s.drag.Dragging():
 		thumb = Pressed(thumb)
-		pointer.CursorGrabbing.Add(gtx.Ops)
+		properties.CursorGrabbing.CursorFor().Add(gtx.Ops)
 		MarkLive()
 	case hovered:
 		thumb = Hovered(thumb)
-		pointer.CursorGrab.Add(gtx.Ops)
+		properties.CursorGrab.CursorFor().Add(gtx.Ops)
 	}
 	thumbClip.Pop()
 

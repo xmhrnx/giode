@@ -368,7 +368,7 @@ func (s *Sheet) panelOps(gtx layout.Context, width, maxH, fixedH int, handle boo
 		if handle && !s.fixed {
 			// The handle and title are where a drag moves the sheet.
 			defer clip.Rect{Max: image.Pt(d.Size.X, hdrH)}.Push(gtx.Ops).Pop()
-			pointer.CursorGrab.Add(gtx.Ops)
+			properties.CursorGrab.CursorFor().Add(gtx.Ops)
 			s.drag.Add(gtx.Ops)
 		}
 		return d

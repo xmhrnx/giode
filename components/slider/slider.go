@@ -13,6 +13,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Slider is a stateful horizontal slider in the range [0, 1]. Create
@@ -142,10 +143,10 @@ func (s *Slider) Layout(gtx layout.Context) layout.Dimensions {
 	switch {
 	case s.drag.Dragging():
 		thumb = kit.Pressed(resolve(thumb, defaultThumb))
-		pointer.CursorGrabbing.Add(gtx.Ops)
+		properties.CursorGrabbing.CursorFor().Add(gtx.Ops)
 	case hovered:
 		thumb = kit.Hovered(resolve(thumb, defaultThumb))
-		pointer.CursorGrab.Add(gtx.Ops)
+		properties.CursorGrab.CursorFor().Add(gtx.Ops)
 	}
 
 	paintTrack(gtx, size, s.st.Background, m)

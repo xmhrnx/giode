@@ -369,7 +369,7 @@ func (m *editMenu) layoutHandle(gtx layout.Context, h *handle) {
 	paint.Fill(gtx.Ops, col)
 	knob.Pop()
 	area := clip.Rect{Min: image.Pt(-hit, 0), Max: image.Pt(hit, 2*r+2*hit)}.Push(gtx.Ops)
-	pointer.CursorGrab.Add(gtx.Ops)
+	properties.CursorGrab.CursorFor().Add(gtx.Ops)
 	h.drag.Add(gtx.Ops)
 	area.Pop()
 }

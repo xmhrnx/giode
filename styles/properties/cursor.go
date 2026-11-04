@@ -1,6 +1,10 @@
 package properties
 
-import "gioui.org/io/pointer"
+import (
+	"runtime"
+
+	"gioui.org/io/pointer"
+)
 
 // Cursor is the cursor shown while hovering an interactive component
 // (CSS cursor).
@@ -31,9 +35,9 @@ func (c Cursor) CursorFor() pointer.Cursor {
 	case CursorCrosshair:
 		return pointer.CursorCrosshair
 	case CursorGrab:
-		return pointer.CursorGrab
+		return grabCursor(pointer.CursorGrab)
 	case CursorGrabbing:
-		return pointer.CursorGrabbing
+		return grabCursor(pointer.CursorGrabbing)
 	case CursorNotAllowed:
 		return pointer.CursorNotAllowed
 	case CursorWait:
@@ -41,4 +45,14 @@ func (c Cursor) CursorFor() pointer.Cursor {
 	default:
 		return pointer.CursorDefault
 	}
+}
+
+// grabCursor is c, the open or closed hand, where the system has one.
+// Windows has none, and Gio shows its four-way move arrow instead,
+// which reads as "move the window": the pointing hand is used there.
+func grabCursor(c pointer.Cursor) pointer.Cursor {
+	if runtime.GOOS == "windows" {
+		return pointer.CursorPointer
+	}
+	return c
 }
