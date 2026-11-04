@@ -110,3 +110,54 @@ func TestLockInstance_UnwritableTempDir(t *testing.T) {
 	l.Serve(func([]string) {})
 	l.Release()
 }
+
+// Copies started together (Explorer starts one per selected file) find
+// the lock file the winner has created but not yet filled in: they
+// treat it as held and wait for the port rather than reclaiming it.
+func TestLockInstance_StartingOwner(t *testing.T) {
+	id := "giode-test-" + filepath.Base(t.TempDir())
+	path := filepath.Join(os.TempDir(), "giode-"+sanitizeID(id)+".lock")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(path)
+	second, _, owner := acquireInstanceLock(id)
+	if !second || owner != nil {
+		t.Fatal("a just-created empty lock was reclaimed")
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal("the starting owner's lock file was removed")
+	}
+
+	// The owner finishes starting while the second copy waits.
+	got := make(chan []string, 1)
+	_, realPath, real := acquireInstanceLock(id + "-owner")
+	defer releaseInstanceLock(realPath, real)
+	real.serveLaunches(func(args []string) { got <- args })
+	go func() {
+		time.Sleep(300 * time.Millisecond)
+		data, _ := os.ReadFile(realPath)
+		os.WriteFile(path, data, 0o600)
+	}()
+	if err := forwardLaunch(path, []string{"a.txt"}); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case args := <-got:
+		if !reflect.DeepEqual(args, []string{"a.txt"}) {
+			t.Errorf("forwarded %q", args)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("the launch wasn't forwarded")
+	}
+
+	// An empty lock file left by a crash long ago is reclaimed.
+	old := time.Now().Add(-time.Minute)
+	os.WriteFile(path, nil, 0o600)
+	os.Chtimes(path, old, old)
+	second, p, o := acquireInstanceLock(id)
+	if second || o == nil {
+		t.Fatal("a stale empty lock wasn't reclaimed")
+	}
+	releaseInstanceLock(p, o)
+}

@@ -28,6 +28,17 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 		k.SetStringValue("MUIVerb", label)
 		k.SetStringValue("Icon", exe)
 		k.Close()
+		if arg == "%1" {
+			// Files and folders: Explorer drops the whole selection on
+			// the app's COM class (see contextserver_windows.go) rather
+			// than starting a copy per item with the command below,
+			// which stays for programs that only run commands.
+			clsid := ContextActionCLSID(prefix, id)
+			if err := registerDropTarget(path, clsid, exe); err != nil {
+				return err
+			}
+			created = append(created, `Software\Classes\CLSID\`+clsid)
+		}
 		c, _, err := registry.CreateKey(registry.CURRENT_USER, path+`\command`, registry.ALL_ACCESS)
 		if err != nil {
 			return err
@@ -63,6 +74,29 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 	return errors.Join(errs...)
 }
 
+// registerDropTarget makes the verb at path a DropTarget verb for the
+// COM class clsid, served by exe.
+func registerDropTarget(path, clsid, exe string) error {
+	k, _, err := registry.CreateKey(registry.CURRENT_USER, path, registry.ALL_ACCESS)
+	if err != nil {
+		return err
+	}
+	k.SetStringValue("MultiSelectModel", "Player")
+	k.Close()
+	d, _, err := registry.CreateKey(registry.CURRENT_USER, path+`\DropTarget`, registry.ALL_ACCESS)
+	if err != nil {
+		return err
+	}
+	d.SetStringValue("CLSID", clsid)
+	d.Close()
+	s, _, err := registry.CreateKey(registry.CURRENT_USER, `Software\Classes\CLSID\`+clsid+`\LocalServer32`, registry.ALL_ACCESS)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	return s.SetStringValue("", `"`+exe+`"`)
+}
+
 func uninstallContextActions(prefix string) error {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\`+prefix, registry.ALL_ACCESS)
 	if err != nil {
@@ -72,7 +106,7 @@ func uninstallContextActions(prefix string) error {
 	paths, _, _ := k.GetStringsValue(contextActionsRecord)
 	var errs []error
 	for _, p := range paths {
-		if !strings.Contains(p, `\shell\`+prefix+".") {
+		if !strings.Contains(p, `\shell\`+prefix+".") && !isOurCLSID(prefix, p) {
 			continue // not ours
 		}
 		errs = append(errs, deleteKeyTree(registry.CURRENT_USER, p))
@@ -98,4 +132,11 @@ func deleteKeyTree(root registry.Key, path string) error {
 		}
 	}
 	return registry.DeleteKey(root, path)
+}
+
+// isOurCLSID reports whether path is the COM class key of one of the
+// app's context actions.
+func isOurCLSID(prefix, path string) bool {
+	const dir = `Software\Classes\CLSID\`
+	return strings.HasPrefix(path, dir) && strings.HasPrefix(strings.TrimPrefix(path, dir), "{")
 }

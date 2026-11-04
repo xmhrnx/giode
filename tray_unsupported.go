@@ -16,3 +16,6 @@ func (a *App) warnTrayLimits()        {}
 func (a *App) platformInit()          {}
 func (a *App) trayView(app.ViewEvent) {}
 func (a *App) applyTrayOptions()      {}
+
+// raiseNative reports false: Raise goes through Gio here.
+func (a *App) raiseNative() bool { return false }

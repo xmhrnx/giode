@@ -13,3 +13,7 @@ func processAlive(pid int) bool {
 	err := syscall.Kill(pid, 0)
 	return err == nil || err == syscall.EPERM
 }
+
+// allowForeground does nothing: only Windows restricts which process
+// may take the foreground.
+func allowForeground(pid int) {}

@@ -4,6 +4,17 @@ package host
 
 import "golang.org/x/sys/windows"
 
+var procAllowSetForegroundWindow = windows.NewLazySystemDLL("user32.dll").NewProc("AllowSetForegroundWindow")
+
+// allowForeground lets the process with the given pid bring its window
+// to the foreground, passing on the right this process got from being
+// launched by the user.
+func allowForeground(pid int) {
+	if pid > 0 {
+		procAllowSetForegroundWindow.Call(uintptr(pid))
+	}
+}
+
 // stillActive is the STATUS_PENDING exit code of a running process.
 const stillActive = 259
 

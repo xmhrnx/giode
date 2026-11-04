@@ -58,8 +58,9 @@ func (a *App) Run(view func() Element) error {
 	if a.instance != nil {
 		a.instance.Serve(a.handleLaunch)
 	}
-	if !a.runContextAction(os.Args[1:]) {
-		a.startupURL(os.Args[1:])
+	a.serveContextActions()
+	if args := withoutEmbedding(os.Args[1:]); !a.runContextAction(args) {
+		a.startupURL(args)
 	}
 	a.watchLifecycle()
 	a.listenShares()
@@ -71,6 +72,7 @@ func (a *App) Run(view func() Element) error {
 	go func() {
 		err := a.runLoop(view)
 		cancel()
+		a.stopContextActions()
 		if a.instance != nil {
 			a.instance.Release()
 		}

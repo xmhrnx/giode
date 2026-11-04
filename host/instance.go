@@ -85,9 +85,12 @@ func acquireInstanceLock(id string) (second bool, path string, owner *InstanceLo
 	}
 	path = filepath.Join(os.TempDir(), "giode-"+sanitizeID(id)+".lock")
 
-	// The lock owner writes its pid; a stale file (dead process or
-	// one that crashed before writing) is reclaimed.
-	for attempt := 0; attempt < 5; attempt++ {
+	// The lock owner writes its pid; a stale file (a dead process, or
+	// one that crashed before writing) is reclaimed. A file without a
+	// pid yet that's only just been created belongs to an instance that
+	// won the race and is still starting - Explorer starts a copy per
+	// selected file all at once - so it counts as held.
+	for {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			break
@@ -96,13 +99,16 @@ func acquireInstanceLock(id string) (second bool, path string, owner *InstanceLo
 		if pid > 0 && processAlive(pid) {
 			return true, path, nil
 		}
-		// Empty or dead: give a racing writer a moment to fill in its
-		// pid before reclaiming.
-		if attempt < 4 {
-			time.Sleep(50 * time.Millisecond)
-			continue
+		if pid == 0 {
+			if st, err := os.Stat(path); err == nil && time.Since(st.ModTime()) < lockStartup {
+				return true, path, nil
+			}
 		}
-		os.Remove(path)
+		if err := os.Remove(path); err != nil {
+			// Another instance holds it open, writing: it's live.
+			return true, path, nil
+		}
+		break
 	}
 
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
@@ -128,6 +134,10 @@ func acquireInstanceLock(id string) (second bool, path string, owner *InstanceLo
 	fmt.Fprintf(f, "%d\n%d\n%s\n", os.Getpid(), port, owner.token)
 	return false, path, owner
 }
+
+// lockStartup is how long a lock file may stay without a pid while its
+// instance starts.
+const lockStartup = 5 * time.Second
 
 // WaitForUpdate waits, in an app restarted by an update (see the
 // update package), for the old process to exit, so the new one takes
@@ -192,14 +202,30 @@ type launchMessage struct {
 
 // forwardLaunch sends args to the instance holding the lock at path.
 func forwardLaunch(path string, args []string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
+	// The instance that holds the lock may still be starting: wait for
+	// it to write its port.
+	var (
+		pid, port int
+		token     string
+	)
+	for deadline := time.Now().Add(lockStartup); ; {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		pid, port, token = parseLock(data)
+		if pid > 0 || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
-	_, port, token := parseLock(data)
 	if port == 0 {
 		return fmt.Errorf("giode: the running instance doesn't take launches")
 	}
+	// Windows gives the process the user launched the right to take the
+	// foreground; pass it on, or the running instance can only flash
+	// its taskbar button.
+	allowForeground(pid)
 	c, err := net.DialTimeout("tcp", "127.0.0.1:"+strconv.Itoa(port), 2*time.Second)
 	if err != nil {
 		return err

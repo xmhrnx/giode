@@ -553,8 +553,18 @@ func (a *App) Center() {
 	a.window.Perform(system.ActionCenter)
 }
 
-// Raise brings the window to the front.
+// Raise brings the window to the front, restoring it first when it's
+// minimized. On Windows it may be called from any goroutine; elsewhere
+// call it on the UI goroutine (from a handler, or through Post).
+//
+// Windows lets an app take the foreground only when the user just
+// interacted with it, or another app passed it the right (a second
+// launch does, see SingleInstanceLock); otherwise the taskbar button
+// flashes instead.
 func (a *App) Raise() {
+	if a.raiseNative() {
+		return
+	}
 	a.window.Perform(system.ActionRaise)
 }
 

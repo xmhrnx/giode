@@ -131,3 +131,6 @@ func giodeReopen() {
 		a.ShowWindow()
 	}
 }
+
+// raiseNative reports false: Raise goes through Gio here.
+func (a *App) raiseNative() bool { return false }

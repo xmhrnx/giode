@@ -8,7 +8,9 @@ import (
 // handleLaunch handles a second instance's arguments in the running
 // one.
 func (a *App) handleLaunch(args []string) {
+	args = withoutEmbedding(args)
 	if a.runContextAction(args) {
+		a.showFromLaunch()
 		return
 	}
 	// A link the system opened with the app (its URL scheme).
@@ -30,6 +32,9 @@ func (a *App) handleLaunch(args []string) {
 // was hidden.
 func (a *App) showFromLaunch() {
 	a.ShowWindow()
+	if a.raiseNative() {
+		return
+	}
 	a.Post(a.Raise)
 }
 

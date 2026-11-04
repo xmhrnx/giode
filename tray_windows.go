@@ -15,6 +15,7 @@ var (
 	procShowWindowAsync     = user32.NewProc("ShowWindowAsync")
 	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
 	procIsIconic            = user32.NewProc("IsIconic")
+	procBringWindowToTop    = user32.NewProc("BringWindowToTop")
 )
 
 const (
@@ -37,6 +38,24 @@ func (a *App) hideNativeWindow() bool {
 		return false
 	}
 	procShowWindowAsync.Call(hwnd, swHide)
+	return true
+}
+
+// raiseNative restores the window if it's minimized and brings it to
+// the foreground, through its HWND, so it works from any goroutine and
+// while Gio draws no frames (a minimized window gets none).
+func (a *App) raiseNative() bool {
+	hwnd := a.NativeHandle()
+	if hwnd == 0 {
+		return false
+	}
+	if iconic, _, _ := procIsIconic.Call(hwnd); iconic != 0 {
+		procShowWindowAsync.Call(hwnd, swRestore)
+	}
+	go func() {
+		procSetForegroundWindow.Call(hwnd)
+		procBringWindowToTop.Call(hwnd)
+	}()
 	return true
 }
 

@@ -324,6 +324,15 @@ runs `OnContextAction` on the UI goroutine. With a `SingleInstanceLock`, an acti
 while the app runs goes to the running instance instead of starting a second one.
 `UninstallContextActions()` removes what `InstallContextActions` added.
 
+On Windows, Explorer would start the app once per selected file for a plain menu command,
+so actions on files and folders are registered as drop targets instead: Explorer hands the
+whole selection to the running app in one call (one `OnContextAction` with every path), and
+starts the app only when it isn't running. The app's window comes to the front and is
+restored if it was minimized; the launching copy passes on its right to take the
+foreground, so Windows doesn't just flash the taskbar button. This needs a 64-bit build;
+32-bit builds fall back to one launch per file, which the single-instance lock gathers
+into the running copy.
+
 The single-instance lock now also passes any second launch's arguments to the running
 instance: `SingleInstanceLock.OnLaunchArgs` receives them (a file opened with the app,
 say), and the window comes to the front.
