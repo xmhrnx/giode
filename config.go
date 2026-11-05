@@ -207,6 +207,14 @@ type Config struct {
 	// stutter on a device. App.FrameStats returns the same numbers, and
 	// the MCP server reports them as frame_stats.
 	ShowFrameTimes bool
+	// MaxFPS caps the frame rate: frames are drawn at most this many
+	// times a second, saving CPU, GPU and battery during animations,
+	// scrolling and video. 0 (the default) draws at the display's
+	// refresh rate. Frames still follow the display's refresh, so on a
+	// 60 Hz display a cap of 30 gives 30 fps but one of 50 gives 30 too:
+	// each frame waits for the refresh after its interval. Change it
+	// while the app runs with SetMaxFPS.
+	MaxFPS int
 
 	// Underlay draws caller-rendered GPU content under the UI each
 	// frame - video frames from libmpv, a 3D or map engine - without

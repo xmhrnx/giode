@@ -113,6 +113,22 @@ interaction on its own.
 Recording the semantic tree for the MCP server adds to the build time, so measure without
 the MCP server for the final numbers.
 
+## Capping the frame rate
+
+`Config.MaxFPS` draws at most that many frames a second; by default (0) the app draws at the
+display's refresh rate. A cap saves CPU, GPU and battery while something animates, scrolls
+or plays, at the cost of smoothness; an idle app draws no frames either way. `SetMaxFPS`
+changes it while the app runs, for a battery saver setting, say:
+
+```go
+app := giode.New(giode.Config{MaxFPS: 30})
+app.SetMaxFPS(0) // back to the refresh rate
+```
+
+A frame that comes sooner than 1/MaxFPS after the last waits out the difference before
+it's laid out, and is then shown at the next refresh: on a 60 Hz display 30 gives 30 fps,
+but 50 gives 30 too.
+
 ## Long lists: LazyList
 
 [LazyList](components/lazylist.md) builds and lays out only the rows near the viewport,

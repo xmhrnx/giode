@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"gioui.org/app"
 	"gioui.org/io/system"
@@ -62,6 +63,10 @@ type App struct {
 
 	hideKeyboard atomic.Bool
 	frames       frameRecorder
+	// maxFPS is the frame-rate cap (Config.MaxFPS, SetMaxFPS); 0 for
+	// none. lastFrame is when the last frame started.
+	maxFPS    atomic.Int64
+	lastFrame time.Time
 	themeCheck   chan struct{}
 
 	// explorer shows the file dialogs; it sees every window event.
@@ -186,6 +191,7 @@ func New(cfg Config) *App {
 	a.rendererErr = setupRenderer(cfg)
 	installFileDrag(a)
 	a.window = new(app.Window)
+	a.SetMaxFPS(cfg.MaxFPS)
 	a.window.Option(opts...)
 	a.explorer = explorer.NewExplorer(a.window)
 	elements.SetLinkOpener(a.openLink)

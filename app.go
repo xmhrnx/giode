@@ -138,6 +138,7 @@ func (a *App) runLoop(view func() Element) error {
 				a.window.Invalidate()
 			}
 		case app.FrameEvent:
+			a.throttleFrame()
 			start := time.Now()
 			a.frameGeom.Store(&frameGeom{pxPerDp: e.Metric.PxPerDp, size: e.Size})
 			a.runUICalls()

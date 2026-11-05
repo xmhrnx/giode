@@ -27,6 +27,7 @@ settings of desktop applications; unsupported platform features are ignored.
 | `AlwaysOnTop` | `bool` | `false` | Keep above other windows; `SetAlwaysOnTop` changes it later. |
 | `Logger` | `Logger` | `nil` | Receives diagnostics; any `*log.Logger` satisfies it. |
 | `LogLevel` | `LogLevel` | `LogLevelDebug` | `LogLevelDebug`, `LogLevelInfo`, `LogLevelWarning`, `LogLevelError`. |
+| `MaxFPS` | `int` | `0` | Cap the frame rate at this many frames a second, saving CPU, GPU and battery during animations and scrolling; 0 draws at the display's refresh rate. `SetMaxFPS` changes it while the app runs. Frames still follow the display's refresh: on a 60 Hz display a cap of 30 gives 30 fps, one of 50 also gives 30. |
 | `ShowFrameTimes` | `bool` | `false` | Draw a counter with frame build and render times and the frame rate, for finding stutter on a device; see [performance.md](performance.md#measuring-frame-times). |
 | `OnStartup` | `func()` | `nil` | Runs before the event loop starts. |
 | `OnReady` | `func()` | `nil` | Runs after the first frame is presented. |
