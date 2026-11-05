@@ -49,7 +49,7 @@ in this conversation; the API is alpha and changes. Map:
   `SaveFile`, `RestartElevated` prompts) must run in a goroutine, never in a click handler.
 - **Lengths are dp.** `Width`, `Padding`, `FontSize`, `Gap`, `BorderRadius` are density
   independent; `Width: -1` / `Height: -1` fill the available space.
-- **Raw Gio is always reachable**: `giode.Raw(func(gtx layout.Context) layout.Dimensions)`,
+- **Raw Gio is always reachable**: `giode.Raw(func(gtx giode.Context) giode.Dimensions)` (`giode.Context`/`Dimensions` are Gio's layout types, so custom components need no Gio import),
   `app.RunRaw`, `app.Window()`.
 
 ## Minimal app
@@ -65,7 +65,7 @@ import (
 )
 
 func main() {
-	giode.UseGofont() // a font for text (or giode.RegisterFonts)
+	giode.UseGofont() // a font for text; giode.RegisterFont(giode.FontFile{Family, Weight, Data}) adds TTF/OTF files
 
 	count := 0
 	btn := giode.Button("Add", giode.Styles{Background: "theme.primary", Color: "theme.onprimary", BorderRadius: 8}).

@@ -280,7 +280,7 @@ defer cam.Close()
 
 view := cam.Preview(camera.PreviewOptions{
 	Fill: true, // crop to fill, as camera apps do; tap to focus is on by default
-	Overlay: func(gtx layout.Context, toView func(f32.Point) f32.Point) {
+	Overlay: func(gtx giode.Context, toView func(f32.Point) f32.Point) {
 		drawQuad(gtx, outline, toView) // frame coordinates (0..1) to the element's pixels
 	},
 })

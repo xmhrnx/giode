@@ -99,7 +99,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | --- | --- | --- | --- |
 | `Color` | string | any color | Text color; empty resolves to black. |
 | `FontSize` | sp | — | Default 14sp. |
-| `FontWeight` | string | `FontWeightThin`, `FontWeightExtraLight`, `FontWeightLight`, `FontWeightNormal`, `FontWeightMedium`, `FontWeightSemiBold`, `FontWeightBold`, `FontWeightExtraBold`, `FontWeightBlack`, or the CSS numbers `"100"`…`"900"` | Default normal. Register each weight's face (e.g. Inter SemiBold as `font.SemiBold`) with `RegisterFonts`. |
+| `FontWeight` | string | `FontWeightThin`, `FontWeightExtraLight`, `FontWeightLight`, `FontWeightNormal`, `FontWeightMedium`, `FontWeightSemiBold`, `FontWeightBold`, `FontWeightExtraBold`, `FontWeightBlack`, or the CSS numbers `"100"`…`"900"` | Default normal. Register each weight's file with `RegisterFont` (below). |
 | `FontStyle` | string | `FontStyleNormal`, `FontStyleItalic` | |
 | `FontFamily` | string | — | Typeface must exist in the registered fonts. |
 | `TextAlign` | string | `TextAlignStart` (default), `TextAlignCenter`, `TextAlignEnd` | |
@@ -109,6 +109,29 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `TextOverflow` | string | `TextOverflowClip` (default), `TextOverflowEllipsis` | Ends cut-off text with "…"; implies one line without `MaxLines`. |
 | `TextTransform` | string | `TextTransformUppercase`, `TextTransformLowercase`, `TextTransformCapitalize` | |
 | `TextDecoration` | string | `TextDecorationNone` (default), `TextDecorationUnderline`, `TextDecorationLineThrough` | |
+
+### Custom fonts
+
+`RegisterFont` adds TTF, OTF or TTC files under the family, weight and style `Styles`
+select them by - no Gio font types needed:
+
+```go
+//go:embed fonts/Inter-Regular.ttf
+var interRegular []byte
+//go:embed fonts/Inter-SemiBold.ttf
+var interSemiBold []byte
+
+giode.UseGofont() // a fallback for text in other families
+err := giode.RegisterFont(
+	giode.FontFile{Family: "Inter", Data: interRegular},
+	giode.FontFile{Family: "Inter", Weight: giode.FontWeightSemiBold, Data: interSemiBold},
+	// Italic: true for an italic file
+)
+```
+
+Text styled `FontFamily: "Inter"` then uses them, picking the closest registered weight and
+style. The family and weight given replace what the file itself says, so they always match
+what you style with. `RegisterFonts` still takes Gio font faces, for code that has them.
 
 ## Interaction
 

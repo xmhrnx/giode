@@ -2,6 +2,7 @@ package ui
 
 import (
 	"gioui.org/io/key"
+	"gioui.org/layout"
 	"github.com/xmhrnx/giode/components/accordion"
 	"github.com/xmhrnx/giode/components/appshell"
 	"github.com/xmhrnx/giode/components/autocomplete"
@@ -54,6 +55,19 @@ import (
 // --- Types ---------------------------------------------------------------
 
 type Element = elements.Element
+
+// Context is what an element's Layout gets: the constraints it must
+// fit, the display metric, the ops to draw into and the input source
+// (Gio's layout.Context). Dimensions is what Layout returns: the size
+// it took and its baseline. With these, a custom element needs nothing
+// from Gio:
+//
+//	func (r *Rating) Layout(gtx giode.Context) giode.Dimensions { ... }
+type (
+	Context     = layout.Context
+	Dimensions  = layout.Dimensions
+	Constraints = layout.Constraints
+)
 type Styles = styles.Styles
 type Inset = properties.Inset
 
@@ -506,7 +520,13 @@ type (
 var (
 	UseGofont     = fonts.UseGofont
 	RegisterFonts = fonts.Register
+	// RegisterFont adds TTF, OTF or TTC font files by family, weight
+	// and style; see fonts.RegisterFont.
+	RegisterFont = fonts.RegisterFont
 )
+
+// FontFile is a font file for RegisterFont.
+type FontFile = fonts.File
 
 // --- Colors and insets -----------------------------------------------------
 

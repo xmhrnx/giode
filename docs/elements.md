@@ -193,8 +193,8 @@ giode.Table(giode.Styles{},
 Drops down to plain Gio at any point of the tree:
 
 ```go
-giode.Raw(func(gtx layout.Context) layout.Dimensions {
-	return layout.Dimensions{Size: image.Pt(10, 10)}
+giode.Raw(func(gtx giode.Context) giode.Dimensions {
+	return giode.Dimensions{Size: image.Pt(10, 10)}
 })
 ```
 

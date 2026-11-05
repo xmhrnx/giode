@@ -4,10 +4,12 @@ Everything in Giode is an `Element`:
 
 ```go
 type Element interface {
-	Layout(gtx layout.Context) layout.Dimensions
+	Layout(gtx giode.Context) giode.Dimensions
 }
 ```
 
+`giode.Context` and `giode.Dimensions` are Gio's `layout.Context` and `layout.Dimensions`
+under Giode names (with `giode.Constraints`), so a component needs no Gio import for them.
 Any type with a `Layout` method is a first-class Giode component — it can be returned
 from a view, placed inside a `Box`/`Row`/`Stack` and re-exported next to the built-ins. On top of
 that interface, Giode offers a small kit of helpers that the built-in components
@@ -17,7 +19,7 @@ themselves are made of.
 
 | Need | Use |
 | --- | --- |
-| One-off raw Gio code | `giode.Raw(func(gtx layout.Context) layout.Dimensions { ... })` |
+| One-off raw Gio code | `giode.Raw(func(gtx giode.Context) giode.Dimensions { ... })` |
 | Stateless visual | A struct with a `Layout` method built from `Box`/`Row`/`Stack`/`Text`/icons |
 | Stateful interactive component | A handle type holding Gio state (`widget.Clickable`, `widget.Editor`, `gesture.*`), created once with a `New` constructor |
 
@@ -65,13 +67,13 @@ same events its `Layout` does and reports whether its appearance changed. Replay
 run the passes and rebuild only when one returns true.
 
 ```go
-func (r *Rating) Layout(gtx layout.Context) layout.Dimensions {
+func (r *Rating) Layout(gtx giode.Context) giode.Dimensions {
 	r.update(gtx)
 	kit.HandleInput(r.pass) // r.pass is created once, not per frame
 	...
 }
 
-func (r *Rating) update(gtx layout.Context) (changed bool) {
+func (r *Rating) update(gtx giode.Context) (changed bool) {
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: r, Kinds: pointer.Press | pointer.Enter | pointer.Leave})
 		if !ok {
@@ -81,7 +83,7 @@ func (r *Rating) update(gtx layout.Context) (changed bool) {
 	}
 }
 
-r.pass = func(gtx layout.Context) bool { return r.update(gtx) }
+r.pass = func(gtx giode.Context) bool { return r.update(gtx) }
 ```
 
 For a widget built on a `widget.Clickable`, `kit.ClickablePass(&clickable, update)` builds
@@ -107,7 +109,7 @@ the trigger's own size:
 ```go
 anchor := elements.AbsolutePosition().Add(image.Pt(0, triggerHeight+4))
 elements.RegisterPortal(gtx, anchor, func() elements.Element {
-	return elements.Raw(func(gtx layout.Context) layout.Dimensions {
+	return elements.Raw(func(gtx giode.Context) giode.Dimensions {
 		return myPanel(gtx)
 	})
 })
@@ -149,7 +151,6 @@ call.Add(gtx.Ops)
 package main
 
 import (
-	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode"
@@ -187,7 +188,7 @@ func (r *Rating) Styles(st styles.Styles) *Rating {
 
 // Layout implements elements.Element, so a *Rating can be placed
 // anywhere an element is expected.
-func (r *Rating) Layout(gtx layout.Context) layout.Dimensions {
+func (r *Rating) Layout(gtx giode.Context) giode.Dimensions {
 	// Defaults first, user styles on top.
 	st := styles.Merge(styles.Styles{Gap: 4, Color: gold}, r.st)
 
@@ -206,7 +207,7 @@ type starEl struct {
 	st     styles.Styles
 }
 
-func (s *starEl) Layout(gtx layout.Context) layout.Dimensions {
+func (s *starEl) Layout(gtx giode.Context) giode.Dimensions {
 	click := &s.rating.stars[s.index]
 	if click.Clicked(gtx) {
 		s.rating.value = s.index + 1
@@ -214,7 +215,7 @@ func (s *starEl) Layout(gtx layout.Context) layout.Dimensions {
 			s.rating.onChange(s.rating.value)
 		}
 	}
-	return click.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+	return click.Layout(gtx, func(gtx giode.Context) giode.Dimensions {
 		col := s.st.Color
 		if s.index >= s.rating.value {
 			col = kit.Alpha(col, 0.25) // unselected stars are dim
@@ -263,7 +264,7 @@ returned size to at least 48x48dp with `w` centered. Wrap a control's visual in 
 the widget that takes its clicks, so the hit area grows while the visual doesn't:
 
 ```go
-dims := c.clickable.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+dims := c.clickable.Layout(gtx, func(gtx giode.Context) giode.Dimensions {
 	return elements.MinTouchTarget(gtx, c.layoutVisual)
 })
 ```

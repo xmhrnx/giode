@@ -362,7 +362,7 @@ while open, and `Router` goes back while it has history. For anything else, regi
 handler from `Layout`, every frame, for as long as Back has something to do:
 
 ```go
-func (p *EditorPage) Layout(gtx layout.Context) layout.Dimensions {
+func (p *EditorPage) Layout(gtx giode.Context) giode.Dimensions {
 	if p.dirty {
 		giode.HandleBack(func() { p.confirmDiscard = true })
 	}

@@ -1,7 +1,7 @@
 # Recipes
 
 Giode isn't opinionated about how you structure components. An `Element` is anything with
-a `Layout(gtx layout.Context) layout.Dimensions` method, and the view is a Go function
+a `Layout(gtx giode.Context) giode.Dimensions` method, and the view is a Go function
 that runs every frame, so plain Go - functions, structs, maps, closures - is the
 component model. These recipes are the patterns that work well; mix them freely, even in
 one screen.
@@ -102,7 +102,7 @@ func NewCounter() *Counter {
 	return c
 }
 
-func (c *Counter) Layout(gtx layout.Context) layout.Dimensions {
+func (c *Counter) Layout(gtx giode.Context) giode.Dimensions {
 	return giode.Row(giode.Styles{Gap: 12, Align: giode.AlignCenter},
 		giode.Text(fmt.Sprintf("%d", c.n)),
 		c.inc,
@@ -136,7 +136,7 @@ func (r *Rating) Color(c giode.Color) *Rating {
 	return r
 }
 func (r *Rating) OnChange(fn func(int)) *Rating { r.onChange = fn; return r }
-func (r *Rating) Layout(gtx layout.Context) layout.Dimensions {
+func (r *Rating) Layout(gtx giode.Context) giode.Dimensions {
 	stars := make([]giode.Element, r.max)
 	for i := range stars {
 		c := giode.Color("theme.border")
@@ -351,10 +351,10 @@ func Sidebar(user string, projects []string) giode.Element {
 
 ```go
 func Sparkline(values []float32, c color.NRGBA) giode.Element {
-	return giode.Raw(func(gtx layout.Context) layout.Dimensions {
+	return giode.Raw(func(gtx giode.Context) giode.Dimensions {
 		size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(40))
 		if len(values) < 2 {
-			return layout.Dimensions{Size: size}
+			return giode.Dimensions{Size: size}
 		}
 		var p clip.Path
 		p.Begin(gtx.Ops)
@@ -368,7 +368,7 @@ func Sparkline(values []float32, c color.NRGBA) giode.Element {
 			}
 		}
 		paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(2))}.Op())
-		return layout.Dimensions{Size: size}
+		return giode.Dimensions{Size: size}
 	})
 }
 ```
@@ -384,8 +384,8 @@ type Toggle struct {
 	label string
 }
 
-func (t *Toggle) Layout(gtx layout.Context) layout.Dimensions {
-	return t.on.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+func (t *Toggle) Layout(gtx giode.Context) giode.Dimensions {
+	return t.on.Layout(gtx, func(gtx giode.Context) giode.Dimensions {
 		bg := giode.Color("theme.border")
 		if t.on.Value {
 			bg = "theme.primary"
