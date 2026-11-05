@@ -3,6 +3,7 @@ package org.giode.mobile;
 import android.app.Activity;
 import android.app.Application;
 import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -217,5 +218,50 @@ public final class mobile_android {
 		done.put("is_pending", 0);
 		resolver.update(uri, done, null, null);
 		return uri.toString();
+	}
+
+	// clipboardImageURI returns the content URI of the first image on the
+	// clipboard, or null. Android only lets the focused app read the
+	// clipboard. Call on the main thread.
+	public static String clipboardImageURI(Context ctx) {
+		ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+		if (cm == null || !cm.hasPrimaryClip()) {
+			return null;
+		}
+		ClipData clip = cm.getPrimaryClip();
+		if (clip == null) {
+			return null;
+		}
+		ContentResolver cr = ctx.getContentResolver();
+		for (int i = 0; i < clip.getItemCount(); i++) {
+			Uri u = clip.getItemAt(i).getUri();
+			if (u == null) {
+				continue;
+			}
+			String type = cr.getType(u);
+			if (type != null && type.startsWith("image/")) {
+				return u.toString();
+			}
+		}
+		return null;
+	}
+
+	// readURI returns up to max bytes of a content URI. Any thread.
+	public static byte[] readURI(Context ctx, String uri, int max) throws IOException {
+		try (InputStream in = ctx.getContentResolver().openInputStream(Uri.parse(uri))) {
+			if (in == null) {
+				return null;
+			}
+			java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+			byte[] buf = new byte[64 * 1024];
+			int n;
+			while ((n = in.read(buf)) > 0) {
+				if (out.size() + n > max) {
+					throw new IOException("the clipboard image is too large");
+				}
+				out.write(buf, 0, n);
+			}
+			return out.toByteArray();
+		}
 	}
 }

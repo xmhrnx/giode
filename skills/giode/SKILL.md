@@ -123,7 +123,7 @@ IconVG), `Markdown`, `RichText`, `Table`, `Canvas`. Constructors and options are
 
 File dialogs `OpenFile`/`OpenFiles`/`SaveFile`/`PickFiles` (`PickedFile.Path` on desktops),
 `PickFolder`, `PickPhoto`, `PickPhotos` (several, upright JPEGs), `SaveToPhotos`,
-`SaveToDownloads`, `OpenDownloads`, `OpenFolder`; `Share` (`ShareFiles` for several);
+`SaveToDownloads`, `OpenDownloads`, `OpenFolder`, `ReadClipboardImage`; `Share` (`ShareFiles` for several);
 receiving shares (`Config.OnShareReceived` with giode.toml's `app.share_target`); `Notify`; `OpenURL`; clipboard; `KeepAlive`,
 `KeepScreenOn`; `Tray` (`SetCloseToTray`, `SetMinimizeToTray` at runtime); start at login
 (`SetLaunchAtLogin`, `LaunchAtLogin`, `giode.LaunchedAtLogin()`, `Config.StartInTray`; MSIX

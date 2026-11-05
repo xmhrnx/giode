@@ -75,3 +75,9 @@ func StopKeepAlive(vm, ctx uintptr) error { return ErrUnsupported }
 
 // ListenShares reports ErrUnsupported outside Android.
 func ListenShares(vm, ctx uintptr, handler func(Shared)) error { return ErrUnsupported }
+
+// ClipboardImageURI reports ErrUnsupported outside Android.
+func ClipboardImageURI(vm, ctx uintptr) (string, error) { return "", ErrUnsupported }
+
+// ReadURI reports ErrUnsupported outside Android.
+func ReadURI(vm, ctx uintptr, uri string, max int) ([]byte, error) { return nil, ErrUnsupported }

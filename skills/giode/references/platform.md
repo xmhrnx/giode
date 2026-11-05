@@ -30,6 +30,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
 | `Dictate` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
+| `ReadClipboardImage` | ✓ | ✓ | ✓ | ✓ | `wl-paste` or `xclip` | ✓ (async clipboard) |
 | `OnShareReceived` (share target) | `app.share_target` | share extension, `app.share_target` | – | – | – | – |
 | `SaveToDownloads` | Download (Android 10+) | Documents, in Files | Downloads | Downloads | XDG Downloads | – |
 | `OpenDownloads` / `OpenFolder` | ✓ / – | Files app | Finder | Explorer | `xdg-open` | – |
@@ -168,7 +169,26 @@ err := app.SaveToPhotos(ctx, "/path/page-1.jpg", "Scans")
 `giode.ShareFiles{Paths: pages}` shares several files in one share sheet (`Share` above
 took one). The MIME type is the files' shared type, `image/*` for mixed images, or `*/*`.
 
-Reading an image from the clipboard isn't supported yet.
+`ReadClipboardImage` reads an image from the clipboard - a screenshot, or an image copied
+from a browser, a document or an image editor - and returns nil when the clipboard holds no
+image. It blocks: call it from a goroutine.
+
+```go
+go func() {
+	img, err := app.ReadClipboardImage(ctx)
+	if err != nil || img == nil {
+		return
+	}
+	attach(img) // an image.Image
+}()
+```
+
+Windows reads the PNG browsers and editors copy, or the bitmap every copy (and Print Screen)
+provides; macOS and iOS read the pasteboard's image (iOS 16 and later tell the user, or ask);
+Android reads an image content URI on the clipboard, as its screenshot and gallery apps copy;
+the web uses the browser's async clipboard, which needs the page focused and may ask the user.
+On Linux it runs `wl-paste` (Wayland) or `xclip` (X11), one of which must be installed;
+without either it returns an error wrapping `ErrNotSupported`.
 
 ## Downloads and folders
 

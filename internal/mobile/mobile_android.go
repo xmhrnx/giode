@@ -458,3 +458,36 @@ func Java_org_giode_mobile_picker_1android_onSpeech(cenv *C.JNIEnv, cls C.jclass
 		}
 	}
 }
+
+// ClipboardImageURI returns the content URI of the clipboard's first
+// image, or "" when it holds none. Call it on the main thread.
+func ClipboardImageURI(vm, ctx uintptr) (string, error) {
+	var uri string
+	err := call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "clipboardImageURI", "(Landroid/content/Context;)Ljava/lang/String;")
+		obj, err := jni.CallStaticObjectMethod(env, cls, m, jni.Value(ctx))
+		if err != nil {
+			return err
+		}
+		uri = jni.GoString(env, jni.String(obj))
+		return nil
+	})
+	return uri, err
+}
+
+// ReadURI returns up to max bytes of a content URI. Any thread.
+func ReadURI(vm, ctx uintptr, uri string, max int) ([]byte, error) {
+	var data []byte
+	err := call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "readURI", "(Landroid/content/Context;Ljava/lang/String;I)[B")
+		obj, err := jni.CallStaticObjectMethod(env, cls, m, jni.Value(ctx), jni.Value(jni.JavaString(env, uri)), jni.Value(max))
+		if err != nil {
+			return err
+		}
+		if obj != 0 {
+			data = append([]byte(nil), jni.GetByteArrayElements(env, jni.ByteArray(obj))...)
+		}
+		return nil
+	})
+	return data, err
+}
