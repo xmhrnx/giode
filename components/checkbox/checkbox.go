@@ -25,6 +25,18 @@ type Checkbox struct {
 	icon     icon.Source
 	iconSt   styles.Styles
 	outlined bool
+	// cache keeps the output between frames; see Layout.
+	cache *elements.MemoCache
+	build func() elements.Element
+}
+
+// CacheSafe reports true: what it draws comes from its own fields,
+// which the cache watches.
+func (c *Checkbox) CacheSafe() bool { return true }
+
+// watch is what it draws from its own fields.
+func (c *Checkbox) watch() []any {
+	return []any{c.label, c.bool.Value, c.st, c.icon, c.iconSt, c.outlined}
 }
 
 // New returns a Checkbox. label is optional: pass "" for a bare
@@ -92,6 +104,18 @@ func (c *Checkbox) update(gtx layout.Context) bool {
 
 // Layout lays out and updates the checkbox.
 func (c *Checkbox) Layout(gtx layout.Context) layout.Dimensions {
+	// The output recorded last time is replayed until the label, the
+	// value, the styles, hover, press, constraints or direction change.
+	if c.cache == nil {
+		c.cache = elements.NewMemoCache()
+		uncached := elements.Raw(c.layoutUncached)
+		c.build = func() elements.Element { return uncached }
+	}
+	return c.cache.LayoutOwn(gtx, c.build, c.watch)
+}
+
+// layoutUncached lays it out without the cache.
+func (c *Checkbox) layoutUncached(gtx layout.Context) layout.Dimensions {
 	c.update(gtx)
 	st := styles.Merge(styles.Styles{Color: defaultText}, c.st)
 	// On touch screens the hit area grows to 48dp around the visual.

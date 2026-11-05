@@ -9,7 +9,6 @@ import (
 
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements/internal/base"
-	"github.com/xmhrnx/giode/elements/raw"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -22,21 +21,44 @@ func Glyph(g kit.Glyph, st ...styles.Styles) base.Element {
 	if len(st) > 0 {
 		s = st[0]
 	}
-	return raw.RawFunc(func(gtx layout.Context) layout.Dimensions {
-		size := unit.Dp(s.Width)
-		if size <= 0 {
-			size = 16
-		}
-		return kit.DrawGlyph(gtx, g, size, base.ResolveColor(s.Color))
-	})
+	return glyphEl{g: g, st: s}
 }
+
+// glyphEl draws a Glyph. It depends only on its fields, so a cache
+// may keep its output (base.CacheSafe).
+type glyphEl struct {
+	g  kit.Glyph
+	st styles.Styles
+}
+
+func (e glyphEl) Layout(gtx layout.Context) layout.Dimensions {
+	size := unit.Dp(e.st.Width)
+	if size <= 0 {
+		size = 16
+	}
+	return kit.DrawGlyph(gtx, e.g, size, base.ResolveColor(e.st.Color))
+}
+
+func (glyphEl) CacheSafe() bool { return true }
 
 // SizedPx lays child out at an exact size in physical pixels on each
 // axis given as positive, leaving the other axis free. Components use
 // it to apply sizes they measured themselves (already in pixels), which
 // must not be scaled again the way Styles lengths (in dp) are.
 func SizedPx(w, h int, child base.Element) base.Element {
-	return raw.RawFunc(func(gtx layout.Context) layout.Dimensions {
+	return sizedEl{w: w, h: h, child: child}
+}
+
+type sizedEl struct {
+	w, h  int
+	child base.Element
+}
+
+func (e sizedEl) CacheSafe() bool { return base.IsCacheSafe(e.child) }
+
+func (e sizedEl) Layout(gtx layout.Context) layout.Dimensions {
+	w, h, child := e.w, e.h, e.child
+	{
 		if w > 0 {
 			gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
 		}
@@ -51,18 +73,27 @@ func SizedPx(w, h int, child base.Element) base.Element {
 			dims.Size.Y = h
 		}
 		return dims
-	})
+	}
 }
 
 // OffsetPx lays child out translated by off physical pixels, keeping
 // AbsolutePosition in sync.
 func OffsetPx(off image.Point, child base.Element) base.Element {
-	return raw.RawFunc(func(gtx layout.Context) layout.Dimensions {
-		pop := base.PushOffset(off)
-		defer pop()
-		defer op.Offset(off).Push(gtx.Ops).Pop()
-		dims := child.Layout(gtx)
-		dims.Size = dims.Size.Add(off)
-		return dims
-	})
+	return offsetEl{off: off, child: child}
+}
+
+type offsetEl struct {
+	off   image.Point
+	child base.Element
+}
+
+func (e offsetEl) CacheSafe() bool { return base.IsCacheSafe(e.child) }
+
+func (e offsetEl) Layout(gtx layout.Context) layout.Dimensions {
+	pop := base.PushOffset(e.off)
+	defer pop()
+	defer op.Offset(e.off).Push(gtx.Ops).Pop()
+	dims := e.child.Layout(gtx)
+	dims.Size = dims.Size.Add(e.off)
+	return dims
 }

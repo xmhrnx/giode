@@ -73,3 +73,8 @@ func (d *DividerElement) Layout(gtx layout.Context) layout.Dimensions {
 	d.RegisterArea(gtx, image.Pt(0, 0), size, st.Cursor)
 	return layout.Dimensions{Size: size}
 }
+
+// CacheSafe reports true: the element depends only on its fields, which
+// don't change once it's built, and on what caches already watch (the
+// theme, the selection, its input passes).
+func (*DividerElement) CacheSafe() bool { return true }

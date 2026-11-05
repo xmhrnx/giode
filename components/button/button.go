@@ -41,6 +41,21 @@ type Button struct {
 	icon, trailing elements.Element
 	disabled       bool
 	loading        bool
+
+	// cache keeps the button's output between frames; see Layout.
+	cache *elements.MemoCache
+	build func() elements.Element
+}
+
+// CacheSafe reports whether the button can cache its output: its icons,
+// if any, must be CacheSafe too.
+func (b *Button) CacheSafe() bool {
+	return (b.icon == nil || elements.IsCacheSafe(b.icon)) && (b.trailing == nil || elements.IsCacheSafe(b.trailing))
+}
+
+// watch is what the button draws from its own fields.
+func (b *Button) watch() []any {
+	return []any{b.label, b.st, b.variant, b.disabled, b.loading, b.icon, b.trailing}
 }
 
 // New returns a Button with the given label. The styles argument is
@@ -146,8 +161,22 @@ func (b *Button) update(gtx layout.Context) bool {
 	return false
 }
 
-// Layout lays out and updates the button.
+// Layout lays out and updates the button. It replays the output
+// recorded last time until its label, styles, state, hover or press,
+// constraints or direction change.
 func (b *Button) Layout(gtx layout.Context) layout.Dimensions {
+	if b.CacheSafe() {
+		if b.cache == nil {
+			b.cache = elements.NewMemoCache()
+			uncached := elements.Raw(b.layoutUncached)
+			b.build = func() elements.Element { return uncached }
+		}
+		return b.cache.LayoutOwn(gtx, b.build, b.watch)
+	}
+	return b.layoutUncached(gtx)
+}
+
+func (b *Button) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if b.inert() {
 		// No events reach a disabled or loading button.
 		gtx = gtx.Disabled()

@@ -19,6 +19,7 @@ var selAreaStack []*selArea
 
 func init() {
 	base.SelectionVersion = selectionVersion
+	base.InSelectionArea = func() bool { return len(selAreaStack) > 0 }
 }
 
 // selectionVersion is the version of the innermost selection area's

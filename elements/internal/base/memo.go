@@ -3,6 +3,8 @@ package base
 import (
 	"image"
 
+	"gioui.org/io/system"
+
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -24,8 +26,9 @@ import (
 //     reflect.DeepEqual for values that aren't comparable);
 //   - any State the subtree read while being built (tracked
 //     automatically);
-//   - the layout constraints, the display density or the active
-//     breakpoint (see ActiveBreakpoint);
+//   - the layout constraints, the display density, the active
+//     breakpoint (see ActiveBreakpoint), touch input (see TouchInput)
+//     or the locale;
 //   - the theme (SetMode/SetPalette);
 //   - a widget inside asked for it: an animation, or a change that
 //     came from outside input (see kit.MarkLive);
@@ -55,8 +58,19 @@ type MemoCache struct {
 	epoch       uint64
 	color       string
 	breakpoint  string
-	deps        []any
-	reads       *state.Tracker
+	// touch and locale are the touch-input mode (minimum touch targets)
+	// and the locale (reading direction) the subtree was laid out with.
+	touch  bool
+	locale system.Locale
+	deps   []any
+	// watch, for a component caching its own output (LayoutOwn),
+	// returns what it draws from its own fields; watched is the value
+	// recorded. It's compared in the cache's pass too, so a setter
+	// called on a component replayed by an enclosing cache still
+	// rebuilds it.
+	watch   func() []any
+	watched []any
+	reads   *state.Tracker
 	// selection is the version of the enclosing SelectionArea's
 	// selection, which the subtree's text draws.
 	selection uint64

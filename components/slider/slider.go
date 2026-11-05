@@ -31,6 +31,18 @@ type Slider struct {
 	lastWidth   float32
 	lastPadding int
 	pass        func(gtx layout.Context) bool
+	// cache keeps the output between frames; see Layout.
+	cache *elements.MemoCache
+	build func() elements.Element
+}
+
+// CacheSafe reports true: what it draws comes from its own fields,
+// which the cache watches.
+func (s *Slider) CacheSafe() bool { return true }
+
+// watch is what it draws from its own fields.
+func (s *Slider) watch() []any {
+	return []any{s.value, s.st}
 }
 
 // New returns a Slider. The styles argument is optional: Color is
@@ -109,6 +121,18 @@ func (s *Slider) update(gtx layout.Context) {
 // Layout lays out and updates the slider. It expands to the available
 // width.
 func (s *Slider) Layout(gtx layout.Context) layout.Dimensions {
+	// The output recorded last time is replayed until the value, the
+	// styles, hover, a drag, constraints or direction change.
+	if s.cache == nil {
+		s.cache = elements.NewMemoCache()
+		uncached := elements.Raw(s.layoutUncached)
+		s.build = func() elements.Element { return uncached }
+	}
+	return s.cache.LayoutOwn(gtx, s.build, s.watch)
+}
+
+// layoutUncached lays it out without the cache.
+func (s *Slider) layoutUncached(gtx layout.Context) layout.Dimensions {
 	m := metricsFor(gtx)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	size := image.Pt(gtx.Constraints.Min.X, m.height)

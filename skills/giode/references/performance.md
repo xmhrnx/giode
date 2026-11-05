@@ -5,6 +5,30 @@ the API simple, and Gio only produces a frame when something happens — input, 
 `State` change, an animation. Within a frame, Giode avoids redoing work for the parts of the
 UI that didn't change.
 
+## Stateful components cache themselves
+
+Components you keep and lay out every frame - `Button`, `Checkbox`, `Switch`, `Slider`, and a
+`Box` with `OnHover` or `OnClick` - cache their own output: a frame where nothing about them
+changed replays what they drew last time instead of laying them out again. They lay out again
+when something they draw changes:
+
+- their own fields, including through setters (`Label`, `SetChecked`, `SetValue`, ...);
+- their hover, press or drag state, and animations in progress;
+- States they read, the constraints they're given, the theme, display density, touch input,
+  the locale or the active breakpoint.
+
+On a screen of 200 rows, each a hoverable row, a button, a checkbox and a switch, a frame
+takes 2.7 ms instead of 8.5 ms with no other change to the app.
+
+A `Box` caches only when everything inside it is safe to cache: text, rich text, glyphs,
+dividers, other boxes and the components above. A `Raw` drawing function, a `Canvas` or
+any element built by a function you pass may read any variable, so a box holding one lays
+its content out every frame as before. Inside a `SelectionArea` nothing is cached, as text
+registers with the area while it's laid out.
+
+Elements made fresh in the view function each frame aren't cached by themselves; wrap a
+large, mostly static region of them in `Memo` (below) to skip building them too.
+
 ## Memo: only rebuild what changed
 
 Wrap a part of the UI in `Memo` and it's rebuilt only when something it depends on changed;

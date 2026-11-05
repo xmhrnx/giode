@@ -57,3 +57,8 @@ func (r *RichTextElement) PlainText() string {
 	}
 	return r.st.TabWidth.Expand(b.String())
 }
+
+// CacheSafe reports true: the element depends only on its fields, which
+// don't change once it's built, and on what caches already watch (the
+// theme, the selection, its input passes).
+func (*RichTextElement) CacheSafe() bool { return true }

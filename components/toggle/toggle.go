@@ -36,6 +36,18 @@ type Switch struct {
 	// pos animates the knob, 0 off to 1 on.
 	pos  float32
 	last time.Time
+	// cache keeps the output between frames; see Layout.
+	cache *elements.MemoCache
+	build func() elements.Element
+}
+
+// CacheSafe reports true: what it draws comes from its own fields,
+// which the cache watches.
+func (s *Switch) CacheSafe() bool { return true }
+
+// watch is what it draws from its own fields.
+func (s *Switch) watch() []any {
+	return []any{s.label, s.st, s.on, s.disabled, s.knobOff, s.knobOn, s.pos}
 }
 
 // New returns a switch. label is optional; it shows left of the track
@@ -102,6 +114,19 @@ func (s *Switch) update(gtx layout.Context) bool {
 }
 
 func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
+	// The output recorded last time is replayed until the label, the
+	// value, the styles, the knob's animation, hover, press,
+	// constraints or direction change.
+	if s.cache == nil {
+		s.cache = elements.NewMemoCache()
+		uncached := elements.Raw(s.layoutUncached)
+		s.build = func() elements.Element { return uncached }
+	}
+	return s.cache.LayoutOwn(gtx, s.build, s.watch)
+}
+
+// layoutUncached lays it out without the cache.
+func (s *Switch) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if s.disabled {
 		gtx = gtx.Disabled()
 	}

@@ -19,6 +19,8 @@ func (c *MemoCache) fresh(gtx layout.Context, deps []any) bool {
 		c.epoch == cacheEpoch.Load() &&
 		c.color == CurrentColor() &&
 		c.breakpoint == ActiveBreakpoint() &&
+		c.touch == TouchInput() &&
+		c.locale == gtx.Locale &&
 		c.selection == SelectionVersion() &&
 		depsEqual(c.deps, deps) &&
 		!c.reads.Changed()
@@ -28,7 +30,8 @@ func (c *MemoCache) fresh(gtx layout.Context, deps []any) bool {
 // it: it delivers input to the widgets inside, and reports a change
 // when they changed or the cache must rebuild anyway.
 func (c *MemoCache) pass(gtx layout.Context) bool {
-	if !c.valid || c.live || c.reads.Changed() || c.epoch != cacheEpoch.Load() || c.theme != properties.ThemeVersion() {
+	if !c.valid || c.live || c.reads.Changed() || c.epoch != cacheEpoch.Load() || c.theme != properties.ThemeVersion() ||
+		(c.watch != nil && !depsEqual(c.watched, c.watch())) {
 		c.dirty = true
 		return true
 	}
@@ -98,6 +101,8 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	c.epoch = cacheEpoch.Load()
 	c.color = CurrentColor()
 	c.breakpoint = ActiveBreakpoint()
+	c.touch = TouchInput()
+	c.locale = gtx.Locale
 	c.selection = SelectionVersion()
 	c.deps = append(c.deps[:0], deps...)
 	c.valid = true

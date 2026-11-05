@@ -33,6 +33,9 @@ type (
 	KeyedCache[K comparable, V any] = base.KeyedCache[K, V]
 	// MemoCache caches the painted output of a subtree across frames.
 	MemoCache = base.MemoCache
+	// CacheSafe is implemented by elements whose output a cache may
+	// keep: it depends only on their own fields and what caches watch.
+	CacheSafe = base.CacheSafe
 	// OutOfFlow is implemented by elements that paint over the window
 	// and take no space where they're placed: Dialog, Sheet and
 	// Drawer.
@@ -147,6 +150,7 @@ var (
 	EndFrame          = base.EndFrame
 	Memo              = base.Memo
 	NewMemoCache      = base.NewMemoCache
+	IsCacheSafe       = base.IsCacheSafe
 )
 
 // Keyed returns the state stored under (scope, key), creating it with

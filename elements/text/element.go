@@ -47,3 +47,8 @@ func (t *TextElement) OnHover(st styles.Styles) *TextElement {
 	t.hoverSt = st
 	return t
 }
+
+// CacheSafe reports true: the element depends only on its fields, which
+// don't change once it's built, and on what caches already watch (the
+// theme, the selection, its input passes).
+func (*TextElement) CacheSafe() bool { return true }

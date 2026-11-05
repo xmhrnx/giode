@@ -19,7 +19,7 @@ func depsEqual(a, b []any) bool {
 			return false
 		}
 		if tx.Comparable() {
-			if x != y {
+			if !safeEqual(x, y) {
 				return false
 			}
 			continue
@@ -29,4 +29,16 @@ func depsEqual(a, b []any) bool {
 		}
 	}
 	return true
+}
+
+// safeEqual is x == y for values of a comparable type, which still
+// panics when an interface inside holds an uncomparable value (a struct
+// with an interface field, say): that counts as a change.
+func safeEqual(x, y any) (eq bool) {
+	defer func() {
+		if recover() != nil {
+			eq = false
+		}
+	}()
+	return x == y
 }
