@@ -8,6 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -77,7 +78,7 @@ func TestRegisterPortal_StacksInRegistrationOrder(t *testing.T) {
 func TestRegisterPortal_UsesWindowSizeNotAmbientConstraints(t *testing.T) {
 	SetWindowSize(image.Pt(800, 600))
 	defer SetWindowSize(image.Point{})
-	defer func() { portalQueue = nil }()
+	defer base.ClearPortals()
 
 	var ops op.Ops
 	var router input.Router
@@ -92,10 +93,9 @@ func TestRegisterPortal_UsesWindowSizeNotAmbientConstraints(t *testing.T) {
 		return Box(styles.Styles{Width: 60, Height: 20})
 	})
 
-	if len(portalQueue) != 1 {
-		t.Fatalf("portalQueue len = %d, want 1", len(portalQueue))
-	}
-	if pos := portalQueue[0].pos(); pos.X < 600 {
+	if q := base.PendingPortals(); len(q) != 1 {
+		t.Fatalf("portalQueue len = %d, want 1", len(q))
+	} else if pos := q[0].Pos(); pos.X < 600 {
 		t.Errorf("pos.X = %d, want it left un-clamped (near 700): the real window is 800 wide, not the 50-wide ambient constraint", pos.X)
 	}
 }
@@ -106,30 +106,31 @@ func TestRegisterPortal_UsesWindowSizeNotAmbientConstraints(t *testing.T) {
 func TestRegisterPortalAround_FlipsAboveTrigger(t *testing.T) {
 	SetWindowSize(image.Pt(800, 600))
 	defer SetWindowSize(image.Point{})
-	portalQueue = nil
-	defer func() { portalQueue = nil }()
+	base.ClearPortals()
+	defer base.ClearPortals()
 	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(800, 600))}
 	panel := func() Element { return Box(styles.Styles{Width: 120, Height: 30}) }
 
 	bar := image.Rect(100, 550, 140, 590) // a button 10 px above the bottom edge
 	RegisterPortalAround(gtx, bar, 6, PlaceAuto, panel)
-	pos := portalQueue[0].pos()
+	pos := base.PendingPortals()[0].Pos()
 	if pos.Y+30 > bar.Min.Y-6 {
 		t.Errorf("flipped panel at y=%d covers the trigger starting at %d", pos.Y, bar.Min.Y)
 	}
 
 	top := image.Rect(100, 20, 140, 60)
 	RegisterPortalAround(gtx, top, 6, PlaceAuto, panel)
-	if pos := portalQueue[1].pos(); pos.Y != 66 || pos.X != 100 {
+	if pos := base.PendingPortals()[1].Pos(); pos.Y != 66 || pos.X != 100 {
 		t.Errorf("below: %v, want (100,66)", pos)
 	}
 	RegisterPortalAround(gtx, image.Rect(100, 200, 140, 240), 6, PlaceAbove, panel)
-	if pos := portalQueue[2].pos(); pos.Y != 200-6-30 {
+	if pos := base.PendingPortals()[2].Pos(); pos.Y != 200-6-30 {
 		t.Errorf("above: %v", pos)
 	}
 	// Tracked anchors move the whole rectangle.
-	portalQueue[2].anchor = portalQueue[2].anchor.Add(image.Pt(0, 100))
-	if pos := portalQueue[2].pos(); pos.Y != 300-6-30 {
+	q := base.PendingPortals()
+	q[2].SetAnchor(q[2].Anchor().Add(image.Pt(0, 100)))
+	if pos := base.PendingPortals()[2].Pos(); pos.Y != 300-6-30 {
 		t.Errorf("moved: %v", pos)
 	}
 }

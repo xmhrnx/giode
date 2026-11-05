@@ -9,6 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -22,7 +23,7 @@ func TestFlexGrow_UnboundedColumnKeepsNaturalHeight(t *testing.T) {
 	col := Stack(styles.Styles{Padding: properties.UniformInset(8)}, grow, Box(styles.Styles{Height: 20}))
 	var ops op.Ops
 	// What a Scroll hands its content: unlimited height.
-	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(300, unbounded)}}
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(300, base.Unbounded)}}
 	dims := col.Layout(gtx)
 	if dims.Size.Y > 200 {
 		t.Errorf("column height %d: the FlexGrow child grew without limit", dims.Size.Y)
@@ -41,7 +42,7 @@ func TestFlexGrow_UnboundedColumnKeepsNaturalHeight(t *testing.T) {
 
 func TestFillHeight_InsidePaddedUnboundedBox(t *testing.T) {
 	var ops op.Ops
-	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(300, unbounded)}}
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(300, base.Unbounded)}}
 	box := Box(styles.Styles{Padding: properties.UniformInset(8)}, Box(styles.Styles{Height: -1}, Text("x")))
 	if h := box.Layout(gtx).Size.Y; h > 200 {
 		t.Errorf("Height -1 inside a padded unbounded box filled %d px", h)

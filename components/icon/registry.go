@@ -3,7 +3,6 @@ package icon
 import (
 	"errors"
 	"fmt"
-	"image"
 	"io/fs"
 	"os"
 	"path"
@@ -11,38 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"gioui.org/layout"
-
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 )
-
-// Source is anything that renders as an icon: a *Document, a Path, an
-// *IconVGIcon, or a custom type.
-type Source interface {
-	Icon(st ...styles.Styles) elements.Element
-}
-
-// Path is a Source from raw SVG path data, for icon sets distributed
-// as path strings rather than files.
-type Path struct {
-	// Data is the SVG path data.
-	Data string
-	// ViewBox is the coordinate space of Data; zero means 24x24.
-	ViewBox image.Point
-	// StrokeWidth, when positive, strokes the path instead of filling
-	// it, in viewBox units.
-	StrokeWidth float32
-}
-
-// Icon renders the path.
-func (p Path) Icon(st ...styles.Styles) elements.Element {
-	vb := p.ViewBox
-	if vb == (image.Point{}) {
-		vb = image.Pt(24, 24)
-	}
-	return &svgEl{path: compileCached(p.Data), viewW: float32(vb.X), viewH: float32(vb.Y), st: first(st), stroke: p.StrokeWidth}
-}
 
 // Registry is a named collection of icons. Most apps use the package
 // level functions (Register, Named, ...), which share a default
@@ -171,42 +141,3 @@ func (r *Registry) Named(name string, st ...styles.Styles) elements.Element {
 	}
 	return &missingEl{st: first(st)}
 }
-
-type missingEl struct{ st styles.Styles }
-
-func (m *missingEl) Layout(gtx layout.Context) layout.Dimensions {
-	size, _ := iconSize(gtx, m.st)
-	return layout.Dimensions{Size: size}
-}
-
-// Register adds (or replaces) an icon in the default registry.
-func Register(name string, src Source) { Default.Register(name, src) }
-
-// RegisterSVG parses data and registers it in the default registry.
-func RegisterSVG(name string, data []byte) error { return Default.RegisterSVG(name, data) }
-
-// RegisterFS registers every .svg file under dir in fsys with the
-// default registry; see Registry.RegisterFS.
-func RegisterFS(fsys fs.FS, dir string) error { return Default.RegisterFS(fsys, dir) }
-
-// MustRegisterFS is RegisterFS, panicking on error - convenient for an
-// embed.FS known at compile time.
-func MustRegisterFS(fsys fs.FS, dir string) {
-	if err := RegisterFS(fsys, dir); err != nil {
-		panic(err)
-	}
-}
-
-// RegisterDir registers every .svg file under a directory on disk with
-// the default registry.
-func RegisterDir(dir string) error { return Default.RegisterDir(dir) }
-
-// Lookup returns an icon from the default registry.
-func Lookup(name string) (Source, bool) { return Default.Lookup(name) }
-
-// Names returns the names in the default registry, sorted.
-func Names() []string { return Default.Names() }
-
-// Named renders an icon from the default registry; see
-// Registry.Named.
-func Named(name string, st ...styles.Styles) elements.Element { return Default.Named(name, st...) }

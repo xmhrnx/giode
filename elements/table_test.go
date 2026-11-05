@@ -27,7 +27,7 @@ func TestTable_AlignsColumnWidthsAcrossRows(t *testing.T) {
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(1000, 200)}}
 	tbl.Layout(gtx)
 
-	widths := tbl.measureColumnWidths(gtx)
+	widths := tbl.MeasureColumnWidths(gtx)
 	if len(widths) != 2 {
 		t.Fatalf("measured %d columns, want 2", len(widths))
 	}

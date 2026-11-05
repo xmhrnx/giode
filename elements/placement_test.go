@@ -7,6 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -31,10 +32,8 @@ func layoutFrame(el Element, max image.Point) {
 	el.Layout(layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: max}})
 }
 
-func takePortals() []portalEntry {
-	q := portalQueue
-	portalQueue = nil
-	return q
+func takePortals() {
+	base.ClearPortals()
 }
 
 func TestPlacement_PortalsFollowFlexChildren(t *testing.T) {
@@ -42,15 +41,16 @@ func TestPlacement_PortalsFollowFlexChildren(t *testing.T) {
 	a, b, c := &portalProbe{w: 100, h: 20}, &portalProbe{w: 50, h: 40}, &portalProbe{w: 30, h: 20}
 	row := Row(styles.Styles{Gap: 10, Align: properties.AlignCenter, Padding: properties.UniformInset(5)}, a, b, c)
 	layoutFrame(row, image.Pt(800, 600))
-	q := takePortals()
+	q := base.PendingPortals()
+	takePortals()
 	if len(q) != 3 {
 		t.Fatalf("%d portals, want 3", len(q))
 	}
 	// Padding 5; children at x 5, 115, 175; centered in a 40-tall line.
 	want := []image.Point{{5, 15}, {115, 5}, {175, 15}}
 	for i, w := range want {
-		if q[i].anchor != w {
-			t.Errorf("portal %d anchored at %v, want %v", i, q[i].anchor, w)
+		if q[i].Anchor() != w {
+			t.Errorf("portal %d anchored at %v, want %v", i, q[i].Anchor(), w)
 		}
 	}
 	if b.pos != want[1] || c.pos != want[2] {
@@ -101,7 +101,7 @@ func TestPlacement_MemoReplayRestoresProbes(t *testing.T) {
 			t.Errorf("frame %d: position %v, want %v", i, p.pos, want)
 		}
 	}
-	if cache.hits != 1 {
-		t.Errorf("cache hits = %d, want 1 (the second frame replays)", cache.hits)
+	if hits, _ := cache.Stats(); hits != 1 {
+		t.Errorf("cache hits = %d, want 1 (the second frame replays)", hits)
 	}
 }
