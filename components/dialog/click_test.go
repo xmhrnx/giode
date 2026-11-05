@@ -24,9 +24,15 @@ func TestClickInsidePanelKeepsOpen(t *testing.T) {
 	})
 	var r input.Router
 	win := image.Pt(800, 600)
+	// The dialog paints as an overlay: drain the queue as the app does
+	// each frame, or neither the scrim nor the panel is laid out.
+	elements.SetWindowSize(win)
+	defer elements.SetWindowSize(image.Point{})
 	frame := func() {
 		ops := new(op.Ops)
-		d.Layout(layout.Context{Ops: ops, Source: r.Source(), Constraints: layout.Exact(win)})
+		gtx := layout.Context{Ops: ops, Source: r.Source(), Constraints: layout.Exact(win)}
+		d.Layout(gtx)
+		elements.DrainPortals(gtx)
 		r.Frame(ops)
 	}
 	click := func(x, y float32) {
