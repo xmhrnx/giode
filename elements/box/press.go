@@ -66,7 +66,9 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 			default:
 				p.pressBtn = MousePrimary
 			}
-			if p.focusable && e.Source == pointer.Mouse {
+			// A selectable box leaves the keyboard focus to the
+			// selection, so Ctrl+C copies what the press selects.
+			if p.focusable && e.Source == pointer.Mouse && !p.selectable {
 				gtx.Execute(key.FocusCmd{Tag: p})
 			}
 		case pointer.Release:
@@ -80,6 +82,13 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 			// this holds for touch as well as the mouse.
 			if !p.hovered || p.longFired {
 				break
+			}
+			if p.selectable && p.pressSrc == pointer.Mouse {
+				// A mouse drag across selectable text selects it.
+				slop := float32(gtx.Dp(multiClickSlop))
+				if d := e.Position.Sub(p.pressPos); d.X*d.X+d.Y*d.Y > slop*slop {
+					break
+				}
 			}
 			slop := float32(gtx.Dp(multiClickSlop))
 			d := e.Position.Sub(p.lastClickPos)

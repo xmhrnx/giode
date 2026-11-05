@@ -32,7 +32,12 @@ func (p *Pressable) Layout(gtx layout.Context) layout.Dimensions {
 
 	base.TrackPosition(&p.origin)
 	macro := op.Record(gtx.Ops)
-	dims := kit.Unselectable(content.Layout)(gtx)
+	var dims layout.Dimensions
+	if p.selectable {
+		dims = content.Layout(gtx)
+	} else {
+		dims = kit.Unselectable(content.Layout)(gtx)
+	}
 	call := macro.Stop()
 
 	// Hit area first, content on top: interactive children win.

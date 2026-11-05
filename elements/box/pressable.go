@@ -46,6 +46,9 @@ type Pressable struct {
 	cursor                         properties.Cursor
 	disabled                       bool
 	focusable                      bool
+	// selectable keeps the content's text selectable, as in a clickable
+	// Box (OnClick): a mouse drag across it selects rather than clicks.
+	selectable bool
 
 	hovered  bool
 	pressed  bool
