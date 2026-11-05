@@ -3,16 +3,18 @@ package progress
 import (
 	"image"
 
-	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
-	"github.com/xmhrnx/giode/components/kit"
-	"github.com/xmhrnx/giode/styles/properties"
+	"math"
 
+	"gioui.org/layout"
+
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
-// ProgressElement renders the track and fill.
+// ProgressElement is the bar: a rounded track box holding a row of the
+// fill and the rest, sized by flex growth in proportion to the value.
 type ProgressElement struct {
 	value float32
 	st    styles.Styles
@@ -31,18 +33,28 @@ func (p *ProgressElement) OnHover(st styles.Styles) *ProgressElement {
 	return p
 }
 
-// Layout renders the bar.
+// growScale is the flex growth the fill and the rest share: the value
+// in thousandths.
+const growScale = 1000
+
+// Layout lays the bar out.
 func (p *ProgressElement) Layout(gtx layout.Context) layout.Dimensions {
 	p.Update(gtx)
 	st := p.st
 	if p.Enabled() && p.Hovered() {
 		st = styles.Merge(p.st, p.hoverSt)
 	}
+	dims := p.bar(st).Layout(gtx)
+	p.RegisterArea(gtx, image.Point{}, dims.Size, st.Cursor)
+	return dims
+}
 
-	st = st.Px(gtx.Metric)
-	height := int(st.Height)
+// bar builds the elements for st: the track, and the fill at the start
+// of a row, so right to left it fills from the right.
+func (p *ProgressElement) bar(st styles.Styles) elements.Element {
+	height := st.Height
 	if height <= 0 {
-		height = gtx.Dp(8)
+		height = 8
 	}
 	track := st.Background
 	if properties.CalcColor(track).A == 0 {
@@ -52,26 +64,19 @@ func (p *ProgressElement) Layout(gtx layout.Context) layout.Dimensions {
 	if properties.CalcColor(fill).A == 0 {
 		fill = properties.CalcColorReverse(defaultFill)
 	}
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	size := image.Pt(gtx.Constraints.Min.X, height)
-
-	defer clip.UniformRRect(image.Rectangle{Max: size}, height/2).Push(gtx.Ops).Pop()
-	paint.Fill(gtx.Ops, properties.CalcColor(track))
-
-	v := p.value
-	if v < 0 {
-		v = 0
-	}
-	if v > 1 {
-		v = 1
-	}
-	fillW := int(v * float32(size.X))
-	if fillW > height/2 {
-		// Right to left, the bar fills from the right.
-		defer kit.MirrorRTL(gtx, size.X)()
-		defer clip.UniformRRect(image.Rect(0, 0, fillW, height), height/2).Push(gtx.Ops).Pop()
-		paint.Fill(gtx.Ops, properties.CalcColor(fill))
-	}
-	p.RegisterArea(gtx, image.Pt(0, 0), size, st.Cursor)
-	return layout.Dimensions{Size: size}
+	v := float64(min(max(p.value, 0), 1))
+	grow := int(math.Round(v * growScale))
+	radius := properties.BorderRadius(height / 2)
+	return elements.Box(styles.Styles{
+		Width:        -1,
+		Height:       height,
+		Background:   track,
+		BorderRadius: radius,
+		Overflow:     properties.OverflowHidden,
+	},
+		elements.Row(styles.Styles{Width: -1, Height: -1, Wrap: properties.WrapNoWrap},
+			elements.Box(styles.Styles{Height: -1, FlexGrow: properties.FlexGrow(grow), Background: fill, BorderRadius: radius}),
+			elements.Box(styles.Styles{Height: -1, FlexGrow: properties.FlexGrow(growScale - grow)}),
+		),
+	)
 }
