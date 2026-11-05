@@ -65,9 +65,9 @@ type App struct {
 	frames       frameRecorder
 	// maxFPS is the frame-rate cap (Config.MaxFPS, SetMaxFPS); 0 for
 	// none. lastFrame is when the last frame started.
-	maxFPS    atomic.Int64
-	lastFrame time.Time
-	themeCheck   chan struct{}
+	maxFPS     atomic.Int64
+	lastFrame  time.Time
+	themeCheck chan struct{}
 
 	// explorer shows the file dialogs; it sees every window event.
 	explorer *explorer.Explorer
