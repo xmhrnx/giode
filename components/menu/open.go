@@ -6,12 +6,23 @@ package menu
 
 import (
 	"gioui.org/f32"
+
+	"github.com/xmhrnx/giode/elements"
 )
 
 // OpenAt opens the menu anchored at p, in window pixel coordinates.
 func (m *Menu) OpenAt(p f32.Point) {
 	m.pos = p
 	m.open = true
+}
+
+// OpenAtClick opens the menu where e happened: at the pointer for a
+// right-click or a long-press, below the clicked element for Enter or
+// Space on it. A row or a tab opens its context menu with it:
+//
+//	tab.OnSecondaryClick(menu.OpenAtClick).OnLongPress(menu.OpenAtClick)
+func (m *Menu) OpenAtClick(e elements.ClickEvent) {
+	m.OpenAt(f32.Pt(float32(e.WindowPosition.X), float32(e.WindowPosition.Y)))
 }
 
 // Toggle flips the menu state, anchored at p.

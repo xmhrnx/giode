@@ -167,3 +167,12 @@ func TestMenu_ShortcutsAndChecks(t *testing.T) {
 		t.Error("radio state")
 	}
 }
+
+// OpenAtClick opens the menu at the click's window position.
+func TestOpenAtClick(t *testing.T) {
+	m := New(styles.Styles{}).Item("Close", func() {})
+	m.OpenAtClick(elements.ClickEvent{WindowPosition: image.Pt(30, 40)})
+	if !m.Opened() || m.pos != f32.Pt(30, 40) {
+		t.Errorf("opened %v at %v, want (30, 40)", m.Opened(), m.pos)
+	}
+}

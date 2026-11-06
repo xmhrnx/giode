@@ -42,6 +42,8 @@ type Pressable struct {
 
 	onClick, onDouble, onSecondary func(ClickEvent)
 	onLongPress                    func(ClickEvent)
+	onDragStart, onDragMove        func(DragEvent)
+	onDragEnd                      func(DragEvent)
 	label                          string
 	cursor                         properties.Cursor
 	disabled                       bool
@@ -73,6 +75,15 @@ type Pressable struct {
 	fired     uint64
 	passFn    func(gtx layout.Context) bool
 	longFired bool
+
+	// pressID is the pointer that pressed; pressWin where it pressed,
+	// in the window. dragging is set once that press moved past
+	// dragSlop with drag handlers set.
+	pressID  pointer.ID
+	pressWin f32.Point
+	dragging bool
+	// size is the last frame's size, for keyboard clicks' position.
+	size image.Point
 }
 
 // NewPressable returns a Pressable around content. The styles argument
@@ -116,6 +127,40 @@ func (p *Pressable) OnLongPress(fn func(e ClickEvent)) *Pressable {
 	return p
 }
 
+// OnDragStart sets the handler for the start of a drag: a press that
+// moves more than a few dp with any button, mouse or finger. Once a
+// press becomes a drag, its release is not a click, so a draggable
+// tab or card still clicks when it's only tapped. The event's Position
+// is where the press was. Setting any drag handler keeps the content's
+// text from being selected by a drag. It returns p for chaining.
+func (p *Pressable) OnDragStart(fn func(e DragEvent)) *Pressable {
+	p.onDragStart = fn
+	return p
+}
+
+// OnDragMove sets the handler for each move of the pointer during a
+// drag, the first one right after OnDragStart. The drag goes on when
+// the pointer leaves the Pressable, and once it has started, an
+// enclosing Scroll or frameless window doesn't take it. (A finger
+// moving along a Scroll's axis scrolls it before it moves far enough
+// to start a drag.) It returns p for chaining.
+func (p *Pressable) OnDragMove(fn func(e DragEvent)) *Pressable {
+	p.onDragMove = fn
+	return p
+}
+
+// OnDragEnd sets the handler for the end of a drag: the release, or a
+// cancellation (DragEvent.Cancelled). It returns p for chaining.
+func (p *Pressable) OnDragEnd(fn func(e DragEvent)) *Pressable {
+	p.onDragEnd = fn
+	return p
+}
+
+// draggable reports whether any drag handler is set.
+func (p *Pressable) draggable() bool {
+	return p.onDragStart != nil || p.onDragMove != nil || p.onDragEnd != nil
+}
+
 // Styles replaces the styles of the box around the content, from the
 // next frame. It returns p for chaining.
 func (p *Pressable) Styles(st styles.Styles) *Pressable {
@@ -135,6 +180,7 @@ func (p *Pressable) Label(label string) *Pressable {
 func (p *Pressable) Disabled(v bool) *Pressable {
 	p.disabled = v
 	if v {
+		p.cancelDrag()
 		p.hovered, p.pressed = false, false
 	}
 	return p
@@ -159,7 +205,7 @@ func (p *Pressable) Click() {
 	if p.disabled {
 		return
 	}
-	p.fire(ClickEvent{Clicks: 1, Source: ClickProgrammatic})
+	p.fire(ClickEvent{Clicks: 1, Source: ClickProgrammatic, WindowPosition: p.below()})
 }
 
 // Hovered reports whether the pointer is over it.
@@ -173,7 +219,16 @@ func (p *Pressable) Focused() bool { return p.focused }
 
 // State returns the current PressState.
 func (p *Pressable) State() PressState {
-	return PressState{Hovered: p.hovered, Pressed: p.pressed, Focused: p.focused, Disabled: p.disabled}
+	return PressState{Hovered: p.hovered, Pressed: p.pressed, Focused: p.focused, Disabled: p.disabled, Dragging: p.dragging}
+}
+
+// Dragging reports whether a drag is in progress.
+func (p *Pressable) Dragging() bool { return p.dragging }
+
+// below is the Pressable's bottom-left corner in the window, where a
+// menu opened by a keyboard click goes.
+func (p *Pressable) below() image.Point {
+	return p.origin.Add(image.Pt(0, p.size.Y))
 }
 
 func (p *Pressable) FlexWeight(axis layout.Axis) int  { return base.WeightOf(p.st, axis) }

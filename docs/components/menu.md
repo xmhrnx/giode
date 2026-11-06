@@ -21,6 +21,7 @@ The app registers the right-click area and renders the menu on top automatically
 ## Manual control
 
 ```go
+menu.OpenAtClick(e)       // where a ClickEvent happened
 menu.OpenAt(f32.Pt(x, y)) // window pixel coordinates
 menu.Toggle(f32.Pt(x, y))
 menu.Close()
@@ -32,13 +33,23 @@ Without `SetContextMenu`, lay the menu out anywhere in the view: it takes no spa
 a portal (see [extending.md](../extending.md#rendering-above-everything-portals)), and a
 press anywhere in the window outside it closes it. `OpenAt` takes window coordinates and
 the panel opens exactly there, whatever containers the menu sits in. To open a menu where a
-row was right-clicked, use the click's `WindowPosition`:
+row or a tab was right-clicked (or long-pressed), pass the click to `OpenAtClick`, which
+needs no Gio import:
 
 ```go
-row := giode.Pressable(content).OnSecondaryClick(func(e giode.ClickEvent) {
-	menu.OpenAt(f32.Pt(float32(e.WindowPosition.X), float32(e.WindowPosition.Y)))
-})
+tabMenu := giode.Menu().
+	Item("Close", func() { closeTab(current) }).
+	Item("Close others", func() { closeOthers(current) }).
+	Separator().
+	Item("Move left", func() { moveTab(current, -1) }).
+	Item("Move right", func() { moveTab(current, +1) })
+
+tab := giode.Pressable(content).
+	OnSecondaryClick(func(e giode.ClickEvent) { current = id; tabMenu.OpenAtClick(e) }).
+	OnLongPress(func(e giode.ClickEvent) { current = id; tabMenu.OpenAtClick(e) })
 ```
+
+A keyboard click (Enter or Space on the focused element) opens it below the element.
 
 ## Dropdown menu: Trigger
 
@@ -91,6 +102,8 @@ Escape) closes every open submenu with it.
 | `Separator() *Menu` | Horizontal line. |
 | `SubMenu(label string, submenu *Menu) *Menu` | Item that reveals submenu on hover. |
 | `Trigger(el Element) Element` | Wraps el; clicking it opens the menu anchored below. |
+| `OpenAtClick(e ClickEvent)` | Opens the menu where the click happened: at the pointer, or below the element for a keyboard click. |
+| `OpenAt(p f32.Point)` / `Toggle(p f32.Point)` | Opens (or toggles) the menu at a window position in pixels. |
 
 Styles: `Background`, `BorderRadius`, `Padding`, `Color` (item text).
 

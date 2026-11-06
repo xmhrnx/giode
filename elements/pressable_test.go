@@ -244,3 +244,98 @@ func TestClickWindowPosition(t *testing.T) {
 		t.Errorf("click at %v: Position %v, WindowPosition %v", pos, got.Position, got.WindowPosition)
 	}
 }
+
+// A press that moves is a drag - start, moves in dp, end - and its
+// release isn't a click; a press that doesn't move still clicks.
+func TestPressable_Drag(t *testing.T) {
+	var clicks int
+	var starts, moves, ends []DragEvent
+	p := NewPressable(func(PressState) Element { return sized(100, 40) }).
+		OnClick(func(ClickEvent) { clicks++ }).
+		OnDragStart(func(e DragEvent) { starts = append(starts, e) }).
+		OnDragMove(func(e DragEvent) { moves = append(moves, e) }).
+		OnDragEnd(func(e DragEvent) { ends = append(ends, e) })
+	// The pressable sits at (20, 30), at 2px per dp.
+	h := &harness{el: Raw(func(gtx layout.Context) layout.Dimensions {
+		gtx.Metric.PxPerDp = 2
+		defer op.Offset(image.Pt(20, 30)).Push(gtx.Ops).Pop()
+		pop := PushOffset(image.Pt(20, 30))
+		defer pop()
+		return p.Layout(gtx)
+	}), now: time.Unix(0, 0)}
+	h.frame()
+	h.frame()
+
+	at := func(x, y float32) f32.Point { return f32.Pt(x, y) }
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at(30, 40)})
+	h.r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: at(30, 40), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	// Within the slop (6dp = 12px): not yet a drag.
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at(36, 40), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	if len(starts) != 0 || p.Dragging() {
+		t.Fatal("a move within the slop started a drag")
+	}
+	// Past it, and out of the pressable: the drag goes on.
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at(70, 40), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at(200, 140), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	if len(starts) != 1 || !p.Dragging() || !p.State().Dragging {
+		t.Fatalf("%d drag starts, dragging %v", len(starts), p.Dragging())
+	}
+	if s := starts[0]; s.Position != image.Pt(10, 10) || s.PositionDp != f32.Pt(5, 5) || s.WindowPosition != image.Pt(30, 40) || s.DeltaDp != (f32.Point{}) {
+		t.Errorf("start = %+v, want the press position", s)
+	}
+	if len(moves) != 2 {
+		t.Fatalf("%d moves, want 2", len(moves))
+	}
+	if m := moves[1]; m.WindowPosition != image.Pt(200, 140) || m.DeltaDp != f32.Pt(85, 50) || m.PositionDp != f32.Pt(90, 55) {
+		t.Errorf("move = %+v", m)
+	}
+	h.r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: at(200, 140)})
+	h.frame()
+	if len(ends) != 1 || ends[0].Cancelled || ends[0].WindowPosition != image.Pt(200, 140) || p.Dragging() {
+		t.Errorf("ends %+v, dragging %v", ends, p.Dragging())
+	}
+	if clicks != 0 {
+		t.Errorf("the drag clicked %d times", clicks)
+	}
+
+	// Back over it, a press and release in place is a click.
+	h.now = h.now.Add(time.Second)
+	h.click(40, 50, pointer.ButtonPrimary, 0)
+	if clicks != 1 || len(starts) != 1 {
+		t.Errorf("a click: %d clicks, %d drag starts", clicks, len(starts))
+	}
+
+	// A cancelled drag ends cancelled.
+	h.r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: at(40, 50), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at(90, 50), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	h.r.Queue(pointer.Event{Kind: pointer.Cancel, Source: pointer.Mouse})
+	h.frame()
+	if len(ends) != 2 || !ends[1].Cancelled || p.Dragging() || clicks != 1 {
+		t.Errorf("after a cancel: ends %+v, dragging %v, clicks %d", ends, p.Dragging(), clicks)
+	}
+}
+
+// A keyboard click's WindowPosition is the pressable's bottom-left
+// corner, where a menu opened from it goes.
+func TestPressable_KeyboardClickPosition(t *testing.T) {
+	var got ClickEvent
+	p := NewPressable(func(PressState) Element { return sized(100, 40) }).OnClick(func(e ClickEvent) { got = e })
+	h := &harness{el: Raw(func(gtx layout.Context) layout.Dimensions {
+		defer op.Offset(image.Pt(20, 30)).Push(gtx.Ops).Pop()
+		pop := PushOffset(image.Pt(20, 30))
+		defer pop()
+		return p.Layout(gtx)
+	}), now: time.Unix(0, 0)}
+	h.frame()
+	h.frame()
+	p.Click()
+	if got.WindowPosition != image.Pt(20, 70) {
+		t.Errorf("programmatic click at %v, want (20, 70)", got.WindowPosition)
+	}
+}

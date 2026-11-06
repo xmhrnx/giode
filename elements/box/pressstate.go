@@ -16,6 +16,9 @@ type PressState struct {
 	Pressed  bool
 	Focused  bool
 	Disabled bool
+	// Dragging is set while a press that moved is being dragged (see
+	// Pressable.OnDragStart).
+	Dragging bool
 }
 
 // ClickEvent describes a click.
@@ -35,10 +38,38 @@ type ClickEvent struct {
 	Position image.Point
 	// PositionDp is Position in dp, the unit of Styles.
 	PositionDp f32.Point
-	// WindowPosition is where the pointer was in the window, in pixels:
-	// what Menu.OpenAt takes, so a row can open a menu where it was
-	// right-clicked.
+	// WindowPosition is where the pointer was in the window, in pixels,
+	// so a row can open a menu where it was right-clicked (see
+	// Menu.OpenAtClick). For keyboard and programmatic clicks it's the
+	// Pressable's bottom-left corner, as of the last frame.
 	WindowPosition image.Point
+}
+
+// DragEvent describes a drag on a Pressable: a press that moved
+// further than a click may, from the start of the drag to its end.
+type DragEvent struct {
+	// Position is where the pointer is, relative to the Pressable, in
+	// pixels.
+	Position image.Point
+	// PositionDp is Position in dp, the unit of Styles.
+	PositionDp f32.Point
+	// WindowPosition is where the pointer is in the window, in pixels.
+	WindowPosition image.Point
+	// DeltaDp is how far the pointer has moved since the press, in dp,
+	// measured in the window: it stays right while the Pressable itself
+	// moves with the drag (a tab being reordered, a dragged card).
+	DeltaDp f32.Point
+	// Button is the mouse button held; MousePrimary for touch.
+	Button MouseButton
+	// Modifiers holds the keys held down.
+	Modifiers key.Modifiers
+	// Touch is set for a finger, unset for a mouse or pen.
+	Touch bool
+	// Cancelled is set on OnDragEnd when the drag didn't end with a
+	// release: the system took the pointer (another gesture won, the
+	// window lost it) or the Pressable was disabled. Treat it as no
+	// drop.
+	Cancelled bool
 }
 
 // MouseButton identifies which button produced a click.
@@ -86,4 +117,6 @@ func (e ClickEvent) Shift() bool {
 const (
 	multiClickWindow = 400 * time.Millisecond
 	multiClickSlop   = 6
+	// dragSlop is how far, in dp, a press moves before it's a drag.
+	dragSlop = 6
 )

@@ -20,6 +20,8 @@ type (
 	ClickSource = box.ClickSource
 	// ClickEvent describes a click.
 	ClickEvent = box.ClickEvent
+	// DragEvent describes a drag on a Pressable.
+	DragEvent = box.DragEvent
 )
 
 const (

@@ -33,12 +33,13 @@ func (p *Pressable) Layout(gtx layout.Context) layout.Dimensions {
 	base.TrackPosition(&p.origin)
 	macro := op.Record(gtx.Ops)
 	var dims layout.Dimensions
-	if p.selectable {
+	if p.selectable && !p.draggable() {
 		dims = content.Layout(gtx)
 	} else {
 		dims = kit.Unselectable(content.Layout)(gtx)
 	}
 	call := macro.Stop()
+	p.size = dims.Size
 
 	// Hit area first, content on top: interactive children win.
 	if !p.disabled {
@@ -72,10 +73,10 @@ func (p *Pressable) Layout(gtx layout.Context) layout.Dimensions {
 	if p.passFn == nil {
 		p.passFn = p.pass
 	}
-	if !kit.HandleInput(p.passFn) && (p.hovered || p.pressed || p.focused) {
+	if !kit.HandleInput(p.passFn) && (p.hovered || p.pressed || p.focused || p.dragging) {
 		kit.MarkLive()
 	}
-	if p.onClick != nil || p.onDouble != nil || p.onSecondary != nil || p.onLongPress != nil {
+	if p.onClick != nil || p.onDouble != nil || p.onSecondary != nil || p.onLongPress != nil || p.draggable() {
 		// Only something that reacts to clicks is a button to
 		// automation; a Pressable used just for hover state isn't.
 		base.RecordSemantic(gtx, base.SemanticNode{Kind: base.SemanticButton, Label: p.label, Disabled: p.disabled, Target: p}, dims.Size)

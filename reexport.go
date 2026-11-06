@@ -80,6 +80,7 @@ type (
 	// Memo.
 	PressState       = ui.PressState
 	ClickEvent       = ui.ClickEvent
+	DragEvent        = ui.DragEvent
 	ClickSource      = ui.ClickSource
 	MouseButton      = ui.MouseButton
 	PressableElement = ui.PressableElement

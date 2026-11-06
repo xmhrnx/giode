@@ -102,6 +102,7 @@ type (
 	// Memo.
 	PressState       = elements.PressState
 	ClickEvent       = elements.ClickEvent
+	DragEvent        = elements.DragEvent
 	ClickSource      = elements.ClickSource
 	MouseButton      = elements.MouseButton
 	PressableElement = elements.Pressable
