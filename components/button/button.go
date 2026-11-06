@@ -43,8 +43,18 @@ type Button struct {
 	loading        bool
 
 	// cache keeps the button's output between frames; see Layout.
-	cache *elements.MemoCache
-	build func() elements.Element
+	cache   *elements.MemoCache
+	build   func() elements.Element
+	watched elements.Watch[drawn]
+}
+
+// drawn is what a Button draws from its own fields.
+type drawn struct {
+	label             string
+	st                styles.Styles
+	variant           Variant
+	disabled, loading bool
+	icon, trailing    elements.Element
 }
 
 // CacheSafe reports whether the button can cache its output: its icons,
@@ -54,8 +64,8 @@ func (b *Button) CacheSafe() bool {
 }
 
 // watch is what the button draws from its own fields.
-func (b *Button) watch() []any {
-	return []any{b.label, b.st, b.variant, b.disabled, b.loading, b.icon, b.trailing}
+func (b *Button) watch() drawn {
+	return drawn{b.label, b.st, b.variant, b.disabled, b.loading, b.icon, b.trailing}
 }
 
 // New returns a Button with the given label. The styles argument is
@@ -170,8 +180,9 @@ func (b *Button) Layout(gtx layout.Context) layout.Dimensions {
 			b.cache = elements.NewMemoCache()
 			uncached := elements.Raw(b.layoutUncached)
 			b.build = func() elements.Element { return uncached }
+			b.watched.Snap = b.watch
 		}
-		return b.cache.LayoutOwn(gtx, b.build, b.watch)
+		return b.cache.LayoutOwn(gtx, b.build, &b.watched)
 	}
 	return b.layoutUncached(gtx)
 }

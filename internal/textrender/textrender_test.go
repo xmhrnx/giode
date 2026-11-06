@@ -1,6 +1,7 @@
 package textrender
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math/rand"
@@ -198,7 +199,7 @@ func TestLayoutRich_MatchesStyledtext(t *testing.T) {
 			want = append(want, image.Rectangle{Max: d.Size})
 		})
 		l := layoutRich(sh, gtx, RichParams{}, spans)
-		if l.Dims != dims {
+		if l.Dims.Size.X != dims.Size.X || l.Dims.Size.Y > dims.Size.Y || l.Dims.Size.Y < dims.Size.Y-len(l.Segments) {
 			t.Errorf("width %d: dims %+v, want %+v", w, l.Dims, dims)
 		}
 		if len(l.Segments) != len(want) {
@@ -206,7 +207,10 @@ func TestLayoutRich_MatchesStyledtext(t *testing.T) {
 			continue
 		}
 		for i, s := range l.Segments {
-			if s.Size != want[i].Max {
+			// A wrapped line's trailing space doesn't count toward its
+			// width, and its height is that of its own glyphs - not of
+			// styledtext's truncator, which may come from another face.
+			if dx, dy := want[i].Max.X-s.Size.X, want[i].Max.Y-s.Size.Y; dx < 0 || dx > 6 || dy < 0 || dy > 1 {
 				t.Errorf("width %d segment %d: size %v, want %v", w, i, s.Size, want[i].Max)
 			}
 		}
@@ -276,4 +280,151 @@ func clearRuns() {
 	runCache.m = nil
 	runCache.bytes = 0
 	runCache.Unlock()
+}
+
+// The layout that shapes each span once places every segment where the
+// line-by-line layout did.
+func TestLayoutRich_MatchesLineByLine(t *testing.T) {
+	fonts.UseGofont()
+	sh := fonts.Shaper()
+	long := strings.Repeat("Streaming tokens arrive one at a time and the paragraph grows. ", 12)
+	cases := map[string][]Span{
+		"one long span": {{Size: 15, Content: long}},
+		"mixed": {
+			{Size: 15, Content: "Run "},
+			{Size: 14, Font: font.Font{Typeface: "Go Mono"}, Content: "go test ./..."},
+			{Size: 15, Content: " and read the " + strings.Repeat("documentation carefully ", 9)},
+			{Size: 15, Font: font.Font{Weight: font.Bold}, Content: "docs\nnext line"},
+			{Size: 15, Content: " then " + long},
+		},
+		"newlines":      {{Size: 15, Content: "first\n\nthird line " + long + "\nlast\n"}},
+		"trailing nl":   {{Size: 15, Content: "a line\n"}, {Size: 15, Content: "next " + long}},
+		"long word":     {{Size: 15, Content: "a " + strings.Repeat("x", 120) + " b " + long}},
+		"bigger spans":  {{Size: 15, Content: long[:200]}, {Size: 22, Content: long[:300]}, {Size: 12, Content: long}},
+		"spaces":        {{Size: 15, Content: "  lead and trail   " + long + "   "}},
+		"rtl and mixed": {{Size: 15, Content: "English then עברית עברית עברית and more English " + long}},
+	}
+	for name, spans := range cases {
+		for _, w := range []int{60, 120, 300, 700} {
+			for _, p := range []RichParams{{}, {Alignment: text.Middle}, {LineHeight: 20, LineHeightScale: 1}} {
+				var ops op.Ops
+				gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(w, 1<<20)}, Metric: unit.Metric{PxPerDp: 1.5, PxPerSp: 1.5}}
+				got, want := layoutRich(sh, gtx, p, spans), layoutRichRef(sh, gtx, p, spans)
+				if degenerate(want) {
+					// The line-by-line layout put the rest of a span whose
+					// word didn't fit in one block of several lines.
+					continue
+				}
+				if len(got.Segments) != len(want.Segments) {
+					t.Errorf("%s, width %d, %+v: %d segments, want %d", name, w, p, len(got.Segments), len(want.Segments))
+					continue
+				}
+				if dy := want.Dims.Size.Y - got.Dims.Size.Y; got.Dims.Size.X != want.Dims.Size.X || dy < 0 || dy > 2*len(got.Segments) {
+					t.Errorf("%s, width %d, %+v: dims %v, want %v", name, w, p, got.Dims.Size, want.Dims.Size)
+				}
+				for i := range got.Segments {
+					g, s := got.Segments[i], want.Segments[i]
+					// As in TestLayoutRich_MatchesStyledtext: a wrapped
+					// line's trailing spaces, centered with the line or
+					// not, and 1px of height per line above.
+					dx, dy := s.Size.X-g.Size.X, s.Size.Y-g.Size.Y
+					ox := s.Offset.X - g.Offset.X
+					if p.Alignment == text.Middle || name == "rtl and mixed" || name == "spaces" {
+						// Centered on a narrower line; a right-to-left run
+						// starts at a fraction of a pixel.
+						ox = 0
+					}
+					same := g.Span == s.Span && ox == 0 && s.Offset.Y-g.Offset.Y >= 0 && s.Offset.Y-g.Offset.Y <= 2*i &&
+						dx >= -1 && (dx <= 7 || name == "spaces") && dy >= 0 && dy <= 1 && g.Ascent == s.Ascent &&
+						g.RuneStart == s.RuneStart && g.RuneEnd == s.RuneEnd && len(g.Glyphs) == len(s.Glyphs)
+					// Bidi levels are resolved over the whole paragraph now,
+					// not line by line: a space between runs of opposite
+					// direction may sit on the other side of a run.
+					for j := 0; same && name != "rtl and mixed" && j < len(g.Glyphs); j++ {
+						d := g.Glyphs[j].X - s.Glyphs[j].X
+						same = d >= -64 && d <= 64 && g.Glyphs[j].Y == s.Glyphs[j].Y && g.Glyphs[j].ID == s.Glyphs[j].ID
+					}
+					if !same {
+						t.Errorf("%s, width %d, %+v, segment %d:\n got  %+v\n want %+v", name, w, p, i, brief(g), brief(s))
+						break
+					}
+				}
+			}
+		}
+	}
+}
+
+// degenerate reports a segment of several lines.
+func degenerate(l *RichLaid) bool {
+	for _, s := range l.Segments {
+		if s.Size.Y > 2*s.Ascent+s.Ascent/2 {
+			return true
+		}
+	}
+	return false
+}
+
+func brief(s Segment) string {
+	return fmt.Sprintf("span %d off %v size %v ascent %d runes %d-%d glyphs %d", s.Span, s.Offset, s.Size, s.Ascent, s.RuneStart, s.RuneEnd, len(s.Glyphs))
+}
+
+// A span growing a little every frame, laid out reusing its earlier
+// lines, comes out as it does laid out afresh.
+func TestLayoutRich_StreamingReuse(t *testing.T) {
+	fonts.UseGofont()
+	sh := fonts.Shaper()
+	words := strings.Fields("Streaming tokens arrive one at a time and the paragraph grows, sometimes with longer words like internationalization or short ones, a b c, and punctuation!")
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(420, 1<<20)}, Metric: unit.Metric{PxPerDp: 1.5, PxPerSp: 1.5}}
+	content := "Intro: "
+	reused := false
+	for i := 0; i < 400; i++ {
+		content += words[i%len(words)] + " "
+		if i%37 == 0 {
+			content += "\n"
+		}
+		spans := []Span{{Size: 15, Content: "Bold start "}, {Size: 15, Content: content}}
+		got := layoutRich(sh, gtx, RichParams{}, spans)
+		streams.Lock()
+		reused = reused || len(streams.m) > 0
+		saved := streams.m
+		streams.m = nil
+		streams.Unlock()
+		want := layoutRich(sh, gtx, RichParams{}, spans)
+		streams.Lock()
+		streams.m = saved
+		streams.Unlock()
+		if got.Dims != want.Dims || len(got.Segments) != len(want.Segments) {
+			for j := range min(len(got.Segments), len(want.Segments)) {
+				if brief(got.Segments[j]) != brief(want.Segments[j]) {
+					t.Logf("segment %d:\n got  %s\n want %s", j, brief(got.Segments[j]), brief(want.Segments[j]))
+				}
+			}
+			t.Fatalf("step %d: dims %v, %d segments; want %v, %d", i, got.Dims.Size, len(got.Segments), want.Dims.Size, len(want.Segments))
+		}
+		for j := range got.Segments {
+			g, w := got.Segments[j], want.Segments[j]
+			if brief(g) != brief(w) {
+				t.Fatalf("step %d segment %d:\n got  %s\n want %s", i, j, brief(g), brief(w))
+			}
+			for k := range g.Glyphs {
+				// Whether a glyph starts a paragraph depends on where the
+				// shape began; nothing laying out rich text reads it.
+				a, b := g.Glyphs[k], w.Glyphs[k]
+				a.Flags &^= text.FlagParagraphStart
+				b.Flags &^= text.FlagParagraphStart
+				if a.Bounds.Empty() && b.Bounds.Empty() {
+					// A space ending a wrapped line has no advance;
+					// the same space shaped last on its own has one.
+					a.Advance, b.Advance = 0, 0
+				}
+				if a != b {
+					t.Fatalf("step %d segment %d glyph %d differs:\n got  %+v\n want %+v", i, j, k, g.Glyphs[k], w.Glyphs[k])
+				}
+			}
+		}
+	}
+	if !reused {
+		t.Error("the long span's lines were never kept")
+	}
 }

@@ -31,7 +31,7 @@ func (c *MemoCache) fresh(gtx layout.Context, deps []any) bool {
 // when they changed or the cache must rebuild anyway.
 func (c *MemoCache) pass(gtx layout.Context) bool {
 	if !c.valid || c.live || c.reads.Changed() || c.epoch != cacheEpoch.Load() || c.theme != properties.ThemeVersion() ||
-		(c.watch != nil && !depsEqual(c.watched, c.watch())) {
+		(c.watch != nil && c.watch.Changed()) {
 		c.dirty = true
 		return true
 	}

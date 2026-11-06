@@ -64,13 +64,11 @@ type MemoCache struct {
 	locale system.Locale
 	deps   []any
 	// watch, for a component caching its own output (LayoutOwn),
-	// returns what it draws from its own fields; watched is the value
-	// recorded. It's compared in the cache's pass too, so a setter
-	// called on a component replayed by an enclosing cache still
-	// rebuilds it.
-	watch   func() []any
-	watched []any
-	reads   *state.Tracker
+	// tracks the fields it draws. It's checked in the cache's pass too,
+	// so a setter called on a component replayed by an enclosing cache
+	// still rebuilds it.
+	watch Watcher
+	reads *state.Tracker
 	// selection is the version of the enclosing SelectionArea's
 	// selection, which the subtree's text draws.
 	selection uint64

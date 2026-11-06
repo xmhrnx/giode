@@ -1,7 +1,6 @@
 package box
 
 import (
-	"gioui.org/gesture"
 	"gioui.org/layout"
 
 	"github.com/xmhrnx/giode/elements/internal/base"
@@ -14,14 +13,9 @@ type BoxElement struct {
 	st       styles.Styles
 	children []base.Element
 
-	// Hover styles, set with OnHover. The hovered field caches the
-	// last observed hover state.
-	hover   *gesture.Hover
-	hoverSt styles.Styles
-	hovered bool
-	// hoverPass is the hover input pass (see kit.HandleInput).
-	hoverPass func(gtx layout.Context) bool
-	hoverAnim
+	// hover is set with OnHover; it's kept apart from the box, so a
+	// box without it - nearly every one - doesn't carry its styles.
+	hover *boxHover
 
 	// press makes the box clickable; see OnClick.
 	press *Pressable
@@ -35,9 +29,9 @@ type BoxElement struct {
 	// element (one with OnHover or OnClick, which must be kept), when
 	// everything in it is CacheSafe; see Layout. safe caches that
 	// verdict: 0 unknown, 1 safe, -1 not.
-	cache  *base.MemoCache
-	safe   int8
-	cached base.Element
+	cache       *base.MemoCache
+	safe        int8
+	cachedBuild func() base.Element
 }
 
 // CacheSafe reports whether the box's output depends only on things a

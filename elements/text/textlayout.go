@@ -24,10 +24,10 @@ import (
 // resolveStyles returns the styles to lay out and paint with: the
 // base styles, with the hover styles merged on top while hovered.
 func (t *TextElement) resolveStyles() styles.Styles {
-	if !t.Enabled() || !t.Hovered() {
+	if !t.Enabled() || !t.Hovered() || t.hoverSt == nil {
 		return t.st
 	}
-	return styles.Merge(t.st, t.hoverSt)
+	return styles.Merge(t.st, *t.hoverSt)
 }
 
 // Layout shapes and paints the text with its decoration.

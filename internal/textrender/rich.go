@@ -9,6 +9,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"strings"
 	"sync"
 	"unicode/utf8"
 
@@ -144,6 +145,9 @@ type spanState struct {
 	Span
 	idx       int
 	runeStart int
+	// lines are the span's remaining lines, shaped at once when it
+	// started a line (see spanLines); the first is this line's.
+	lines []spanResult
 }
 
 type spanResult struct {
@@ -241,7 +245,24 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 	for i := 0; i < len(spans); i++ {
 		span := spans[i]
 		maxWidth := gtx.Constraints.Max.X - lineDims.X
-		res := layoutSpan(sh, gtx, p, maxWidth, span)
+		if lineDims.X == 0 && span.lines == nil && len(span.Content) > spanLinesMin {
+			// At the start of a line, the span's lines are all full
+			// width: shape it once and take them in turn, rather than
+			// shaping what's left of it for every line.
+			span.lines = spanLines(sh, gtx, p, maxWidth, span)
+		}
+		var res spanResult
+		if len(span.lines) > 0 {
+			res = span.lines[0]
+		} else {
+			res = layoutSpan(sh, gtx, p, maxWidth, span)
+		}
+		if res.multiLine || res.endedWithNewline {
+			// A line that ends here ends at its last visible glyph:
+			// spaces before a wrap or a newline don't count, however
+			// the line was shaped.
+			res.width = min(res.width, inkWidth(res.glyphs))
+		}
 		forceToNextLine := lineDims.X > 0 && res.width > maxWidth
 		if !forceToNextLine {
 			line = append(line, Segment{
@@ -294,6 +315,9 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 			}
 			span.Content = span.Content[byteLen:]
 			span.runeStart += res.runes
+			if len(span.lines) > 0 {
+				span.lines = span.lines[1:]
+			}
 			spans[i+1] = span
 		} else if forceToNextLine {
 			i--
@@ -301,6 +325,221 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 	}
 	out.Dims = layout.Dimensions{Size: gtx.Constraints.Constrain(overall)}
 	return out
+}
+
+// spanLines shapes span once, starting a line maxWidth wide, and
+// returns its lines as layoutSpan would have, line by line: each line's
+// glyphs, size, baseline and runes, the glyphs placed as if the line
+// were shaped on its own - all but the last, which the next span may
+// continue. It returns none when a line wouldn't come out the same (a
+// word too long for the line), for layoutSpan to handle line by line.
+func spanLines(sh *text.Shaper, gtx layout.Context, p RichParams, maxWidth int, span spanState) []spanResult {
+	if len(span.Content) < streamMin || hasRTL(span.Content) {
+		return shapeLines(sh, gtx, p, maxWidth, span)
+	}
+	// A long span is most likely text streaming in, a little longer
+	// every frame: its lines but the last stay as they were, so they're
+	// reused and only the text from there on is shaped.
+	key := streamKey{
+		font: span.Font, size: span.Size, pxPerSp: gtx.Metric.PxPerSp, width: maxWidth,
+		lineHeight: p.LineHeight, scale: p.LineHeightScale, lang: gtx.Locale.Language,
+		head: span.Content[:streamHead],
+	}
+	now := frame.Load()
+	streams.Lock()
+	e := streams.m[key]
+	streams.Unlock()
+	var lines []spanResult
+	var ends []int
+	if e != nil && len(e.lines) > 1 {
+		// Keep all but the last line shaped before, as a margin: it
+		// may end where the text was cut.
+		k := len(e.lines) - 1
+		if cut := e.ends[k-1]; strings.HasPrefix(span.Content, e.content[:cut]) {
+			rest := span
+			rest.Content = span.Content[cut:]
+			more := shapeLines(sh, gtx, p, maxWidth, rest)
+			if len(more) > 0 || len(rest.Content) <= streamMin {
+				lines = append(append(make([]spanResult, 0, k+len(more)), e.lines[:k]...), more...)
+				ends = append(make([]int, 0, len(lines)), e.ends[:k]...)
+				ends = lineEnds(ends, span.Content, cut, more)
+			}
+		}
+	}
+	if lines == nil {
+		lines = shapeLines(sh, gtx, p, maxWidth, span)
+		ends = lineEnds(nil, span.Content, 0, lines)
+	}
+	if len(lines) > 0 {
+		streams.Lock()
+		if streams.m == nil {
+			streams.m = make(map[streamKey]*streamEntry)
+		}
+		streams.m[key] = &streamEntry{content: span.Content, lines: lines, ends: ends, used: now}
+		streams.Unlock()
+	}
+	return lines
+}
+
+// streamMin is the length in bytes from which a span's lines are kept
+// for reuse when it grows; streamHead how much of its start tells
+// spans of the same style apart.
+const (
+	streamMin  = 512
+	streamHead = 64
+)
+
+type streamKey struct {
+	font       font.Font
+	size       unit.Sp
+	pxPerSp    float32
+	width      int
+	lineHeight unit.Sp
+	scale      float32
+	lang       string
+	head       string
+}
+
+// streamEntry is a long span's text and its lines but the last, ends
+// the byte offset in the text where each line ends.
+type streamEntry struct {
+	content string
+	lines   []spanResult
+	ends    []int
+	used    uint64
+}
+
+var streams struct {
+	sync.Mutex
+	m map[streamKey]*streamEntry
+}
+
+// lineEnds appends to ends where each of lines ends in s, the lines
+// starting at byte from.
+func lineEnds(ends []int, s string, from int, lines []spanResult) []int {
+	i := from
+	for _, ln := range lines {
+		for n := 0; n < ln.runes && i < len(s); n++ {
+			_, sz := utf8.DecodeRuneInString(s[i:])
+			i += sz
+		}
+		ends = append(ends, i)
+	}
+	return ends
+}
+
+// hasRTL reports whether s holds right-to-left letters, whose lines a
+// shape of part of the paragraph may order differently.
+func hasRTL(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < 0xD6 {
+			continue
+		}
+		r, _ := utf8.DecodeRuneInString(s[i:])
+		if r >= 0x0590 && r <= 0x08FF || r >= 0xFB1D && r <= 0xFEFF || r >= 0x10800 && r <= 0x10FFF || r >= 0x1E800 && r <= 0x1EFFF {
+			return true
+		}
+	}
+	return false
+}
+
+// shapeLines is spanLines without reuse.
+func shapeLines(sh *text.Shaper, gtx layout.Context, p RichParams, maxWidth int, span spanState) []spanResult {
+	sh.LayoutString(text.Parameters{
+		Font:            span.Font,
+		PxPerEm:         fixed.I(gtx.Sp(span.Size)),
+		MaxWidth:        maxWidth,
+		Truncator:       "​",
+		Locale:          gtx.Locale,
+		WrapPolicy:      text.WrapWords,
+		LineHeight:      fixed.I(gtx.Sp(p.LineHeight)),
+		LineHeightScale: p.LineHeightScale,
+	}, span.Content)
+	var (
+		lines []spanResult
+		ti    richIterator
+		cur   spanResult
+		// shift moves this line's glyphs up to where the first line's
+		// are: a line shaped on its own starts there.
+		shift    int32
+		first    = true
+		baseline int32
+		bad      = -1
+	)
+	reset := func() {
+		ti = richIterator{viewport: image.Rectangle{Max: gtx.Constraints.Max}, maxLines: 1}
+		cur = spanResult{}
+	}
+	reset()
+	for g, more := sh.NextGlyph(); more; g, more = sh.NextGlyph() {
+		if first {
+			first, baseline = false, g.Y
+		}
+		if ti.runes == 0 && !ti.first {
+			shift = g.Y - baseline
+		}
+		g.Y -= shift
+		ti.processGlyph(g)
+		if ti.visible {
+			if !ti.init {
+				ti.firstX = g.X
+				ti.init = true
+			}
+			g.X -= ti.firstX
+			cur.glyphs = append(cur.glyphs, g)
+		}
+		if g.Flags&text.FlagLineBreak == 0 {
+			continue
+		}
+		// The end of a line.
+		cur.width, cur.height = ti.bounds.Dx(), ti.bounds.Dy()
+		cur.ascent = ti.baseline
+		cur.runes = ti.runes
+		if g.Flags&text.FlagParagraphBreak != 0 && g.Flags&text.FlagTruncator == 0 {
+			cur.endedWithNewline = true
+		}
+		if cur.runes == 0 && !cur.endedWithNewline {
+			// Nothing fit (a word too long for the line), unless it's
+			// the empty line after a final newline: the last line,
+			// left to layoutSpan below.
+			bad = len(lines)
+		}
+		cur.multiLine = true
+		lines = append(lines, cur)
+		reset()
+	}
+	if bad >= 0 && bad < len(lines)-1 || len(lines) < 2 {
+		return []spanResult{}
+	}
+	// The last line is shaped on its own (layoutSpan), as before: the
+	// next span continues it, after its trailing space, which a wrapped
+	// paragraph's last line doesn't count.
+	return lines[:len(lines)-1]
+}
+
+// spanLinesMin is the length in bytes above which a span starting a
+// line is shaped at once (spanLines): a shorter one most likely fits on
+// the line, and shaping it whole would only add a shape.
+const spanLinesMin = 96
+
+// inkWidth is the width of a line's glyphs from its left edge to the
+// right edge of its rightmost glyph with a visible shape: the line
+// without the blanks that end it on the right.
+func inkWidth(glyphs []text.Glyph) int {
+	if len(glyphs) == 0 {
+		return 0
+	}
+	left, right := glyphs[0].X.Floor(), math.MinInt
+	for _, g := range glyphs {
+		left = min(left, g.X.Floor())
+		if !g.Bounds.Empty() {
+			right = max(right, (g.X + g.Advance).Ceil())
+		}
+	}
+	if right == math.MinInt {
+		return 0
+	}
+	return max(0, right-left)
 }
 
 // richIterator follows styledtext's textIterator.
@@ -328,8 +567,13 @@ func (it *richIterator) processGlyph(g text.Glyph) bool {
 		if it.runes == 0 {
 			it.hasNewline = true
 		}
-		it.bounds.Min.Y = min(it.bounds.Min.Y, logical.Min.Y)
-		it.bounds.Max.Y = max(it.bounds.Max.Y, logical.Max.Y)
+		if !it.first {
+			// A line of nothing (a newline): it's as tall as the
+			// truncator. A line of glyphs is as tall as they are, as
+			// when the span is shaped whole (spanLines).
+			it.bounds.Min.Y = min(it.bounds.Min.Y, logical.Min.Y)
+			it.bounds.Max.Y = max(it.bounds.Max.Y, logical.Max.Y)
+		}
 		it.visible = false
 		return false
 	}

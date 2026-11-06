@@ -1,12 +1,19 @@
 package box
 
 import (
+	"sync"
+
 	"gioui.org/layout"
 	"gioui.org/op"
 
 	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
+)
+
+var (
+	wrapItems = sync.Pool{New: func() any { return new([]wrapItem) }}
+	wrapLines = sync.Pool{New: func() any { return new([]wrapLine) }}
 )
 
 // layoutFlexWrap measures every child once (each is laid out exactly
@@ -43,7 +50,17 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		stretchTo = wrapStretch(gtx, children, axis, mainMax, gap)
 	}
 
-	items := make([]wrapItem, 0, len(children))
+	// The items and lines come from pools: a box's are done with when
+	// it returns, and every frame lays out many boxes.
+	itemsBuf := wrapItems.Get().(*[]wrapItem)
+	linesBuf := wrapLines.Get().(*[]wrapLine)
+	defer func() {
+		clear(*itemsBuf)
+		clear(*linesBuf)
+		wrapItems.Put(itemsBuf)
+		wrapLines.Put(linesBuf)
+	}()
+	items := (*itemsBuf)[:0]
 	for ci, child := range children {
 		el := child
 		if pct := base.FlexPercentOf(child, axis); pct > 0 {
@@ -81,28 +98,34 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		it := wrapItem{ops: ops, main: axisMain(dims.Size, axis), cross: axisCross(dims.Size, axis), track: track, z: base.ZIndexOf(child)}
 		items = append(items, it)
 	}
+	*itemsBuf = items
 
-	var lines []wrapLine
+	// Each line is a run of the items, sliced from them.
+	lines := (*linesBuf)[:0]
 	var cur wrapLine
-	for _, it := range items {
+	start := 0
+	for i, it := range items {
 		add := it.main
-		if len(cur.items) > 0 {
+		if i > start {
 			add += gap
 		}
-		if len(cur.items) > 0 && cur.used+add > mainMax {
+		if i > start && cur.used+add > mainMax {
+			cur.items = items[start:i]
 			lines = append(lines, cur)
 			cur = wrapLine{}
+			start = i
 			add = it.main
 		}
-		cur.items = append(cur.items, it)
 		cur.used += add
 		if it.cross > cur.thickness {
 			cur.thickness = it.cross
 		}
 	}
-	if len(cur.items) > 0 {
+	if start < len(items) {
+		cur.items = items[start:]
 		lines = append(lines, cur)
 	}
+	*linesBuf = lines
 
 	// Lines share any spare cross-axis space of a container with a
 	// minimum cross size (a fixed Height on a Row, say), like CSS's

@@ -21,7 +21,7 @@ type ImageElement struct {
 	st  styles.Styles
 
 	kit.HoverTracker
-	hoverSt styles.Styles
+	hoverSt *styles.Styles // set with OnHover
 }
 
 // OnHover sets styles applied while the pointer is over the image,
@@ -31,7 +31,7 @@ type ImageElement struct {
 // function resets the hover on each frame.
 func (i *ImageElement) OnHover(st styles.Styles) *ImageElement {
 	i.Enable()
-	i.hoverSt = st
+	i.hoverSt = &st
 	return i
 }
 
@@ -39,8 +39,8 @@ func (i *ImageElement) OnHover(st styles.Styles) *ImageElement {
 func (i *ImageElement) Layout(gtx layout.Context) layout.Dimensions {
 	i.Update(gtx)
 	st := i.st
-	if i.Enabled() && i.Hovered() {
-		st = styles.Merge(i.st, i.hoverSt)
+	if i.Enabled() && i.Hovered() && i.hoverSt != nil {
+		st = styles.Merge(i.st, *i.hoverSt)
 	}
 	st = st.Px(gtx.Metric)
 

@@ -20,13 +20,12 @@ import (
 	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/internal/textrender"
-	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // resolvedSpan is a span with its paragraph styles applied.
 type resolvedSpan struct {
-	st    styles.Styles
+	st    spanStyle
 	text  string
 	url   string
 	click *gesture.Click
@@ -41,7 +40,7 @@ func (r *RichTextElement) Layout(gtx layout.Context) layout.Dimensions {
 	pst := r.st.Px(gtx.Metric)
 
 	spans := make([]resolvedSpan, 0, len(r.spans))
-	inherited := styles.Styles{
+	inherited := spanStyle{
 		Color: r.st.Color, FontSize: r.st.FontSize, FontWeight: r.st.FontWeight,
 		FontStyle: r.st.FontStyle, FontFamily: r.st.FontFamily, TabWidth: r.st.TabWidth,
 	}
@@ -52,7 +51,7 @@ func (r *RichTextElement) Layout(gtx layout.Context) layout.Dimensions {
 		if s.text == "" {
 			continue
 		}
-		rs := resolvedSpan{st: styles.Merge(inherited, s.st), url: s.url}
+		rs := resolvedSpan{st: inherited.over(s.st), url: s.url}
 		rs.text = rs.st.TabWidth.Expand(s.text)
 		if s.url != "" {
 			rs.click = linkClick(s.url, s.text)

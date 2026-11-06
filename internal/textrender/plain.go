@@ -114,8 +114,10 @@ func Layout(sh *text.Shaper, p text.Parameters, cs layout.Constraints, str strin
 	return l
 }
 
-// sweepLayouts drops layouts unused for two seconds or so.
+// sweepLayouts drops layouts unused for two seconds or so, and line
+// images unused for about five.
 func sweepLayouts(now uint64) {
+	sweepRuns(now)
 	layouts.Lock()
 	for k, l := range layouts.m {
 		if now-l.used > 120 {
@@ -130,6 +132,13 @@ func sweepLayouts(now uint64) {
 		}
 	}
 	richLayouts.Unlock()
+	streams.Lock()
+	for k, e := range streams.m {
+		if now-e.used > 120 {
+			delete(streams.m, k)
+		}
+	}
+	streams.Unlock()
 }
 
 // splittable reports whether str can be laid out a paragraph at a time

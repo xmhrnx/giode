@@ -31,6 +31,9 @@ type (
 	Describer = base.Describer
 	// KeyedCache is a typed, self-contained version of Keyed.
 	KeyedCache[K comparable, V any] = base.KeyedCache[K, V]
+	// Watch tracks the fields a component caching its own output draws
+	// from; see MemoCache.LayoutOwn.
+	Watch[T comparable] = base.Watch[T]
 	// MemoCache caches the painted output of a subtree across frames.
 	MemoCache = base.MemoCache
 	// CacheSafe is implemented by elements whose output a cache may

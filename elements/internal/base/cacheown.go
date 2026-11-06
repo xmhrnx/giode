@@ -20,30 +20,76 @@ func IsCacheSafe(el Element) bool {
 	return ok && c.CacheSafe()
 }
 
+// Watcher reports whether a component's own fields changed since it
+// last drew them (Changed), and records the fields Changed saw once it
+// has drawn them (Commit). Watch implements it.
+type Watcher interface {
+	Changed() bool
+	Commit()
+}
+
+// Watch is a Watcher over a snapshot of a component's fields: Snap
+// returns the fields it draws from, as a comparable struct, which is
+// compared with the one recorded when it last drew - without
+// allocating, unlike a list of values. Set Snap once, when the
+// component is made or first laid out.
+type Watch[T comparable] struct {
+	Snap func() T
+	// cur is the snapshot Changed took; last the one recorded.
+	cur, last T
+	set       bool
+}
+
+// Changed reports whether Snap differs from the recorded snapshot.
+func (w *Watch[T]) Changed() bool {
+	w.cur = w.Snap()
+	return !w.set || !equalSafe(w.cur, w.last)
+}
+
+// Commit records the snapshot the last Changed took: the fields as
+// they were when the component started drawing.
+func (w *Watch[T]) Commit() {
+	w.last, w.set = w.cur, true
+}
+
+// equalSafe compares a and b, reporting false where == panics (an
+// interface field holding an incomparable value).
+func equalSafe[T comparable](a, b T) (eq bool) {
+	defer func() {
+		if recover() != nil {
+			eq = false
+		}
+	}()
+	return a == b
+}
+
 // LayoutOwn lays a stateful component out through its own cache: the
 // output recorded last time is replayed until something it draws
-// changes - watch's values (the component's own fields: label, value,
-// styles), deps (the layout context: direction, a parent's stretch),
-// or anything a Memo watches (States read, constraints, theme, input
+// changes - its own fields (label, value, styles), which watch tracks,
+// deps (the layout context: direction, a parent's stretch), or
+// anything a Memo watches (States read, constraints, theme, input
 // through its passes, animations). watch is also checked when an
 // enclosing cache replays the component without laying it out, so a
-// setter changing a field is never missed.
-func (c *MemoCache) LayoutOwn(gtx layout.Context, build func() Element, watch func() []any, deps ...any) layout.Dimensions {
+// setter changing a field is never missed. watch may be nil for a
+// component whose fields don't change once built. Pass the same build
+// function every frame, rather than a new method value, so laying the
+// component out allocates nothing.
+func (c *MemoCache) LayoutOwn(gtx layout.Context, build func() Element, watch Watcher, deps ...any) layout.Dimensions {
 	if InSelectionArea() {
 		// Text in a selection area registers with it as it's laid out,
 		// which a replay would skip.
 		return build().Layout(gtx)
 	}
 	c.watch = watch
-	w := watch()
-	if !depsEqual(c.watched, w) {
+	if watch != nil && watch.Changed() {
 		c.valid = false
 	}
+	// Commit (below) records the snapshot Changed just took.
 	misses := c.misses
 	dims := c.Layout(gtx, build, deps...)
-	if c.misses != misses {
-		// Rebuilt: what it drew is w.
-		c.watched = append(c.watched[:0], w...)
+	if c.misses != misses && watch != nil {
+		// Rebuilt: record what it drew.
+		watch.Commit()
 	}
 	return dims
 }

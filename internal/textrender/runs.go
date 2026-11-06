@@ -55,7 +55,7 @@ var runCache struct {
 
 // maxRunBytes bounds the memory of cached line images; least recently
 // used lines go first.
-const maxRunBytes = 48 << 20
+const maxRunBytes = 32 << 20
 
 var seed = maphash.MakeSeed()
 
@@ -152,6 +152,24 @@ func runImageFor(sh *text.Shaper, glyphs []text.Glyph, col color.NRGBA, ox, oy i
 	return img
 }
 
+// runIdleFrames is how many frames a line image may go unused before
+// it's dropped: text scrolled away, a message deleted, a streamed line
+// that grew. Text that comes back is drawn again from cached glyphs.
+const runIdleFrames = 300
+
+// sweepRuns drops line images no frame has drawn for runIdleFrames, so
+// the cache holds what's on screen rather than filling its budget.
+func sweepRuns(now uint64) {
+	runCache.Lock()
+	defer runCache.Unlock()
+	for k, v := range runCache.m {
+		if now-v.used > runIdleFrames {
+			runCache.bytes -= v.bytes
+			delete(runCache.m, k)
+		}
+	}
+}
+
 // evictRuns drops the least recently used line images until the cache
 // is down to three quarters of its budget.
 func evictRuns() {
@@ -243,4 +261,19 @@ func putU64(b []byte, v uint64) {
 	for i := 0; i < 8; i++ {
 		b[i] = byte(v >> (8 * i))
 	}
+}
+
+// CacheStats reports the size of the text caches: line images (count
+// and bytes) and laid out plain and rich texts.
+func CacheStats() (runs, runBytes, plain, rich int) {
+	runCache.Lock()
+	runs, runBytes = len(runCache.m), runCache.bytes
+	runCache.Unlock()
+	layouts.Lock()
+	plain = len(layouts.m)
+	layouts.Unlock()
+	richLayouts.Lock()
+	rich = len(richLayouts.m)
+	richLayouts.Unlock()
+	return
 }

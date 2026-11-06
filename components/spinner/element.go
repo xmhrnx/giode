@@ -18,7 +18,7 @@ type SpinnerElement struct {
 	st styles.Styles
 
 	kit.HoverTracker
-	hoverSt styles.Styles
+	hoverSt *styles.Styles // set with OnHover
 }
 
 // OnHover sets styles applied while the pointer is over the spinner,
@@ -27,7 +27,7 @@ type SpinnerElement struct {
 // view function resets the hover on each frame.
 func (s *SpinnerElement) OnHover(st styles.Styles) *SpinnerElement {
 	s.Enable()
-	s.hoverSt = st
+	s.hoverSt = &st
 	return s
 }
 
@@ -35,8 +35,8 @@ func (s *SpinnerElement) OnHover(st styles.Styles) *SpinnerElement {
 func (s *SpinnerElement) Layout(gtx layout.Context) layout.Dimensions {
 	s.Update(gtx)
 	st := s.st
-	if s.Enabled() && s.Hovered() {
-		st = styles.Merge(s.st, s.hoverSt)
+	if s.Enabled() && s.Hovered() && s.hoverSt != nil {
+		st = styles.Merge(s.st, *s.hoverSt)
 	}
 
 	st = st.Px(gtx.Metric)

@@ -11,7 +11,14 @@ import (
 // before placing it.
 func Measure(gtx layout.Context, el Element) layout.Dimensions {
 	scratch := gtx
-	scratch.Ops = new(op.Ops)
+	// The ops are thrown away, into a buffer kept for the next measure
+	// at the same depth (measures nest), so measuring allocates nothing
+	// once the buffers have grown.
+	if len(measureOps) <= measuring {
+		measureOps = append(measureOps, new(op.Ops))
+	}
+	scratch.Ops = measureOps[measuring]
+	scratch.Ops.Reset()
 	scratch.Source = gtx.Source.Disabled()
 	saved := semantics
 	semantics = nil
@@ -26,8 +33,12 @@ func Measure(gtx layout.Context, el Element) layout.Dimensions {
 	return dims
 }
 
-// measuring counts the Measure calls in progress.
-var measuring int
+// measuring counts the Measure calls in progress; measureOps are their
+// scratch ops, by depth.
+var (
+	measuring  int
+	measureOps []*op.Ops
+)
 
 // Measuring reports whether the element being laid out is only being
 // measured: what it registers for the frame - selectable text, say -

@@ -26,8 +26,19 @@ type Checkbox struct {
 	iconSt   styles.Styles
 	outlined bool
 	// cache keeps the output between frames; see Layout.
-	cache *elements.MemoCache
-	build func() elements.Element
+	cache   *elements.MemoCache
+	build   func() elements.Element
+	watched elements.Watch[drawn]
+}
+
+// drawn is what a Checkbox draws from its own fields.
+type drawn struct {
+	label    string
+	checked  bool
+	st       styles.Styles
+	icon     icon.Source
+	iconSt   styles.Styles
+	outlined bool
 }
 
 // CacheSafe reports true: what it draws comes from its own fields,
@@ -35,8 +46,8 @@ type Checkbox struct {
 func (c *Checkbox) CacheSafe() bool { return true }
 
 // watch is what it draws from its own fields.
-func (c *Checkbox) watch() []any {
-	return []any{c.label, c.bool.Value, c.st, c.icon, c.iconSt, c.outlined}
+func (c *Checkbox) watch() drawn {
+	return drawn{c.label, c.bool.Value, c.st, c.icon, c.iconSt, c.outlined}
 }
 
 // New returns a Checkbox. label is optional: pass "" for a bare
@@ -110,8 +121,9 @@ func (c *Checkbox) Layout(gtx layout.Context) layout.Dimensions {
 		c.cache = elements.NewMemoCache()
 		uncached := elements.Raw(c.layoutUncached)
 		c.build = func() elements.Element { return uncached }
+		c.watched.Snap = c.watch
 	}
-	return c.cache.LayoutOwn(gtx, c.build, c.watch)
+	return c.cache.LayoutOwn(gtx, c.build, &c.watched)
 }
 
 // layoutUncached lays it out without the cache.

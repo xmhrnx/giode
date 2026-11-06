@@ -1,7 +1,6 @@
 package box
 
 import (
-	"gioui.org/gesture"
 	"gioui.org/layout"
 
 	"github.com/xmhrnx/giode/components/kit"
@@ -23,15 +22,14 @@ import (
 // every frame; rebuilding it in the view function resets the hover on
 // each frame.
 func (b *BoxElement) OnHover(st styles.Styles) *BoxElement {
-	b.hover = new(gesture.Hover)
-	b.hoverSt = st
+	b.hover = &boxHover{st: st}
 	return b
 }
 
 // Hovered reports whether the pointer was over the element on the last
 // frame.
 func (b *BoxElement) Hovered() bool {
-	return b.hovered
+	return b.hover != nil && b.hover.hovered
 }
 
 // resolveStyles processes hover events and returns the styles to lay
@@ -39,60 +37,61 @@ func (b *BoxElement) Hovered() bool {
 // on top while hovered - blended over the base styles' Transition when
 // one is set.
 func (b *BoxElement) resolveStyles(gtx layout.Context) styles.Styles {
-	if b.hover == nil {
+	h := b.hover
+	if h == nil {
 		return b.st
 	}
-	wasHovered := b.hovered
-	b.hovered = b.hover.Update(gtx.Source)
-	if b.hovered != wasHovered {
+	wasHovered := h.hovered
+	h.hovered = h.Update(gtx.Source)
+	if h.hovered != wasHovered {
 		kit.MarkLive()
 	}
-	if b.hoverPass == nil {
-		b.hoverPass = func(gtx layout.Context) bool {
-			was := b.hovered
-			b.hovered = b.hover.Update(gtx.Source)
-			return was != b.hovered
+	if h.pass == nil {
+		h.pass = func(gtx layout.Context) bool {
+			was := h.hovered
+			h.hovered = h.Update(gtx.Source)
+			return was != h.hovered
 		}
 	}
-	kit.HandleInput(b.hoverPass)
+	kit.HandleInput(h.pass)
 	tr := b.st.Transition
 	if tr.Duration <= 0 {
-		if !b.hovered {
+		if !h.hovered {
 			return b.st
 		}
-		return styles.Merge(b.st, b.hoverSt)
+		return styles.Merge(b.st, h.st)
 	}
 
 	target := float32(0)
-	if b.hovered {
+	if h.hovered {
 		target = 1
 	}
 	// A transition starting after the element sat idle measures from
 	// this frame, not from the last frame drawn, which may be long ago.
-	if !b.animating {
-		b.lastFrame = gtx.Now
+	if !h.animating {
+		h.lastFrame = gtx.Now
 	}
-	dt := gtx.Now.Sub(b.lastFrame)
-	b.lastFrame = gtx.Now
+	dt := gtx.Now.Sub(h.lastFrame)
+	h.lastFrame = gtx.Now
 	step := float32(dt) / float32(tr.Duration)
 	switch {
-	case b.progress < target:
-		b.progress = min(target, b.progress+step)
-	case b.progress > target:
-		b.progress = max(target, b.progress-step)
+	case h.progress < target:
+		h.progress = min(target, h.progress+step)
+	case h.progress > target:
+		h.progress = max(target, h.progress-step)
 	}
-	b.animating = b.progress != target
-	if b.animating {
+	h.animating = h.progress != target
+	if h.animating {
 		kit.RequestFrame(gtx)
 	}
 
-	switch b.progress {
+	switch h.progress {
 	case 0:
 		return b.st
 	case 1:
-		return styles.Merge(b.st, b.hoverSt)
+		return styles.Merge(b.st, h.st)
 	}
-	return blendStyles(b.st, styles.Merge(b.st, b.hoverSt), tr.Easing.Apply(b.progress))
+	return blendStyles(b.st, styles.Merge(b.st, h.st), tr.Easing.Apply(h.progress))
 }
 
 // blendStyles returns to with its animatable properties - colors and

@@ -89,6 +89,10 @@ type (
 	SemanticKind     = ui.SemanticKind
 )
 
+// Watch tracks the fields a component caching its own output draws
+// from; see MemoCache.LayoutOwn.
+type Watch[T comparable] = ui.Watch[T]
+
 // Style value and element types, for declaring variables and
 // helpers that take them.
 type (

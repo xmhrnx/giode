@@ -184,7 +184,7 @@ func (b *BoxElement) layoutBody(gtx layout.Context) layout.Dimensions {
 		ps := pointer.PassOp{}.Push(gtx.Ops)
 		cl := clip.Rect(box).Push(gtx.Ops)
 		b.hover.Add(gtx.Ops)
-		if b.hovered && st.Cursor != "" {
+		if b.hover.hovered && st.Cursor != "" {
 			st.Cursor.CursorFor().Add(gtx.Ops)
 		}
 		cl.Pop()

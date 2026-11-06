@@ -31,6 +31,39 @@ there still replay their recorded output, and are rebuilt when the selection cha
 Elements made fresh in the view function each frame aren't cached by themselves; wrap a
 large, mostly static region of them in `Memo` (below) to skip building them too.
 
+### A component of your own
+
+A component built from elements can cache itself the same way, with a `MemoCache` and a
+`Watch` over the fields it draws from, gathered in a comparable struct:
+
+```go
+type Rating struct {
+	stars, of int
+	st        giode.Styles
+	cache     *giode.MemoCache
+	build     func() giode.Element
+	watched   giode.Watch[ratingDrawn]
+}
+
+type ratingDrawn struct {
+	stars, of int
+	st        giode.Styles
+}
+
+func (r *Rating) Layout(gtx giode.Context) giode.Dimensions {
+	if r.cache == nil {
+		r.cache = giode.NewMemoCache()
+		r.build = func() giode.Element { return r.view() } // made once, not every frame
+		r.watched.Snap = func() ratingDrawn { return ratingDrawn{r.stars, r.of, r.st} }
+	}
+	return r.cache.LayoutOwn(gtx, r.build, &r.watched)
+}
+```
+
+`LayoutOwn` replays the last drawing until the snapshot differs from the one it was drawn
+from, or anything a `Memo` watches changes. Comparing the snapshot allocates nothing, so a
+screen of such components costs little more than replaying their drawings.
+
 ## Memo: only rebuild what changed
 
 Wrap a part of the UI in `Memo` and it's rebuilt only when something it depends on changed;
@@ -139,6 +172,13 @@ rows instead of rebuilding them, and offscreen rows keep their measured heights 
 version changes. Rows are identified by key, so the list keeps its place when rows above
 are added or resize, and `AnchorBottom` keeps a chat pinned to its newest message.
 
+A row out of view for a second drops its recorded drawing (and the line images it holds),
+keeping only its measured height, so memory follows what's on screen rather than what was
+scrolled past. The scrollbar's estimate of the content height, which asks every row for its
+key and version, is worked out again only when a row's height, the row count or the scroll
+position changes (or every half second, for edits offscreen), so an idle list of thousands
+of rows costs about as much as one of ten.
+
 ## Text
 
 Text is drawn from images, not paths. Each line is rasterized once on the CPU (glyphs at
@@ -151,6 +191,18 @@ Layouts are cached too: the same text, style and width isn't shaped again. Long 
 laid out a paragraph at a time, so a streaming reply that appends to its last paragraph
 reshapes only that paragraph, and only the lines inside the clip are drawn. (Paragraphs are
 split for start-aligned, left-to-right text; other text is laid out whole, still cached.)
+
+Rich text (`RichText`, and so `Markdown`) shapes each run of text once however many lines it
+wraps to. A long run that grows - a reply streaming in - keeps the lines it wrapped to before
+and shapes only the text from its last lines on, so a frame of a streaming reply costs about
+the same at its 5,000th character as at its 50th. (Text with right-to-left letters is
+shaped whole, still once.) A line that wraps or ends with a newline ends at its last
+visible glyph: the spaces before the break don't count toward its width, so centered lines
+are centered on their text.
+
+Line images are kept while drawn and dropped after about five seconds unused, within a 32 MB
+budget; layouts are dropped after about two seconds unused. Text scrolled back into view is
+drawn again from the cached glyphs.
 
 Icons (SVG, path data, IconVG and the built-in glyphs) are rasterized the same way, once
 per size and color.
@@ -182,4 +234,23 @@ Without any memo, Giode still avoids repeated work every frame:
   paths only at the corners, so their GPU cost doesn't grow with the box's size, and a
   hidden-overflow box clips with a plain rectangle when its content stays clear of the
   rounded corners;
-- `State.SetIfChanged` skips redraws when a value didn't actually change.
+- `State.SetIfChanged` skips redraws when a value didn't actually change;
+- an element carries hover styles only when `OnHover` was called, so the many that don't
+  are half the size;
+- a stateful component checks whether its own fields changed by comparing them with what it
+  last drew, without allocating; components of your own can do the same (see
+  [A component of your own](#a-component-of-your-own)).
+
+## Benchmarks
+
+`internal/perf` lays out typical screens frame after frame with a real input router: 200
+rows of controls, a page of text, a 1,000-message chat (idle, scrolling, streaming a reply,
+in a `SelectionArea`) and a table. Run them with
+
+```
+go test ./internal/perf -bench . -benchmem
+```
+
+`TestRetainedMemory` in the same package runs a chat for 2,000 frames with a message
+arriving every frame and logs the heap and the text caches' sizes, to catch a cache that
+grows without bound.

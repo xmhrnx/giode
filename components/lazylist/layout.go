@@ -280,10 +280,19 @@ func (l *List) estimate(gap int) (contentH, offset int) {
 		}
 		return s
 	}
-	above := sum(0, l.anchorIdx)
-	below := sum(l.anchorIdx, l.n)
-	return above + below - gap, above - l.anchorOff
+	e := &l.est
+	if !e.valid || e.n != l.n || e.anchorIdx != l.anchorIdx || e.gap != gap || e.measure != l.measure || l.frame-e.frame >= estimateFrames {
+		e.above, e.below = sum(0, l.anchorIdx), sum(l.anchorIdx, l.n)
+		e.valid, e.n, e.anchorIdx, e.gap, e.measure, e.frame = true, l.n, l.anchorIdx, gap, l.measure, l.frame
+	}
+	return e.above + e.below - gap, e.above - l.anchorOff
 }
+
+// estimateFrames is how often estimate sums the rows' heights anew when
+// nothing it knows of changed: a row edited offscreen gets a new
+// version, and so its height the estimate, which only the scrollbar
+// shows.
+const estimateFrames = 30
 
 // jumpTo moves the anchor to the row at the estimated offset y, for a
 // scrollbar drag.

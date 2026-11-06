@@ -56,11 +56,17 @@ func (l *List) layoutRow(gtx layout.Context, i int) placed {
 	}
 	track.End()
 	call := m.Stop()
-	r.height, r.width = dims.Size.Y, gtx.Constraints.Max.X
-	if l.measure == 0 {
-		l.measure = max(1, r.height)
-	} else {
-		l.measure = (l.measure*7 + r.height) / 8
+	if fresh := r.width == 0; fresh || r.height != dims.Size.Y || r.width != gtx.Constraints.Max.X {
+		// A row new or changed: it moves the estimate and the average
+		// height. A row drawn as before doesn't, so rows of different
+		// heights don't keep the estimate changing frame after frame.
+		l.est.valid = false
+		r.height, r.width = dims.Size.Y, gtx.Constraints.Max.X
+		if l.measure == 0 {
+			l.measure = max(1, r.height)
+		} else {
+			l.measure = (l.measure*7 + r.height) / 8
+		}
 	}
 	return placed{idx: i, h: r.height, call: call, track: track}
 }

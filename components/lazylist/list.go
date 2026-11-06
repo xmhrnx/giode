@@ -81,6 +81,16 @@ type List struct {
 	wasAtTop, wasAtEnd     bool
 	pass                   func(gtx layout.Context) bool
 	movedBy                int
+
+	// est caches estimate's sums, which call key and version for every
+	// row: they're redone when a row's height or the rows change, the
+	// anchor moves, or every estimateFrames frames for edits offscreen.
+	est struct {
+		valid                      bool
+		n, anchorIdx, gap, measure int
+		frame                      uint64
+		above, below               int
+	}
 }
 
 // New returns a list of count() rows, row i identified by key(i) and
@@ -196,12 +206,19 @@ func (l *List) indexOf(key any, hint int) int {
 
 // sweep forgets rows not laid out for a while.
 func (l *List) sweep() {
-	if l.frame%120 != 0 {
+	if l.frame%60 != 0 {
 		return
 	}
 	for k, r := range l.rows {
-		if l.frame-r.used > 600 {
+		switch idle := l.frame - r.used; {
+		case idle > 600:
 			delete(l.rows, k)
+			l.est.valid = false
+		case idle > 60 && r.cache != nil:
+			// Out of the viewport for a second: drop its drawing - its
+			// ops and the line images they hold - and keep its height
+			// for the scrollbar and the anchor.
+			r.cache = nil
 		}
 	}
 }

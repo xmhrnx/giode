@@ -21,17 +21,14 @@ func (b *BoxElement) Layout(gtx layout.Context) layout.Dimensions {
 	if (b.hover != nil || b.press != nil) && b.CacheSafe() {
 		if b.cache == nil {
 			b.cache = base.NewMemoCache()
-			b.cached = boxUncached{b}
+			cached := base.Element(boxUncached{b})
+			b.cachedBuild = func() base.Element { return cached }
 		}
-		return b.cache.LayoutOwn(gtx, b.cachedBuild, noWatch, b.stretchX, b.stretchY)
+		// No watch: a box's fields don't change once built.
+		return b.cache.LayoutOwn(gtx, b.cachedBuild, nil, b.stretchX, b.stretchY)
 	}
 	return b.layoutUncached(gtx)
 }
-
-func (b *BoxElement) cachedBuild() base.Element { return b.cached }
-
-// noWatch is the watch of a box: its fields don't change once built.
-func noWatch() []any { return nil }
 
 // boxUncached lays the box out without its cache.
 type boxUncached struct{ b *BoxElement }

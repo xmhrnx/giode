@@ -12,7 +12,9 @@ type TextElement struct {
 	st  styles.Styles
 
 	kit.HoverTracker
-	hoverSt     styles.Styles
+	// hoverSt is set with OnHover; a pointer, so the many texts without
+	// it don't carry a second set of styles.
+	hoverSt     *styles.Styles
 	lastHovered bool
 
 	// selKey identifies a selectable text's state; see Selectable.
@@ -44,7 +46,7 @@ func Text(str string, st ...styles.Styles) *TextElement {
 // each frame.
 func (t *TextElement) OnHover(st styles.Styles) *TextElement {
 	t.Enable()
-	t.hoverSt = st
+	t.hoverSt = &st
 	return t
 }
 

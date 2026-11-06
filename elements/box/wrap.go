@@ -20,6 +20,7 @@ type wrapItem struct {
 
 // wrapLine is one run of items that fit within the main axis.
 type wrapLine struct {
+	// items are the line's items, a part of the box's.
 	items     []wrapItem
 	used      int // sum of item main sizes plus internal gaps
 	thickness int // the line's extent on the cross axis

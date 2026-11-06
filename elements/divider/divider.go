@@ -19,7 +19,7 @@ type DividerElement struct {
 	st styles.Styles
 
 	kit.HoverTracker
-	hoverSt styles.Styles
+	hoverSt *styles.Styles // set with OnHover
 }
 
 var defaultDividerColor = color.NRGBA{R: 0x33, G: 0x41, B: 0x55, A: 0xff}
@@ -40,15 +40,15 @@ func Divider(st ...styles.Styles) *DividerElement {
 // view function resets the hover on each frame.
 func (d *DividerElement) OnHover(st styles.Styles) *DividerElement {
 	d.Enable()
-	d.hoverSt = st
+	d.hoverSt = &st
 	return d
 }
 
 func (d *DividerElement) Layout(gtx layout.Context) layout.Dimensions {
 	d.Update(gtx)
 	st := d.st
-	if d.Enabled() && d.Hovered() {
-		st = styles.Merge(d.st, d.hoverSt)
+	if d.Enabled() && d.Hovered() && d.hoverSt != nil {
+		st = styles.Merge(d.st, *d.hoverSt)
 	}
 	if st.Display == properties.DisplayNone {
 		return layout.Dimensions{}

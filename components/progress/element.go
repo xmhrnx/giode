@@ -20,7 +20,7 @@ type ProgressElement struct {
 	st    styles.Styles
 
 	kit.HoverTracker
-	hoverSt styles.Styles
+	hoverSt *styles.Styles // set with OnHover
 }
 
 // OnHover sets styles applied while the pointer is over the bar,
@@ -29,7 +29,7 @@ type ProgressElement struct {
 // view function resets the hover on each frame.
 func (p *ProgressElement) OnHover(st styles.Styles) *ProgressElement {
 	p.Enable()
-	p.hoverSt = st
+	p.hoverSt = &st
 	return p
 }
 
@@ -41,8 +41,8 @@ const growScale = 1000
 func (p *ProgressElement) Layout(gtx layout.Context) layout.Dimensions {
 	p.Update(gtx)
 	st := p.st
-	if p.Enabled() && p.Hovered() {
-		st = styles.Merge(p.st, p.hoverSt)
+	if p.Enabled() && p.Hovered() && p.hoverSt != nil {
+		st = styles.Merge(p.st, *p.hoverSt)
 	}
 	dims := p.bar(st).Layout(gtx)
 	p.RegisterArea(gtx, image.Point{}, dims.Size, st.Cursor)

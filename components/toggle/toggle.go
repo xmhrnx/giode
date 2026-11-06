@@ -37,8 +37,18 @@ type Switch struct {
 	pos  float32
 	last time.Time
 	// cache keeps the output between frames; see Layout.
-	cache *elements.MemoCache
-	build func() elements.Element
+	cache   *elements.MemoCache
+	build   func() elements.Element
+	watched elements.Watch[drawn]
+}
+
+// drawn is what a Switch draws from its own fields.
+type drawn struct {
+	label           string
+	st              styles.Styles
+	on, disabled    bool
+	knobOff, knobOn properties.Color
+	pos             float32
 }
 
 // CacheSafe reports true: what it draws comes from its own fields,
@@ -46,8 +56,8 @@ type Switch struct {
 func (s *Switch) CacheSafe() bool { return true }
 
 // watch is what it draws from its own fields.
-func (s *Switch) watch() []any {
-	return []any{s.label, s.st, s.on, s.disabled, s.knobOff, s.knobOn, s.pos}
+func (s *Switch) watch() drawn {
+	return drawn{s.label, s.st, s.on, s.disabled, s.knobOff, s.knobOn, s.pos}
 }
 
 // New returns a switch. label is optional; it shows left of the track
@@ -121,8 +131,9 @@ func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
 		s.cache = elements.NewMemoCache()
 		uncached := elements.Raw(s.layoutUncached)
 		s.build = func() elements.Element { return uncached }
+		s.watched.Snap = s.watch
 	}
-	return s.cache.LayoutOwn(gtx, s.build, s.watch)
+	return s.cache.LayoutOwn(gtx, s.build, &s.watched)
 }
 
 // layoutUncached lays it out without the cache.
