@@ -37,6 +37,7 @@ func (r *RichTextElement) Layout(gtx layout.Context) layout.Dimensions {
 	if shaper == nil || r.st.Display == properties.DisplayNone {
 		return layout.Dimensions{}
 	}
+	gtx = withWidths(gtx, r.st)
 	pst := r.st.Px(gtx.Metric)
 
 	spans := make([]resolvedSpan, 0, len(r.spans))

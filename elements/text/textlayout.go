@@ -45,6 +45,7 @@ func (t *TextElement) Layout(gtx layout.Context) layout.Dimensions {
 	if shaper == nil {
 		return layout.Dimensions{}
 	}
+	gtx = withWidths(gtx, st)
 	if st.Visibility == properties.VisibilityHidden {
 		// Measure without painting: keep the space, drop the ops.
 		gtx.Ops = new(op.Ops)

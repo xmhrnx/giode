@@ -52,7 +52,16 @@ type windowPointer struct{}
 // layout registers the pointer region and processes events queued
 // from the registration on a previous frame: recording whether the
 // press was a touch, and opening the context menu on a right-click.
-// Only presses are observed, so moving the mouse costs no frames.
+// Presses and releases are observed, not moves, so moving the mouse
+// costs no frames.
+//
+// Releases are taken (and ignored) so that every release has a
+// handler. Gio keeps an event only when some handler receives it; one
+// nobody receives is folded into the router's state. When a command
+// runs during a frame (a caret blink's InvalidateCmd), Gio rewinds that
+// state and replays the kept events - the press over empty space
+// without its release - and so believes the button is still held: the
+// next press then reaches only this listener, not the widget under it.
 func (w *windowPointer) layout(a *App, gtx layout.Context) {
 	ps := pointer.PassOp{}.Push(gtx.Ops)
 	cl := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
@@ -61,12 +70,12 @@ func (w *windowPointer) layout(a *App, gtx layout.Context) {
 	ps.Pop()
 
 	for {
-		ev, ok := gtx.Source.Event(pointer.Filter{Target: w, Kinds: pointer.Press})
+		ev, ok := gtx.Source.Event(pointer.Filter{Target: w, Kinds: pointer.Press | pointer.Release})
 		if !ok {
 			break
 		}
 		e, ok := ev.(pointer.Event)
-		if !ok {
+		if !ok || e.Kind != pointer.Press {
 			continue
 		}
 		if elements.SetTouchInput(e.Source == pointer.Touch) {

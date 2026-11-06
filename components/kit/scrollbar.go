@@ -67,18 +67,20 @@ func (s *Scrollbar) handle(gtx layout.Context, offset *float32) {
 		if !ok {
 			break
 		}
+		// Every press on the thumb starts a drag and every drag moves
+		// it, whatever their priority: the thumb shares its events with
+		// whatever lies under it (the list, hover, a window-wide
+		// listener), so a press is rarely the thumb's alone, and Gio
+		// grabs the pointer for the thumb only once it has moved a few
+		// pixels - the drags before that count too.
 		switch ev.Kind {
 		case pointer.Press:
-			if ev.Priority == pointer.Grabbed {
-				s.dragY = ev.Position.Y
-			}
+			s.dragY = ev.Position.Y
 		case pointer.Drag:
-			if ev.Priority == pointer.Grabbed {
-				dy := ev.Position.Y - s.dragY
-				s.dragY = ev.Position.Y
-				if dy != 0 && s.maxThumbOff > 0 {
-					*offset = max(0, min(s.maxOff, *offset+dy*s.maxOff/float32(s.maxThumbOff)))
-				}
+			dy := ev.Position.Y - s.dragY
+			s.dragY = ev.Position.Y
+			if dy != 0 && s.maxThumbOff > 0 {
+				*offset = max(0, min(s.maxOff, *offset+dy*s.maxOff/float32(s.maxThumbOff)))
 			}
 		}
 	}

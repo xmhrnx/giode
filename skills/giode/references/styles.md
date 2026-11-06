@@ -66,7 +66,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `FlexGrow` | int | ≥0 | Share of spare main-axis space. |
 | `Width` / `Height` | int | `0` hug, `-1` expand, `>0` fixed dp | |
 | `WidthPct` / `HeightPct` | int | 1–100 | Percent of available space; takes precedence over `Width`/`Height`. |
-| `MinWidth` / `MaxWidth` / `MinHeight` / `MaxHeight` | int | dp | Clamp the resolved size, including for expanding boxes (`Width: -1`, `FlexGrow`): `Width: -1, MaxWidth: 760` is a column at most 760dp wide, placed by the parent's `Justify`/`Align`. A minimum beats a maximum. |
+| `MinWidth` / `MaxWidth` / `MinHeight` / `MaxHeight` | int | dp | Clamp the resolved size, including for expanding boxes (`Width: -1`, `FlexGrow`): `Width: -1, MaxWidth: 760` is a column at most 760dp wide, placed by the parent's `Justify`/`Align`. A minimum beats a maximum. `Text` and `RichText` take `MinWidth` and `MaxWidth` too: they wrap, or end in an ellipsis, at `MaxWidth`. |
 | `AspectRatio` | float | w/h | Derives the hugging axis from the resized axis. |
 | `Padding` / `Margin` | Inset | dp per side | `UniformInset(v)`, `SymmetricInset(h, v)` or `giode.Inset{Top, Right, Bottom, Left}`; `Start`/`End` follow the reading direction. An all-zero inset means unset (`Merge` keeps the base's, components use their default); `giode.NoInset` is an explicit zero. |
 | `Position` | string | `PositionStatic` (default), `PositionRelative`, `PositionAbsolute` | Absolute removes the element from the flow; see below. |
