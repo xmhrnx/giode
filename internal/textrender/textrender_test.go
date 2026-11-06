@@ -199,7 +199,7 @@ func TestLayoutRich_MatchesStyledtext(t *testing.T) {
 			want = append(want, image.Rectangle{Max: d.Size})
 		})
 		l := layoutRich(sh, gtx, RichParams{}, spans)
-		if l.Dims.Size.X != dims.Size.X || l.Dims.Size.Y > dims.Size.Y || l.Dims.Size.Y < dims.Size.Y-len(l.Segments) {
+		if l.Dims.Size.X != dims.Size.X || l.Dims.Size.Y > dims.Size.Y || l.Dims.Size.Y < dims.Size.Y-4*len(l.Segments) {
 			t.Errorf("width %d: dims %+v, want %+v", w, l.Dims, dims)
 		}
 		if len(l.Segments) != len(want) {
@@ -209,8 +209,10 @@ func TestLayoutRich_MatchesStyledtext(t *testing.T) {
 		for i, s := range l.Segments {
 			// A wrapped line's trailing space doesn't count toward its
 			// width, and its height is that of its own glyphs - not of
-			// styledtext's truncator, which may come from another face.
-			if dx, dy := want[i].Max.X-s.Size.X, want[i].Max.Y-s.Size.Y; dx < 0 || dx > 6 || dy < 0 || dy > 1 {
+			// styledtext's truncator, which may come from another face
+			// and so be a few pixels taller, depending on the system's
+			// fonts.
+			if dx, dy := want[i].Max.X-s.Size.X, want[i].Max.Y-s.Size.Y; dx < 0 || dx > 6 || dy < 0 || dy > 3 {
 				t.Errorf("width %d segment %d: size %v, want %v", w, i, s.Size, want[i].Max)
 			}
 		}
@@ -319,14 +321,19 @@ func TestLayoutRich_MatchesLineByLine(t *testing.T) {
 					t.Errorf("%s, width %d, %+v: %d segments, want %d", name, w, p, len(got.Segments), len(want.Segments))
 					continue
 				}
-				if dy := want.Dims.Size.Y - got.Dims.Size.Y; got.Dims.Size.X != want.Dims.Size.X || dy < 0 || dy > 2*len(got.Segments) {
+				if dy := want.Dims.Size.Y - got.Dims.Size.Y; got.Dims.Size.X != want.Dims.Size.X || dy < 0 || dy > 4*len(got.Segments) {
 					t.Errorf("%s, width %d, %+v: dims %v, want %v", name, w, p, got.Dims.Size, want.Dims.Size)
 				}
 				for i := range got.Segments {
 					g, s := got.Segments[i], want.Segments[i]
 					// As in TestLayoutRich_MatchesStyledtext: a wrapped
 					// line's trailing spaces, centered with the line or
-					// not, and 1px of height per line above.
+					// not, and the truncator's height, which the line-by-
+					// line layout counted: a few pixels per line, more
+					// where the system's fonts give the truncator (and so
+					// the line) a taller face, as on macOS and Windows. A
+					// line starting with letters from another face may
+					// sit a pixel lower or higher.
 					dx, dy := s.Size.X-g.Size.X, s.Size.Y-g.Size.Y
 					ox := s.Offset.X - g.Offset.X
 					if p.Alignment == text.Middle || name == "rtl and mixed" || name == "spaces" {
@@ -334,8 +341,8 @@ func TestLayoutRich_MatchesLineByLine(t *testing.T) {
 						// starts at a fraction of a pixel.
 						ox = 0
 					}
-					same := g.Span == s.Span && ox == 0 && s.Offset.Y-g.Offset.Y >= 0 && s.Offset.Y-g.Offset.Y <= 2*i &&
-						dx >= -1 && (dx <= 7 || name == "spaces") && dy >= 0 && dy <= 1 && g.Ascent == s.Ascent &&
+					same := g.Span == s.Span && ox == 0 && s.Offset.Y-g.Offset.Y >= 0 && s.Offset.Y-g.Offset.Y <= 4*i &&
+						dx >= -1 && (dx <= 7 || name == "spaces") && dy >= 0 && dy <= 3 && g.Ascent-s.Ascent >= -1 && g.Ascent-s.Ascent <= 1 &&
 						g.RuneStart == s.RuneStart && g.RuneEnd == s.RuneEnd && len(g.Glyphs) == len(s.Glyphs)
 					// Bidi levels are resolved over the whole paragraph now,
 					// not line by line: a space between runs of opposite
