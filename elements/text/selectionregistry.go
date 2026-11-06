@@ -18,6 +18,17 @@ import (
 var selAreaStack []*selArea
 
 func init() {
+	base.SelectionLen = func() int {
+		if n := len(selAreaStack); n > 0 && selAreaStack[n-1].collecting {
+			return len(selAreaStack[n-1].parts)
+		}
+		return -1
+	}
+	base.SelectionReorder = func(spans [][2]int) {
+		if n := len(selAreaStack); n > 0 {
+			selAreaStack[n-1].reorder(spans)
+		}
+	}
 	base.SelectionVersion = selectionVersion
 	base.InSelectionArea = func() bool { return len(selAreaStack) > 0 }
 }
@@ -36,15 +47,16 @@ func selectionVersion() uint64 {
 // selected, in the selection color for col. It reports whether there
 // is an area.
 func registerSelectable(gtx layout.Context, text string, size image.Point, stops func() []textrender.StopLine, col properties.Color) bool {
-	if len(selAreaStack) == 0 || !kit.TextSelectable() {
+	if len(selAreaStack) == 0 || !kit.TextSelectable() || base.Measuring() {
 		return false
 	}
 	a := selAreaStack[len(selAreaStack)-1]
 	p := &selPart{size: size, text: text, stops: stops}
 	base.TrackPosition(&p.origin)
-	idx := len(a.parts)
+	idx := a.placeOf(len(a.order))
 	add := func() {
 		if a.collecting {
+			a.order = append(a.order, len(a.order))
 			a.parts = append(a.parts, p)
 		}
 	}

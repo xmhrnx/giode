@@ -20,6 +20,9 @@ type ChildTracker struct {
 	semStart, semEnd       int
 	portalStart, portalEnd int
 	probeStart, probeEnd   int
+	// selStart and selEnd bound the text the child registered with the
+	// innermost selection area; -1 outside one.
+	selStart, selEnd int
 }
 
 // probes are the positions registered with TrackPosition this frame,
@@ -49,6 +52,8 @@ func TrackChild() ChildTracker {
 		t.semStart = len(*semantics)
 	}
 	t.semEnd, t.portalEnd, t.probeEnd = t.semStart, t.portalStart, t.probeStart
+	t.selStart = SelectionLen()
+	t.selEnd = t.selStart
 	return t
 }
 
@@ -58,6 +63,49 @@ func (t *ChildTracker) End() {
 	if semantics != nil {
 		t.semEnd = len(*semantics)
 	}
+	t.selEnd = SelectionLen()
+}
+
+// SelectionLen is how many text parts the innermost selection area
+// holds so far this frame, -1 outside one; SelectionReorder rearranges
+// them: spans, ranges of parts, in the order they're to take. The text
+// package sets both.
+var (
+	SelectionLen     = func() int { return -1 }
+	SelectionReorder = func(spans [][2]int) {}
+)
+
+// ReorderTracked tells the innermost selection area the screen order of
+// children a container laid out in another order - a list laying its
+// rows out from the bottom up - so selecting by dragging runs through
+// them top to bottom. ts are the children's trackers, in screen order.
+func ReorderTracked(ts []ChildTracker) {
+	if len(ts) < 2 {
+		return
+	}
+	lo, hi, total := -1, -1, 0
+	spans := make([][2]int, 0, len(ts))
+	inOrder := true
+	for i, t := range ts {
+		if t.selStart < 0 || t.selEnd < t.selStart {
+			return
+		}
+		if i > 0 && t.selStart < ts[i-1].selEnd {
+			inOrder = false
+		}
+		if lo < 0 || t.selStart < lo {
+			lo = t.selStart
+		}
+		hi = max(hi, t.selEnd)
+		total += t.selEnd - t.selStart
+		spans = append(spans, [2]int{t.selStart, t.selEnd})
+	}
+	if inOrder || total != hi-lo {
+		// Already in order, or not the contiguous run of parts this
+		// expects: leave them.
+		return
+	}
+	SelectionReorder(spans)
 }
 
 // Place moves everything recorded by off, the child's offset from the

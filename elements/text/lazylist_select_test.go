@@ -117,3 +117,38 @@ func TestSelectTextInLazyListRows(t *testing.T) {
 		}
 	}
 }
+
+// A bottom-anchored list lays its rows out from the bottom up; a drag
+// from one row down into the next still selects top to bottom.
+func TestSelectAcrossBottomAnchoredRows(t *testing.T) {
+	fonts.UseGofont()
+	const rowH = 23 // a 20px line of Go font
+	for _, n := range []int{3, 50} {
+		for _, versioned := range []bool{false, true} {
+			item := func(i int) elements.Element {
+				return elements.Text(fmt.Sprintf("Row number %d text", i), styles.Styles{FontSize: 20})
+			}
+			l := lazylist.New(func() int { return n }, func(i int) any { return i }, item).Anchor(lazylist.AnchorBottom)
+			if versioned {
+				l.Version(func(i int) any { return i })
+			}
+			h := &listHarness{root: elements.SelectionArea("sel", l)}
+			for i := 0; i < 3; i++ {
+				h.frame()
+			}
+			// Shorter than the viewport, the rows start at the top;
+			// longer, the last one ends at the bottom.
+			row, y := 1, float32(10+rowH)
+			if n > 3 {
+				row, y = n-3, float32(300-3*rowH+10)
+			}
+			h.mouse(pointer.Press, 2, y)
+			h.mouse(pointer.Move, 100, y+rowH)
+			h.mouse(pointer.Release, 100, y+rowH)
+			want := fmt.Sprintf("Row number %d text\nRow numb", row)
+			if got := text.SelectedText("sel"); got != want {
+				t.Errorf("%d rows (versioned %v): selected %q, want %q", n, versioned, got, want)
+			}
+		}
+	}
+}

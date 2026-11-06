@@ -32,6 +32,7 @@ giode.Stack(giode.Styles{}, name)
 | `SubmitOn(m SubmitMode)` | `SubmitDefault` (Enter submits a single-line field), `SubmitEnter`, `SubmitEnterUnlessShift` (Enter sends, Shift+Enter inserts a newline; on a touch screen the on-screen Enter key inserts a newline, since phone apps send with a button), `SubmitNever`. |
 | `SelectAll()` | Selects the whole content. |
 | `InsertText(s string)` | Inserts at the caret (replacing the selection) and calls OnChange, as typing would. |
+| `OnPaste(fn func(pasteText func()))` | Runs `fn` in place of pasting when the user pastes (Ctrl/Cmd+V, or Paste in the editing menu); calling `pasteText` pastes the clipboard's text as the field would have. See below. |
 | `Placeholder(s string)` / `Styles(st Styles)` | Replace the placeholder or styles from the next frame, keeping the text and focus. A placeholder too long for the field is cut off with "…" (at one line, or at `Lines`' maximum). |
 | `Password(on bool)` | Masks the content and asks for the password keyboard. |
 | `Keyboard(k Keyboard)` | On-screen keyboard on touch devices: `KeyboardText` (default), `KeyboardNumeric`, `KeyboardEmail`, `KeyboardURL`, `KeyboardPhone`. |
@@ -51,6 +52,27 @@ or Copy in a password field, no Paste in a read-only one. Two handles below the 
 drag its ends. Tapping anywhere else closes the menu. A finger that moves before the
 long-press scrolls as usual. With a mouse, a right-click opens the same menu. Keyboard
 shortcuts (Ctrl/Cmd+X, C, V, A) work as before.
+
+**Pasting images.** `OnPaste` takes over pasting, so a chat composer can attach an image
+the user copied (a screenshot, an image from a browser) and paste text otherwise. `fn` runs
+on the UI goroutine; `pasteText` can be called then, or later through `App.Post`:
+
+```go
+composer.OnPaste(func(pasteText func()) {
+	go func() {
+		img, err := app.ReadClipboardImage(ctx)
+		app.Post(func() {
+			if err == nil && img != nil {
+				attach(img)
+			} else {
+				pasteText()
+			}
+		})
+	}()
+})
+```
+
+A read-only field doesn't paste and doesn't call `fn`.
 
 Styles: `Color` (text), `Background` (fill), `BorderWidth`/`BorderColor`/`BorderRadius`
 (frame, 1px border by default), `Padding` (12x8 by default). Expands to the available

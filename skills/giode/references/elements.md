@@ -125,7 +125,9 @@ Each element draws its part of the selection in its own text color at 30% opacit
 of buttons, menus, tabs, inputs and other interactive components is left out (custom
 components can do the same with `kit.Unselectable`), as are elements that are
 `Selectable` themselves. Text inside a `Memo` or a `LazyList` row takes part too: the cached
-output is replayed until the selection changes.
+output is replayed until the selection changes, then rebuilt once. The boxes and components
+that cache their own output (see [performance.md](performance.md)) don't inside an area:
+they're laid out every frame.
 
 ## RichText
 
@@ -167,6 +169,11 @@ strikethrough, inline code and links, bulleted, numbered and task lists, block q
 fenced code blocks (with the language and a copy button), tables and rules. Parsing is
 cached per source, so a document laid out every frame is parsed once, and a streaming
 reply only when it changes. Raw HTML is dropped and images show their alt text.
+
+`Selectable` puts the document in its own `SelectionArea`, keyed by its value: a drag
+selects across paragraphs, headings, lists, tables and code, and copies their text joined
+by newlines. A document already inside a `SelectionArea` is part of that area's selection,
+with or without `Selectable`.
 
 ## Divider
 

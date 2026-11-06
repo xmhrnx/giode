@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"gioui.org/f32"
-	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
@@ -190,8 +189,7 @@ func (m *editMenu) do(gtx layout.Context, in *Input, action string) {
 		ed.SetCaret(c, c)
 		m.close()
 	case "paste":
-		// The editor inserts the clipboard's text when it arrives.
-		gtx.Execute(clipboard.ReadCmd{Tag: ed})
+		in.paste(gtx)
 		m.close()
 	case "select_all":
 		ed.SetCaret(ed.Len(), 0)

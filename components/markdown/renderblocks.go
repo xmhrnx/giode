@@ -33,13 +33,11 @@ func (r *renderer) codeBlock(n gast.Node, lang string) elements.Element {
 		return copybutton.New(func() string { return code }, styles.Styles{FontSize: 12, Color: "theme.muted"})
 	})
 	header := elements.Row(styles.Styles{Width: -1, Align: properties.AlignCenter, Wrap: properties.WrapNoWrap},
-		elements.Box(styles.Styles{FlexGrow: 1}, elements.Text(lang, styles.Styles{Color: "theme.muted", FontSize: 12})),
+		// The language label isn't part of a selection of the code.
+		elements.Box(styles.Styles{FlexGrow: 1}, elements.Raw(elements.RawFunc(kit.Unselectable(elements.Text(lang, styles.Styles{Color: "theme.muted", FontSize: 12}).Layout)))),
 		copyBtn,
 	)
 	body := elements.Text(code, styles.Styles{FontFamily: r.o.CodeFont, FontSize: fontSize, Color: r.base.Color, TabWidth: 4})
-	if k := r.selKey(); k != nil {
-		body.Selectable(k)
-	}
 	return elements.Stack(styles.Styles{
 		Width: -1, Background: r.o.CodeBackground, BorderRadius: 8,
 		Padding: properties.Inset{Top: 6, Right: 10, Bottom: 10, Left: 12}, Gap: 4,

@@ -1,6 +1,7 @@
 package input
 
 import (
+	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
@@ -21,6 +22,25 @@ func (i *Input) InsertText(s string) {
 	if i.onChange != nil {
 		i.onChange(i.editor.Text())
 	}
+}
+
+// paste pastes the clipboard's text, or hands the paste to OnPaste.
+func (i *Input) paste(gtx layout.Context) {
+	if i.editor.ReadOnly {
+		return
+	}
+	if i.onPaste == nil {
+		gtx.Execute(clipboard.ReadCmd{Tag: &i.editor})
+		return
+	}
+	i.onPaste(func() {
+		i.pastePending = true
+	})
+	if i.pastePending {
+		i.pastePending = false
+		gtx.Execute(clipboard.ReadCmd{Tag: &i.editor})
+	}
+	kit.RequestFrame(gtx)
 }
 
 // applySubmit sets the editor's submit behavior for this frame.
@@ -72,6 +92,27 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 	}
 	if i.menu.update(gtx, i) {
 		changed = true
+	}
+	if i.onPaste != nil {
+		// Ctrl+V is taken before the editor sees it, so OnPaste can
+		// decide what's pasted.
+		for {
+			ev, ok := gtx.Event(key.Filter{Focus: &i.editor, Name: "V", Required: key.ModShortcut})
+			if !ok {
+				break
+			}
+			if e, ok := ev.(key.Event); ok && e.State == key.Press {
+				i.paste(gtx)
+			}
+		}
+	}
+	if i.pastePending {
+		i.pastePending = false
+		if !i.editor.ReadOnly {
+			// The editor inserts the text when it arrives.
+			gtx.Execute(clipboard.ReadCmd{Tag: &i.editor})
+			changed = true
+		}
 	}
 	i.applySubmit()
 	for {

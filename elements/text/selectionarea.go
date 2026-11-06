@@ -30,8 +30,10 @@ type selectionAreaEl struct {
 // styles; the selection is drawn in its color at 30% opacity. Elements
 // that are themselves Selectable keep their own selection and aren't
 // part of the area's, nor is the text of buttons, menus, inputs and
-// other interactive components (see kit.Unselectable). The area works through Memo and LazyList: cached
-// subtrees rebuild only when the selection changes.
+// other interactive components (see kit.Unselectable). The area works
+// through Memo and LazyList: cached subtrees rebuild only when the
+// selection changes. Boxes and components that cache their own output
+// don't inside an area: they're laid out every frame.
 func SelectionArea(key any, child base.Element) base.Element {
 	return &selectionAreaEl{key: key, child: child}
 }
@@ -52,6 +54,7 @@ func (e *selectionAreaEl) Layout(gtx layout.Context) layout.Dimensions {
 	s.collecting = n > 1 && selAreaStack[n-2] == s
 	s.prev, s.parts = s.parts, s.prev
 	clear(s.parts)
+	s.endFrame()
 	if s.has {
 		// The selection may now be past the end of shorter content.
 		for _, p := range []*selPos{&s.anchor, &s.focus} {

@@ -23,8 +23,10 @@ takes 2.7 ms instead of 8.5 ms with no other change to the app.
 A `Box` caches only when everything inside it is safe to cache: text, rich text, glyphs,
 dividers, other boxes and the components above. A `Raw` drawing function, a `Canvas` or
 any element built by a function you pass may read any variable, so a box holding one lays
-its content out every frame as before. Inside a `SelectionArea` nothing is cached, as text
-registers with the area while it's laid out.
+its content out every frame as before. Inside a `SelectionArea` these boxes and components
+don't cache themselves and are laid out every frame; `Memo` regions and `LazyList` rows
+there still replay their recorded output, and are rebuilt when the selection changes (see
+[SelectionArea](elements.md#selectionarea)).
 
 Elements made fresh in the view function each frame aren't cached by themselves; wrap a
 large, mostly static region of them in `Memo` (below) to skip building them too.

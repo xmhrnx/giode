@@ -95,6 +95,7 @@ var (
 	PushOffset       = base.PushOffset
 	TrackPosition    = base.TrackPosition
 	TrackChild       = base.TrackChild
+	ReorderTracked   = base.ReorderTracked
 )
 
 // Semantic tree.
@@ -164,3 +165,7 @@ func Keyed[T any](scope, key any, init func() T) T {
 func NewKeyedCache[K comparable, V any]() *KeyedCache[K, V] {
 	return base.NewKeyedCache[K, V]()
 }
+
+// InSelectionArea reports whether a SelectionArea is being laid out
+// around the caller: its text is part of that area's selection.
+func InSelectionArea() bool { return base.InSelectionArea() }

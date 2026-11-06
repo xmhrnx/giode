@@ -79,11 +79,7 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	// first frame, and whenever the size changes, the panel is
 	// measured first and another frame is requested.
 	if d.size == (image.Point{}) {
-		macro := op.Record(gtx.Ops)
-		mgtx := panelGtx
-		mgtx.Source = gtx.Source.Disabled()
-		d.size = elements.Box(st, d.content()).Layout(mgtx).Size
-		macro.Stop()
+		d.size = elements.Measure(panelGtx, elements.Box(st, d.content())).Size
 	}
 	pos := image.Pt((win.X-d.size.X)/2, (win.Y-d.size.Y)/2)
 	off := op.Offset(pos).Push(gtx.Ops)

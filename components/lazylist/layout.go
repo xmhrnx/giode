@@ -58,6 +58,14 @@ func (l *List) Layout(gtx layout.Context) layout.Dimensions {
 	var rows []placed
 	if l.n > 0 {
 		rows = l.place(gtx, viewport, gap, overscan)
+		// Rows above the anchor, or all of them when following the
+		// end, are laid out from the bottom up: a selection area
+		// takes their text in screen order.
+		tracks := make([]elements.ChildTracker, len(rows))
+		for i, p := range rows {
+			tracks[i] = p.track
+		}
+		elements.ReorderTracked(tracks)
 	}
 
 	// Paint, and record the visible range.

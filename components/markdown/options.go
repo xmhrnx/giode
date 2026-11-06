@@ -8,6 +8,8 @@ package markdown
 import (
 	"sync"
 
+	"gioui.org/layout"
+
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
@@ -34,9 +36,12 @@ type Options struct {
 	// OnLink handles taps on links; by default they open in the
 	// browser.
 	OnLink func(url string)
-	// Selectable, when set, makes every paragraph, heading and code
-	// block selectable (see elements.Text.Selectable); its value
-	// identifies the document, as a message ID would.
+	// Selectable, when set, makes the document selectable as a whole -
+	// drag across paragraphs, headings, lists, tables and code, then
+	// copy - by putting it in a SelectionArea; its value identifies the
+	// document, as a message ID would. A document already inside a
+	// SelectionArea is part of that area's selection, with or without
+	// it.
 	Selectable any
 	// Gap is the space between blocks in dp, default 10.
 	Gap int
@@ -82,5 +87,23 @@ func New(src string, opts ...Options) elements.Element {
 	}
 	r := &renderer{src: []byte(src), o: o}
 	r.defaults()
-	return r.blocks(parse(src))
+	doc := r.blocks(parse(src))
+	if o.Selectable == nil {
+		return doc
+	}
+	return selectableDoc{key: o.Selectable, doc: doc}
+}
+
+// selectableDoc puts a document in its own SelectionArea, unless it's
+// already inside one.
+type selectableDoc struct {
+	key any
+	doc elements.Element
+}
+
+func (s selectableDoc) Layout(gtx layout.Context) layout.Dimensions {
+	if elements.InSelectionArea() {
+		return s.doc.Layout(gtx)
+	}
+	return elements.SelectionArea([2]any{"giode.markdown", s.key}, s.doc).Layout(gtx)
 }

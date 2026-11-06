@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/components/kit"
@@ -69,15 +68,12 @@ func (m *Menu) panelPaddingTop() int {
 // hugging its (nonexistent) content, so measuring it would report the
 // scratch context's width instead of anything meaningful.
 func (m *Menu) measureWidth(gtx layout.Context, st styles.Styles) int {
-	scratch := gtx
-	scratch.Ops = new(op.Ops)
-	scratch.Source = gtx.Source.Disabled()
 	width := 0
 	for i := range m.items {
 		if m.items[i].separator {
 			continue
 		}
-		dims := m.row(&m.items[i], i, 0, st).Layout(scratch)
+		dims := elements.Measure(gtx, m.row(&m.items[i], i, 0, st))
 		if dims.Size.X > width {
 			width = dims.Size.X
 		}

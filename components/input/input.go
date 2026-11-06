@@ -25,6 +25,10 @@ type Input struct {
 	maxLines     int
 	onFocus      func()
 	onBlur       func()
+	onPaste      func(pasteText func())
+	// pastePending is set by OnPaste's pasteText: the clipboard's text
+	// is read in the next update.
+	pastePending bool
 	// tap is the event tag for presses anywhere on the field, padding
 	// and border included, which focus the editor.
 	tap int
@@ -131,6 +135,33 @@ func (i *Input) OnFocus(fn func()) *Input {
 // It returns i for chaining.
 func (i *Input) OnBlur(fn func()) *Input {
 	i.onBlur = fn
+	return i
+}
+
+// OnPaste sets fn to run in place of pasting when the user pastes into
+// the field: Ctrl+V (Cmd+V on Apple platforms) or Paste in the editing
+// menu. fn runs on the UI goroutine; it may call pasteText to paste
+// the clipboard's text as the field would have, then or later from the
+// UI goroutine (through App.Post, from a goroutine). A chat composer
+// attaches a copied image this way and pastes text otherwise:
+//
+//	in.OnPaste(func(pasteText func()) {
+//		go func() {
+//			img, err := app.ReadClipboardImage(ctx)
+//			app.Post(func() {
+//				if err == nil && img != nil {
+//					attach(img)
+//				} else {
+//					pasteText()
+//				}
+//			})
+//		}()
+//	})
+//
+// A read-only field doesn't paste and doesn't call fn. It returns i
+// for chaining.
+func (i *Input) OnPaste(fn func(pasteText func())) *Input {
+	i.onPaste = fn
 	return i
 }
 

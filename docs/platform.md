@@ -190,6 +190,9 @@ the web uses the browser's async clipboard, which needs the page focused and may
 On Linux it runs `wl-paste` (Wayland) or `xclip` (X11), one of which must be installed;
 without either it returns an error wrapping `ErrNotSupported`.
 
+To attach an image when the user presses Ctrl+V (Cmd+V) in a text field, read it from the
+field's `OnPaste` hook - see [Input](components/input.md).
+
 ## Downloads and folders
 
 `SaveToDownloads` copies a file into the Downloads folder, in a subfolder (the app's name

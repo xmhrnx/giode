@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"gioui.org/layout"
-	"gioui.org/op"
 
 	"github.com/xmhrnx/giode/elements/box"
 	"github.com/xmhrnx/giode/elements/internal/base"
@@ -49,16 +48,13 @@ func (t *tableElement) Layout(gtx layout.Context) layout.Dimensions {
 	return box.Box(tst, children...).Layout(gtx)
 }
 
-// MeasureColumnWidths lays each row's cells out on a scratch context
-// to find the widest cell per column, the same technique Menu's own
-// panel-width measurement uses.
+// MeasureColumnWidths measures each row's cells to find the widest
+// cell per column. Measuring registers nothing - no selectable text or
+// semantic nodes - so the cells appear once, as they're laid out.
 func (t *tableElement) MeasureColumnWidths(gtx layout.Context) []int {
 	scratch := gtx
-	scratch.Ops = new(op.Ops)
-	scratch.Source = gtx.Source.Disabled()
-	// Cleared for the same reason Menu's own panel-width measurement
-	// clears it: an inherited nonzero Min would force every cell to
-	// hug to at least that size, rather than its own natural width.
+	// An inherited nonzero Min would force every cell to hug to at
+	// least that size, rather than its own natural width.
 	scratch.Constraints.Min = image.Point{}
 
 	var widths []int
@@ -68,7 +64,7 @@ func (t *tableElement) MeasureColumnWidths(gtx layout.Context) []int {
 			continue
 		}
 		for i, cell := range tr.cells {
-			dims := cell.Layout(scratch)
+			dims := base.Measure(scratch, cell)
 			for len(widths) <= i {
 				widths = append(widths, 0)
 			}

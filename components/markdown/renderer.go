@@ -18,8 +18,6 @@ type renderer struct {
 	o    Options
 	base styles.Styles
 	code styles.Styles
-	// n counts selectable blocks, for their keys.
-	n int
 }
 
 func (r *renderer) defaults() {
@@ -37,15 +35,6 @@ func (r *renderer) defaults() {
 		r.o.Gap = 10
 	}
 	r.code = styles.Styles{FontFamily: r.o.CodeFont, Background: r.o.CodeBackground}
-}
-
-// selKey returns the next block's selection key, or nil.
-func (r *renderer) selKey() any {
-	if r.o.Selectable == nil {
-		return nil
-	}
-	r.n++
-	return [2]any{r.o.Selectable, r.n}
 }
 
 // blocks renders n's block children as a column.
@@ -95,9 +84,6 @@ func (r *renderer) paragraph(st styles.Styles, n gast.Node) elements.Element {
 	rt := elements.RichText(st, spans...)
 	if r.o.OnLink != nil {
 		rt.OnLink(r.o.OnLink)
-	}
-	if k := r.selKey(); k != nil {
-		rt.Selectable(k)
 	}
 	return rt
 }

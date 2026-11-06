@@ -20,7 +20,13 @@ type selArea struct {
 	// parts are being collected this frame; prev are last frame's,
 	// whose positions are exact by the time events arrive.
 	parts, prev []*selPart
-	origin      image.Point
+	// order holds, for each part this frame, the order it registered
+	// in, as containers that lay children out of screen order
+	// rearrange parts (see base.ReorderTracked); regPlace maps last
+	// frame's registration order to the part's place, to paint a
+	// part's selection as it registers.
+	order, regPlace []int
+	origin          image.Point
 
 	anchor, focus selPos
 	has           bool
@@ -180,4 +186,45 @@ func (s *selArea) bounds() image.Rectangle {
 		}
 	}
 	return r
+}
+
+// placeOf is where the part registering reg-th this frame ends up, as
+// it did last frame.
+func (s *selArea) placeOf(reg int) int {
+	if reg < len(s.regPlace) {
+		return s.regPlace[reg]
+	}
+	return reg
+}
+
+// reorder puts the parts in spans in the order the spans are given,
+// where the spans lie now.
+func (s *selArea) reorder(spans [][2]int) {
+	lo := spans[0][0]
+	for _, sp := range spans {
+		lo = min(lo, sp[0])
+	}
+	parts := make([]*selPart, 0, len(s.parts))
+	order := make([]int, 0, len(s.order))
+	for _, sp := range spans {
+		parts = append(parts, s.parts[sp[0]:sp[1]]...)
+		order = append(order, s.order[sp[0]:sp[1]]...)
+	}
+	copy(s.parts[lo:], parts)
+	copy(s.order[lo:], order)
+}
+
+// endFrame records where each registration ended up, for the next
+// frame's painting.
+func (s *selArea) endFrame() {
+	s.regPlace = s.regPlace[:0]
+	for range s.order {
+		s.regPlace = append(s.regPlace, 0)
+	}
+	for pos, reg := range s.order {
+		if reg < len(s.regPlace) {
+			s.regPlace[reg] = pos
+		}
+	}
+	s.order = s.order[:0]
 }

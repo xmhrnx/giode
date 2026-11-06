@@ -205,3 +205,42 @@ func TestInput_PlaceholderStaysOneLine(t *testing.T) {
 		}
 	}
 }
+
+// OnPaste takes Ctrl+V and the menu's Paste in place of pasting; the
+// field reads the clipboard only when pasteText is called.
+func TestInput_OnPaste(t *testing.T) {
+	fonts.UseGofont()
+	var pasteText func()
+	calls := 0
+	in := New("Message").OnPaste(func(p func()) { calls++; pasteText = p })
+	h := &harness{in: in, max: image.Pt(400, 400)}
+	in.Focus()
+	h.frame()
+	h.frame()
+	h.r.Queue(key.Event{Name: "V", Modifiers: key.ModShortcut, State: key.Press})
+	h.frame()
+	if calls != 1 {
+		t.Fatalf("Ctrl+V called OnPaste %d times, want 1", calls)
+	}
+	if h.r.ClipboardRequested() {
+		t.Fatal("the field read the clipboard before pasteText")
+	}
+	// Later, as from App.Post.
+	pasteText()
+	h.frame()
+	if !h.r.ClipboardRequested() {
+		t.Fatal("pasteText didn't read the clipboard")
+	}
+
+	// Without OnPaste, Ctrl+V reads the clipboard as before.
+	plain := New("Message")
+	h = &harness{in: plain, max: image.Pt(400, 400)}
+	plain.Focus()
+	h.frame()
+	h.frame()
+	h.r.Queue(key.Event{Name: "V", Modifiers: key.ModShortcut, State: key.Press})
+	h.frame()
+	if !h.r.ClipboardRequested() {
+		t.Error("Ctrl+V without OnPaste didn't read the clipboard")
+	}
+}
