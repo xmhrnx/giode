@@ -127,9 +127,13 @@ func (m *editMenu) update(gtx layout.Context, in *Input) bool {
 			m.action = ""
 			changed = true
 		}
-		if gtx.Source.Focused(ed) {
+		switch {
+		case !gtx.Source.Enabled():
+			// A measuring pass (the field laid out with input off, to
+			// size it): Focused reports false whatever the focus.
+		case gtx.Source.Focused(ed):
 			m.hadFocus = true
-		} else if m.hadFocus {
+		case m.hadFocus:
 			m.close()
 			changed = true
 		}

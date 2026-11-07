@@ -166,6 +166,11 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 			}
 		}
 	}
+	if !gtx.Source.Enabled() {
+		// A measuring pass: Focused reports false whatever the focus,
+		// which isn't the field losing it.
+		return changed
+	}
 	focused := gtx.Source.Focused(&i.editor)
 	if focused != i.focused {
 		changed = true

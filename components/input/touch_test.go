@@ -18,6 +18,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 type menuHarness struct {
@@ -172,5 +173,101 @@ func TestInput_ScrollIsNotALongPress(t *testing.T) {
 	h.frame()
 	if h.in.menu.open {
 		t.Error("a moving finger opened the menu")
+	}
+}
+
+// The menu opens at the field, wherever the field is in the window -
+// below a 200dp box here - not at the window's corner.
+func TestEditMenuAtField(t *testing.T) {
+	fonts.UseGofont()
+	defer elements.SetWindowSize(image.Point{})
+	var r input.Router
+	field := New("type here")
+	field.SetText("hello")
+	view := elements.Stack(styles.Styles{Width: -1, Height: -1, Padding: properties.UniformInset(20)},
+		elements.Box(styles.Styles{Width: -1, Height: 200}),
+		field)
+	var nodes []elements.SemanticNode
+	frame := func() {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Constraints: layout.Exact(image.Pt(600, 500)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+		elements.BeginFrame()
+		elements.SetWindowSize(gtx.Constraints.Max)
+		elements.BeginSemantics()
+		view.Layout(gtx)
+		elements.DrainPortals(gtx)
+		nodes = elements.EndSemantics()
+		elements.EndFrame()
+		r.Frame(&ops)
+	}
+	frame()
+	frame()
+	// Right-click the field: it's at y 220 and down.
+	at := f32.Pt(60, 235)
+	r.Queue(
+		pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at},
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonSecondary, Position: at},
+		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: at},
+	)
+	frame()
+	frame()
+	if !field.menu.open {
+		t.Fatal("the right-click didn't open the menu")
+	}
+	var paste *elements.SemanticNode
+	for i, n := range nodes {
+		if n.Kind == elements.SemanticButton && strings.Contains(n.Label, "Paste") {
+			paste = &nodes[i]
+		}
+	}
+	if paste == nil {
+		t.Fatalf("no Paste button; nodes %v", nodes)
+	}
+	// The bar sits just above (or below) the field's line: within
+	// 80px of the click, not at the window's top.
+	if c := paste.Bounds.Min.Add(paste.Bounds.Max).Div(2); c.Y < 235-80 || c.Y > 235+80 {
+		t.Errorf("Paste is at %v; the field was clicked at y 235", paste.Bounds)
+	}
+}
+
+// A field measured before it's laid out in the same frame (input off,
+// so no focus is reported) keeps its menu open and its focus.
+func TestEditMenuSurvivesMeasure(t *testing.T) {
+	fonts.UseGofont()
+	defer elements.SetWindowSize(image.Point{})
+	var r input.Router
+	blurs := 0
+	field := New("type here").OnBlur(func() { blurs++ })
+	field.SetText("hello")
+	view := elements.Raw(func(gtx layout.Context) layout.Dimensions {
+		elements.Measure(gtx, field)
+		return field.Layout(gtx)
+	})
+	frame := func() {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Constraints: layout.Exact(image.Pt(400, 200)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+		elements.BeginFrame()
+		elements.SetWindowSize(gtx.Constraints.Max)
+		view.Layout(gtx)
+		elements.DrainPortals(gtx)
+		elements.EndFrame()
+		r.Frame(&ops)
+	}
+	frame()
+	frame()
+	at := f32.Pt(30, 15)
+	r.Queue(
+		pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at},
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonSecondary, Position: at},
+		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: at},
+	)
+	for i := 0; i < 4; i++ {
+		frame()
+	}
+	if !field.menu.open {
+		t.Error("the menu closed: the measuring pass looked like the field losing focus")
+	}
+	if blurs != 0 || !field.Focused() {
+		t.Errorf("OnBlur ran %d times, focused %v: the measuring pass looked like a blur", blurs, field.Focused())
 	}
 }

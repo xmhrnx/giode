@@ -31,37 +31,43 @@ func (m *editMenu) layout(gtx layout.Context, in *Input, size image.Point) {
 	acts := m.actions(in)
 	s, e := ed.Selection()
 	lo, hi := min(s, e), max(s, e)
-	// The selection's (or caret's) rectangles, in window coordinates.
-	origin := m.origin
-	var bounds image.Rectangle
-	var startPt, endPt image.Point
-	var have bool
 	regions := ed.Regions(lo, hi, nil)
-	for i, r := range regions {
-		b := r.Bounds.Add(origin)
-		if i == 0 {
-			bounds = b
-			startPt = image.Pt(b.Min.X, b.Max.Y)
-		} else {
-			bounds = bounds.Union(b)
-		}
-		endPt = image.Pt(b.Max.X, b.Max.Y)
-		have = true
-	}
-	if !have {
-		c := ed.CaretCoords().Round().Add(origin)
-		lh := gtx.Sp(properties.ResolveFontSize(in.st.FontSize))
-		bounds = image.Rect(c.X, c.Y-lh, c.X+1, c.Y+lh/4)
-		startPt, endPt = image.Pt(c.X, bounds.Max.Y), image.Pt(c.X, bounds.Max.Y)
-	}
 	showHandles := m.handles && lo != hi && len(regions) > 0
 	dragging := m.start.drag.Dragging() || m.end.drag.Dragging()
+	caret := ed.CaretCoords().Round()
+	lh := gtx.Sp(properties.ResolveFontSize(in.st.FontSize))
 	if m.buttons == nil {
 		m.buttons = map[string]*elements.Pressable{}
 	}
 	elements.RegisterOverlay(func() elements.Element {
 		return elements.Raw(func(gtx layout.Context) layout.Dimensions {
 			win := gtx.Constraints.Max
+			// The selection's (or caret's) rectangles, in window
+			// coordinates. Worked out here, as the overlays are laid out
+			// after the rest of the frame: m.origin, tracked while the
+			// editor was laid out, has by now been moved to where the
+			// containers around the field placed it. Read during the
+			// editor's layout, it was where the field started out,
+			// near the window's corner.
+			origin := m.origin
+			var bounds image.Rectangle
+			var startPt, endPt image.Point
+			for i, r := range regions {
+				b := r.Bounds.Add(origin)
+				if i == 0 {
+					bounds = b
+					startPt = image.Pt(b.Min.X, b.Max.Y)
+				} else {
+					bounds = bounds.Union(b)
+				}
+				endPt = image.Pt(b.Max.X, b.Max.Y)
+			}
+			if len(regions) == 0 {
+				c := caret.Add(origin)
+				bounds = image.Rect(c.X, c.Y-lh, c.X+1, c.Y+lh/4)
+				startPt, endPt = image.Pt(c.X, bounds.Max.Y), image.Pt(c.X, bounds.Max.Y)
+			}
+
 			// Watch presses everywhere without taking them.
 			ps := pointer.PassOp{}.Push(gtx.Ops)
 			cl := clip.Rect{Max: win}.Push(gtx.Ops)
