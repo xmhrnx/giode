@@ -15,6 +15,7 @@ import (
 	"gioui.org/op/paint"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -122,6 +123,10 @@ func (l *List) Layout(gtx layout.Context) layout.Dimensions {
 		kit.MarkLive()
 	}
 	l.sweep()
+	if l.idleFn == nil {
+		l.idleFn = l.sweepIdle
+	}
+	textrender.OnNextIdle(l, l.idleFn)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticScroll, Target: l}, viewport)
 	return layout.Dimensions{Size: viewport}
 }

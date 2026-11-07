@@ -5,6 +5,7 @@ import (
 	"image"
 	"sort"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/io/input"
@@ -14,6 +15,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -311,5 +313,50 @@ func TestLazyList_FingerScrollsUpWhileLastRowGrows(t *testing.T) {
 	}
 	if !h.l.Following() {
 		t.Error("not following after letting go at the end")
+	}
+}
+
+// A window gone idle lets go of the drawings of the rows its last frame
+// didn't lay out; the visible rows keep theirs.
+func TestLazyList_IdleSweepDropsOffscreenRows(t *testing.T) {
+	m := newModel(500)
+	h := newHarness(m, AnchorTop, true)
+	h.frame()
+	// Scroll through a few screens: each row laid out gets a drawing.
+	for i := 0; i < 40; i++ {
+		h.l.ScrollBy(0, 100)
+		h.frame()
+	}
+	cached := func() (n, recent int) {
+		for _, r := range h.l.rows {
+			if r.cache != nil {
+				n++
+				if r.used == h.l.frame {
+					recent++
+				}
+			}
+		}
+		return
+	}
+	before, _ := cached()
+	// The idle sweep runs on the "UI goroutine": here, the test's.
+	ui := make(chan func(), 1)
+	textrender.SetUIRunner(func(fn func()) {
+		select {
+		case ui <- fn:
+		default:
+		}
+	})
+	defer textrender.SetUIRunner(nil)
+	defer textrender.SetIdleSweep(textrender.SetIdleSweep(20 * time.Millisecond))
+	select {
+	case fn := <-ui:
+		fn()
+	case <-time.After(3 * time.Second):
+		t.Fatal("no idle sweep")
+	}
+	after, recent := cached()
+	if after != recent || after == 0 || after >= before {
+		t.Errorf("rows with drawings: %d before the idle sweep, %d after, %d of them laid out in the last frame; want only those", before, after, recent)
 	}
 }

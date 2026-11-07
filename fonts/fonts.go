@@ -30,8 +30,14 @@ var (
 
 // Register replaces the font collection used to shape text.
 func Register(faces []font.FontFace) {
+	register(faces, nil)
+}
+
+// register replaces the collection, and the RegisterFont aliases with
+// as.
+func register(faces []font.FontFace, as []alias) {
 	mu.Lock()
-	collection = faces
+	collection, aliases = faces, as
 	mu.Unlock()
 	shaper.Store(text.NewShaper(text.WithCollection(faces)))
 	shaped.Store(0)
@@ -111,26 +117,82 @@ type File struct {
 //	)
 //
 // Text styled FontFamily: "Inter" then uses them, with the closest
-// registered weight and style. Each file's family, weight and style
-// replace what the file itself says, so they always match what Styles
-// ask for. A collection (TTC) registers all its faces.
+// registered weight and style. The family, weight and style given here
+// are what Styles select a file by, whatever the file itself says. A
+// collection (TTC) registers all its faces.
 func RegisterFont(files ...File) error {
-	faces := append([]font.FontFace(nil), collection...)
+	faces := append([]font.FontFace(nil), Collection()...)
+	var added []alias
 	for _, f := range files {
 		parsed, err := opentype.ParseCollection(f.Data)
 		if err != nil {
 			return fmt.Errorf("giode: font %q: %w", f.Family, err)
 		}
+		style := font.Regular
+		if f.Italic {
+			style = font.Italic
+		}
 		for _, face := range parsed {
-			face.Font.Typeface = font.Typeface(f.Family)
-			face.Font.Weight = f.Weight.Weight()
-			face.Font.Style = font.Regular
-			if f.Italic {
-				face.Font.Style = font.Italic
-			}
+			// The face keeps the family and weight its file gives: Gio
+			// resolves a face renamed to another family to a copy of
+			// it, numbered apart from the registered fonts and drawn
+			// as shapes. Text asks for it by the name given here, which
+			// Resolve maps to the file's own.
+			added = append(added, alias{
+				family: font.Typeface(f.Family), weight: f.Weight.Weight(), style: style,
+				font: face.Font,
+			})
 			faces = append(faces, face)
 		}
 	}
-	Register(faces)
+	mu.Lock()
+	as := append(append([]alias(nil), aliases...), added...)
+	mu.Unlock()
+	register(faces, as)
 	return nil
+}
+
+// alias is a face registered with RegisterFont: the family, weight and
+// style text asks for it by, and the face's own.
+type alias struct {
+	family font.Typeface
+	weight font.Weight
+	style  font.Style
+	font   font.Font
+}
+
+var aliases []alias
+
+// Resolve maps f, as text styles ask for it, to a face registered with
+// RegisterFont under that family: the one with the same style and the
+// closest weight (the heavier on a tie). A family registered no other
+// way is returned as is, for the shaper to match.
+func Resolve(f font.Font) font.Font {
+	mu.Lock()
+	defer mu.Unlock()
+	best, found := alias{}, false
+	score := func(a alias) int {
+		d := int(a.weight) - int(f.Weight)
+		if d < 0 {
+			d = -d*2 + 1 // a lighter face loses a tie
+		} else {
+			d *= 2
+		}
+		if a.style != f.Style {
+			d += 10000
+		}
+		return d
+	}
+	for _, a := range aliases {
+		if a.family != f.Typeface {
+			continue
+		}
+		if !found || score(a) < score(best) {
+			best, found = a, true
+		}
+	}
+	if !found {
+		return f
+	}
+	return best.font
 }

@@ -85,11 +85,11 @@ func (r *RichTextElement) Layout(gtx layout.Context) layout.Dimensions {
 	hasBackground := false
 	for i, s := range spans {
 		trSpans[i] = textrender.Span{
-			Font: font.Font{
+			Font: fonts.Resolve(font.Font{
 				Typeface: font.Typeface(s.st.FontFamily),
 				Weight:   s.st.FontWeight.Weight(),
 				Style:    s.st.FontStyle.Style(),
-			},
+			}),
 			Size:    properties.ResolveFontSize(s.st.FontSize),
 			Content: s.text,
 		}

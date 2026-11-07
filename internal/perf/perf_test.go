@@ -290,3 +290,49 @@ func TestRetainedMemoryDistinctText(t *testing.T) {
 	}
 	t.Logf("after 1500 frames of new 1.5 KB messages: heap %.1f MB (start %.1f MB)", heap(), start)
 }
+
+// TestRetainedMemoryAfterIdle runs a burst of long, distinct messages,
+// then lets the window go idle: the idle sweep, run on the "UI
+// goroutine" before one more frame as App runs it, lets go of what
+// isn't on screen.
+func TestRetainedMemoryAfterIdle(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	msgs := make([]msg, 50)
+	for i := range msgs {
+		msgs[i] = msg{id: i, text: fmt.Sprintf("Message %d. %s", i, strings.Repeat(lorem+" ", 8))}
+	}
+	next := len(msgs)
+	h := newHost(1000, 900, chatView(&msgs, false))
+	heap := func() float64 {
+		runtime.GC()
+		runtime.GC()
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		return float64(m.HeapAlloc) / 1e6
+	}
+	for i := 0; i < 1500; i++ {
+		msgs = append(msgs[1:], msg{id: next, text: fmt.Sprintf("Message %d. %s", next, strings.Repeat(lorem+" ", 8))})
+		next++
+		h.frame()
+	}
+	busy := heap()
+	ui := make(chan func(), 1)
+	textrender.SetUIRunner(func(fn func()) {
+		select {
+		case ui <- fn:
+		default:
+		}
+	})
+	defer textrender.SetUIRunner(nil)
+	defer textrender.SetIdleSweep(textrender.SetIdleSweep(50 * time.Millisecond))
+	select {
+	case fn := <-ui:
+		fn()
+		h.frame()
+	case <-time.After(5 * time.Second):
+		t.Fatal("no idle sweep")
+	}
+	t.Logf("heap after the burst %.1f MB, after going idle %.1f MB", busy, heap())
+}

@@ -116,6 +116,19 @@ func Layout(sh *text.Shaper, p text.Parameters, cs layout.Constraints, str strin
 	return l
 }
 
+// clearLayouts forgets every laid out text.
+func clearLayouts() {
+	layouts.Lock()
+	layouts.m = nil
+	layouts.Unlock()
+	richLayouts.Lock()
+	richLayouts.m = nil
+	richLayouts.Unlock()
+	streams.Lock()
+	streams.m = nil
+	streams.Unlock()
+}
+
 // sweepUnused drops everything the frame f didn't use: what an idle
 // window keeps is what it shows.
 func sweepUnused(f uint64) {

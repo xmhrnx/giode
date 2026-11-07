@@ -81,6 +81,8 @@ type List struct {
 	wasAtTop, wasAtEnd     bool
 	pass                   func(gtx layout.Context) bool
 	movedBy                int
+	// idleFn is sweepIdle, made once (see textrender.OnNextIdle).
+	idleFn func()
 
 	// est caches estimate's sums, which call key and version for every
 	// row: they're redone when a row's height or the rows change, the
@@ -202,6 +204,18 @@ func (l *List) indexOf(key any, hint int) int {
 		}
 	}
 	return -1
+}
+
+// sweepIdle drops the drawings of the rows the last frame didn't lay
+// out - all but the visible ones - when the window has gone idle: a
+// burst of text scrolled past would otherwise stay until the next
+// frames.
+func (l *List) sweepIdle() {
+	for _, r := range l.rows {
+		if r.used < l.frame {
+			r.cache = nil
+		}
+	}
 }
 
 // sweep forgets rows not laid out for a while.

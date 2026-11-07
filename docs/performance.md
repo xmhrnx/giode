@@ -212,8 +212,15 @@ at about 25 MB. A new shaper takes well under a millisecond.
 
 These caches are swept as frames are drawn, and a window that stops drawing would keep
 everything it last held. So once a window has drawn nothing for ten seconds, Giode drops
-the text images and layouts its last frame didn't use, and Gio's shaper cache: an idle window
-keeps what it shows.
+the text images and layouts its last frame didn't use, Gio's shaper cache if much text went
+through it, and the drawings of every `LazyList` row that isn't on screen; then it draws one
+frame, which lets Gio's GPU caches drop what nothing draws any more. An idle window keeps
+what it shows: after a burst of long chat messages, the heap went from 63 MB to 19 MB once
+the window was idle. (A custom host using `giode.Frame` gets the text part, not the lists'.)
+
+`RegisterFont` registers each file under its own family name and maps the name you give to
+it, so text in those fonts is drawn from the registered faces as bitmaps. A face renamed
+in Gio itself would be found again as a copy, drawn as shapes.
 
 Icons (SVG, path data, IconVG and the built-in glyphs) are rasterized the same way, once
 per size and color.

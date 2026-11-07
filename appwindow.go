@@ -17,6 +17,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/host"
 	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/state"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -157,6 +158,8 @@ func New(cfg Config) *App {
 	a.topMost.Store(cfg.AlwaysOnTop)
 	a.title.Store(&cfg.Title)
 	currentApp.Store(a)
+	// The idle sweep runs on the UI goroutine, before one frame.
+	textrender.SetUIRunner(a.Post)
 	a.platformInit()
 	if cfg.Locale != "" {
 		i18n.SetLocale(cfg.Locale)

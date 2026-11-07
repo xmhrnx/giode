@@ -33,9 +33,20 @@ func Tick() {
 	f := frame.Add(1)
 	// Text laid out this frame uses a fresh shaper once Gio's cache of
 	// laid out paragraphs has grown; see fonts.Refresh.
-	fonts.Refresh(shapeBudget)
+	refreshShaper(shapeBudget)
 	if f%60 == 0 {
 		sweepLayouts(f)
+	}
+}
+
+// refreshShaper replaces the shaper once limit bytes were shaped with
+// it, and then forgets every layout made with the old one: their glyphs
+// name faces by the old shaper's numbering - Gio numbers fallback and
+// renamed faces as it first uses them - which the new shaper may not
+// know yet, so it would draw them as nothing.
+func refreshShaper(limit int) {
+	if fonts.Refresh(limit) {
+		clearLayouts()
 	}
 }
 
@@ -47,8 +58,13 @@ func FrameDone() {
 
 // shapeBudget is how much text, in bytes, is shaped with one shaper
 // before it's replaced: Gio keeps about a hundred times that in laid
-// out glyphs, some 25 MB.
-const shapeBudget = 256 << 10
+// out glyphs, some 25 MB. An idle window replaces it past
+// idleShapeBudget: replacing it clears the layouts of the text on
+// screen too, which the next frame shapes again.
+const (
+	shapeBudget     = 256 << 10
+	idleShapeBudget = 32 << 10
+)
 
 var (
 	startIdleSweep sync.Once
@@ -68,29 +84,93 @@ func init() { idleSweep.Store(int64(10 * time.Second)) }
 // the caches are otherwise swept only as frames are drawn, so an idle
 // window kept everything it had shown - a closed chat, a long-gone
 // page - until the next input. Once no frame has been drawn for
-// idleSweep, it drops what the last frame didn't use and lets Gio's
-// shaper cache go; what's on screen stays.
+// idleSweep, it drops what the last frame didn't use, and lets Gio's
+// shaper cache go if much text went through it.
 func idleSweeper() {
 	var last, swept uint64
-	idle := 0
+	since := time.Now()
 	for {
-		time.Sleep(time.Duration(idleSweep.Load()) / 2)
+		idle := time.Duration(idleSweep.Load())
+		time.Sleep(min(idle/4, 500*time.Millisecond))
 		f := frame.Load()
 		if f != last {
-			last, idle = f, 0
+			last, since = f, time.Now()
 			continue
 		}
-		if idle++; idle < 2 || swept == f {
+		if swept == f || time.Since(since) < idle {
+			continue
+		}
+		if run := uiRunner.Load(); run != nil {
+			// On the UI goroutine, before one more frame: the lists and
+			// other components sweep their own state there, and the
+			// frame lets Gio's GPU caches drop what nothing draws now.
+			// That frame is this sweep's own, not a reason for another.
+			(*run)(func() { sweepIdle(f) })
+			swept = f + 1
 			continue
 		}
 		between.Lock()
 		if !inFrame.Load() {
-			sweepUnused(f)
-			fonts.Refresh(0)
+			sweepIdle(f)
 			swept = f
 		}
 		between.Unlock()
 	}
+}
+
+// sweepIdle sweeps an idle window's caches, f its last frame: the text
+// caches, the shaper, and what components registered with OnNextIdle.
+func sweepIdle(f uint64) {
+	sweepUnused(f)
+	refreshShaper(idleShapeBudget)
+	idleFns.Lock()
+	fns := idleFns.m
+	idleFns.m = nil
+	idleFns.Unlock()
+	for _, fn := range fns {
+		fn()
+	}
+}
+
+var (
+	// uiRunner runs a function on the UI goroutine; see SetUIRunner.
+	uiRunner atomic.Pointer[func(func())]
+	idleFns  struct {
+		sync.Mutex
+		m map[any]func()
+	}
+)
+
+// SetUIRunner gives the idle sweep a way to run on the UI goroutine
+// before a frame (App.Post), so components can sweep their own state
+// (OnNextIdle). Without one - a custom host - the idle sweep clears only
+// the text caches, from its own goroutine, between frames.
+func SetUIRunner(run func(func())) {
+	if run == nil {
+		uiRunner.Store(nil)
+		return
+	}
+	uiRunner.Store(&run)
+}
+
+// SetIdleSweep sets how long a window draws nothing before the idle
+// sweep, for tests; it returns the previous delay.
+func SetIdleSweep(d time.Duration) time.Duration {
+	return time.Duration(idleSweep.Swap(int64(d)))
+}
+
+// OnNextIdle has fn run, on the UI goroutine, at the next idle sweep - a
+// component's way to let go of state it keeps only for frames it draws
+// (a list's off-screen rows). Call it every frame the component is
+// laid out, with the same key: the sweep forgets it after running it,
+// so a component no longer laid out isn't kept.
+func OnNextIdle(key any, fn func()) {
+	idleFns.Lock()
+	if idleFns.m == nil {
+		idleFns.m = make(map[any]func())
+	}
+	idleFns.m[key] = fn
+	idleFns.Unlock()
 }
 
 // runKey identifies a line image: its glyphs, their positions relative

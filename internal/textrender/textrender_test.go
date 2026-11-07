@@ -23,6 +23,8 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/xmhrnx/giode/fonts"
+	"golang.org/x/image/font/gofont/gobold"
+	"golang.org/x/image/font/gofont/goregular"
 )
 
 func params(size int) text.Parameters {
@@ -438,12 +440,11 @@ func TestLayoutRich_StreamingReuse(t *testing.T) {
 }
 
 // A window that stops drawing lets go of what its last frame didn't
-// show, and of Gio's shaper cache; what it shows stays.
+// show; what it shows stays.
 func TestIdleSweep(t *testing.T) {
 	fonts.UseGofont()
 	defer idleSweep.Store(idleSweep.Load())
 	idleSweep.Store(int64(20 * time.Millisecond))
-	sh := fonts.Shaper()
 	cs := layout.Constraints{Max: image.Pt(400, 1000)}
 	frameOf := func(texts ...string) {
 		Tick()
@@ -457,19 +458,18 @@ func TestIdleSweep(t *testing.T) {
 	if _, _, plain, _ := CacheStats(); plain < 2 {
 		t.Fatalf("%d layouts cached, want both", plain)
 	}
-	deadline := time.Now().Add(2 * time.Second)
-	for fonts.Shaper() == sh && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if fonts.Shaper() == sh {
-		t.Fatal("the idle window kept its shaper and Gio's cache")
-	}
-	layouts.Lock()
 	var kept []string
-	for k := range layouts.m {
-		kept = append(kept, k.str)
+	for deadline := time.Now().Add(2 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		kept = kept[:0]
+		layouts.Lock()
+		for k := range layouts.m {
+			kept = append(kept, k.str)
+		}
+		layouts.Unlock()
+		if len(kept) == 1 {
+			break
+		}
 	}
-	layouts.Unlock()
 	if len(kept) != 1 || kept[0] != "still here" {
 		t.Errorf("after the idle sweep the layouts are %q, want only what the last frame drew", kept)
 	}
@@ -488,5 +488,77 @@ func TestShaperRefresh(t *testing.T) {
 	}
 	if fonts.Shaper() == sh {
 		t.Error("the shaper was never replaced")
+	}
+}
+
+// Text laid out before the shaper is replaced still draws after: the
+// layouts made with the old shaper are forgotten, since their glyphs
+// name faces by its numbering - here a system font the text falls back
+// to, which Gio numbers as it first uses it, and which the new shaper
+// hasn't loaded yet.
+func TestShaperRefreshKeepsTextVisible(t *testing.T) {
+	fonts.UseGofont()
+	const str = "設定 Settings"
+	cs := layout.Constraints{Max: image.Pt(400, 100)}
+	p := params(18)
+	sh := fonts.Shaper()
+	sh.LayoutString(p, str)
+	g, _ := sh.NextGlyph()
+	for _, ok := sh.NextGlyph(); ok; _, ok = sh.NextGlyph() {
+	}
+	if _, face, _ := splitGlyphID(g.ID); face < len(faces(sh)) {
+		t.Skip("no system font to fall back to for the Japanese text")
+	}
+	draw := func() int {
+		l := Layout(fonts.Shaper(), p, cs, str)
+		img := render(t, 400, 60, func(ops *op.Ops) { l.Draw(ops, fonts.Shaper(), color.NRGBA{A: 255}) })
+		n := 0
+		for i := 0; i < len(img.Pix); i += 4 {
+			if img.Pix[i] < 128 {
+				n++
+			}
+		}
+		return n
+	}
+	Tick()
+	before := draw()
+	FrameDone()
+	fonts.Shaped(1 << 30)
+	clearRuns()
+	Tick()
+	if fonts.Shaper() == sh {
+		t.Fatal("the shaper wasn't replaced")
+	}
+	after := draw()
+	FrameDone()
+	if after < before*9/10 {
+		t.Errorf("after the shaper was replaced %d pixels were drawn, %d before", after, before)
+	}
+}
+
+// A font registered with RegisterFont under another family than its
+// own is drawn from the registered face, as bitmaps: Resolve asks Gio
+// for the face by its own name.
+func TestRegisterFontUsesBitmaps(t *testing.T) {
+	defer fonts.UseGofont()
+	fonts.Register(nil)
+	if err := fonts.RegisterFont(
+		fonts.File{Family: "Inter", Data: goregular.TTF},
+		fonts.File{Family: "Inter", Weight: "bold", Data: gobold.TTF},
+	); err != nil {
+		t.Fatal(err)
+	}
+	sh := fonts.Shaper()
+	for _, w := range []font.Weight{font.Normal, font.Bold} {
+		p := params(18)
+		p.Font = fonts.Resolve(font.Font{Typeface: "Inter", Weight: w})
+		sh.LayoutString(p, "S")
+		g, _ := sh.NextGlyph()
+		for _, ok := sh.NextGlyph(); ok; _, ok = sh.NextGlyph() {
+		}
+		_, face, _ := splitGlyphID(g.ID)
+		if fs := faces(sh); face >= len(fs) {
+			t.Errorf("weight %v: face %d, beyond the %d registered: drawn as shapes", w, face, len(fs))
+		}
 	}
 }
