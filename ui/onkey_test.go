@@ -4,6 +4,7 @@ import (
 	"image"
 	"testing"
 
+	"gioui.org/io/event"
 	"gioui.org/io/input"
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -111,5 +112,57 @@ func TestShortcutsWithFocusedField(t *testing.T) {
 	}
 	if field.Text() != "abc" {
 		t.Errorf("field %q: typing should stay in the field", field.Text())
+	}
+}
+
+// Tab and Shift+Tab shortcuts fire, and the focus stays. A window hands
+// Gio those keys as system events, which go only to a listener that
+// names the key; otherwise the window moves the focus.
+func TestShortcutsTab(t *testing.T) {
+	fonts.UseGofont()
+	var r input.Router
+	a, b := Input.Text("A"), Input.Text("B")
+	var fired []string
+	frame := func() {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Constraints: layout.Exact(image.Pt(640, 480))}
+		Frame(gtx, Raw(func(gtx layout.Context) layout.Dimensions {
+			Shortcuts(
+				Shortcut("Tab", func() { fired = append(fired, "Tab") }),
+				Shortcut("Shift+Tab", func() { fired = append(fired, "Shift+Tab") }),
+			)
+			return Stack(Styles{Width: -1}, a, b).Layout(gtx)
+		}))
+		r.Frame(&ops)
+	}
+	// press sends Tab as the window does: as a system event when it
+	// would move the focus (no modifiers, or Shift).
+	press := func(mods key.Modifiers) {
+		for _, st := range []key.State{key.Press, key.Release} {
+			var e event.Event = key.Event{Name: key.NameTab, Modifiers: mods, State: st}
+			if mods == 0 || mods == key.ModShift {
+				e = input.SystemEvent{Event: e}
+			}
+			r.Queue(e)
+		}
+		frame()
+		frame()
+	}
+	frame()
+	a.Focus()
+	frame()
+	frame()
+	press(0)
+	press(key.ModShift)
+	if len(fired) != 2 || fired[0] != "Tab" || fired[1] != "Shift+Tab" {
+		t.Errorf("shortcuts fired %q, want Tab then Shift+Tab", fired)
+	}
+	if !a.Focused() || b.Focused() {
+		t.Errorf("the focus moved (A %v, B %v)", a.Focused(), b.Focused())
+	}
+	// Ctrl+Tab isn't a shortcut here.
+	press(key.ModCtrl)
+	if len(fired) != 2 {
+		t.Errorf("Ctrl+Tab fired a shortcut: %q", fired)
 	}
 }

@@ -57,10 +57,42 @@ func (i *Input) applySubmit() {
 	}
 }
 
+// Caret returns the caret's position: the number of runes before it.
+// With a selection, it's the end the caret is at (see Selection).
+func (i *Input) Caret() int {
+	c, _ := i.editor.Selection()
+	return c
+}
+
+// SetCaret moves the caret to pos runes from the start, clamped to the
+// content, and clears the selection.
+func (i *Input) SetCaret(pos int) {
+	pos = max(0, min(pos, i.editor.Len()))
+	i.editor.SetCaret(pos, pos)
+}
+
+// Selection returns the selected runes as [start, end), start <= end;
+// start == end is the caret alone.
+func (i *Input) Selection() (start, end int) {
+	a, b := i.editor.Selection()
+	return min(a, b), max(a, b)
+}
+
+// SetSelection selects the runes [start, end), clamped to the content,
+// with the caret at end; start == end places the caret alone. To
+// replace the word at the caret, select it and call InsertText.
+func (i *Input) SetSelection(start, end int) {
+	n := i.editor.Len()
+	start, end = max(0, min(start, n)), max(0, min(end, n))
+	i.editor.SetCaret(end, start)
+}
+
 // ChangeText replaces the content and invokes OnChange, as typing
-// would.
+// would. Like SetText, it leaves the caret at the end.
 func (i *Input) ChangeText(s string) {
 	i.editor.SetText(s)
+	n := i.editor.Len()
+	i.editor.SetCaret(n, n)
 	if i.onChange != nil {
 		i.onChange(s)
 	}

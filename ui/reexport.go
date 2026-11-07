@@ -181,11 +181,22 @@ func NewState[T any](initial T) *State[T] {
 //		giode.Shortcut("F5", refresh),
 //	)
 func Shortcuts(list ...KeyShortcut) {
-	elements.OnKey(func(e key.Event) bool { return shortcut.Handle(e, list) })
+	// Name the shortcuts' keys too: Gio gives Tab and Shift+Tab only to
+	// a listener that names them, and moves the focus otherwise.
+	named := make([]elements.NamedKey, len(list))
+	for i, s := range list {
+		named[i] = elements.NamedKey{Name: s.Name, Mods: s.Mods}
+	}
+	elements.OnKey(func(e key.Event) bool { return shortcut.Handle(e, list) }, named...)
 }
 
 // KeyShortcut is a keyboard shortcut made with Shortcut.
 type KeyShortcut = shortcut.Shortcut
+
+// NamedKey is a key, with exactly the modifiers to hold, that an OnKey
+// handler asks for by name: Tab and Shift+Tab reach only a handler that
+// names them. See OnKey.
+type NamedKey = elements.NamedKey
 
 // Keyed returns the state stored under (scope, key), creating it with
 // init the first time - persistent per-item state (a Pressable, a text

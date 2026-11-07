@@ -166,6 +166,11 @@ var Shortcuts = ui.Shortcuts
 // KeyShortcut is a keyboard shortcut made with Shortcut.
 type KeyShortcut = ui.KeyShortcut
 
+// NamedKey is a key, with exactly the modifiers to hold, that an OnKey
+// handler asks for by name: Tab and Shift+Tab reach only a handler that
+// names them. See OnKey.
+type NamedKey = ui.NamedKey
+
 // Keyed returns the state stored under (scope, key), creating it with
 // init the first time - persistent per-item state (a Pressable, a text
 // field) for lists that change at runtime. Entries not asked for in a

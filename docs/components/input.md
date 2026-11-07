@@ -23,7 +23,9 @@ giode.Stack(giode.Styles{}, name)
 | Member | Description |
 | --- | --- |
 | `Text() string` | Current content. |
-| `SetText(s string)` | Replaces the content. |
+| `SetText(s string)` | Replaces the content, leaving the caret at the end (as if typed), without calling OnChange. |
+| `Caret() int` / `SetCaret(pos int)` | The caret's position in runes from the start; setting it clears the selection. |
+| `Selection() (start, end int)` / `SetSelection(start, end int)` | The selected runes, `[start, end)`; setting puts the caret at `end`. Select a word and `InsertText` to replace it - a completion at the caret, mid-line. |
 | `Submit(fn func(text string))` | Handler for Enter. |
 | `Focus()` | Requests keyboard focus. |
 | `OnFocus(fn func())` / `OnBlur(fn func())` | Called when the field gains or loses focus. |

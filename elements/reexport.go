@@ -17,6 +17,9 @@ import (
 // Element, semantics and the shared runtime, re-exported from
 // elements/internal/base.
 type (
+	// NamedKey is a key, with its modifiers, that an OnKey handler asks
+	// Gio for by name (Tab).
+	NamedKey = base.NamedKey
 	// Element is anything that can lay itself out in a frame.
 	Element = base.Element
 	// SemanticKind classifies a node of the semantic tree.

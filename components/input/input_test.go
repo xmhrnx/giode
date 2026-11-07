@@ -244,3 +244,53 @@ func TestInput_OnPaste(t *testing.T) {
 		t.Error("Ctrl+V without OnPaste didn't read the clipboard")
 	}
 }
+
+// SetText leaves the caret at the end; Caret, SetCaret, Selection and
+// SetSelection read and place it, so a completion can replace the word
+// at the caret mid-line.
+func TestInput_Caret(t *testing.T) {
+	fonts.UseGofont()
+	in := New("Command")
+	h := &harness{in: in, max: image.Pt(400, 400)}
+	in.Focus()
+	h.frame()
+	h.frame()
+
+	in.SetText("git chec main")
+	if c := in.Caret(); c != 13 {
+		t.Fatalf("after SetText the caret is at %d, want 13 (the end)", c)
+	}
+	// Typing continues at the end.
+	h.r.Queue(key.EditEvent{Range: key.Range{Start: 13, End: 13}, Text: "!"})
+	h.frame()
+	if in.Text() != "git chec main!" {
+		t.Errorf("typing after SetText gave %q", in.Text())
+	}
+
+	// The caret in the middle of "chec": complete that word.
+	in.SetText("git chec main")
+	in.SetCaret(6)
+	if c := in.Caret(); c != 6 {
+		t.Fatalf("Caret() = %d after SetCaret(6)", c)
+	}
+	if s, e := in.Selection(); s != 6 || e != 6 {
+		t.Errorf("Selection() = %d, %d with the caret alone at 6", s, e)
+	}
+	in.SetSelection(4, 8) // "chec"
+	if s, e := in.Selection(); s != 4 || e != 8 || in.Caret() != 8 {
+		t.Errorf("after SetSelection(4, 8): selection %d, %d, caret %d", s, e, in.Caret())
+	}
+	in.InsertText("checkout")
+	if in.Text() != "git checkout main" || in.Caret() != 12 {
+		t.Errorf("completing at the caret gave %q with the caret at %d", in.Text(), in.Caret())
+	}
+	// Out of range clamps.
+	in.SetCaret(99)
+	if in.Caret() != 17 {
+		t.Errorf("SetCaret(99) put the caret at %d, want the end, 17", in.Caret())
+	}
+	in.SetSelection(-3, 3)
+	if s, e := in.Selection(); s != 0 || e != 3 {
+		t.Errorf("SetSelection(-3, 3) selected %d, %d", s, e)
+	}
+}

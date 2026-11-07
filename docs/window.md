@@ -432,6 +432,19 @@ there, and Escape closes an open dialog before it reaches the shortcut. The hand
 presses and releases (check `e.State`) on the UI goroutine. It returns whether it used the
 key. A custom host gets the same behavior from `giode.Frame`.
 
+Tab and Shift+Tab move the keyboard focus unless something asks for them by name: the
+window hands them only to a listener that names the key. A `Shortcut("Tab", …)` or
+`Shortcut("Shift+Tab", …)` does that, so it fires instead of moving the focus; Tab with
+other modifiers (Ctrl+Tab) still moves it unless a shortcut names that too. A handler of
+your own names them as it registers:
+
+```go
+giode.OnKey(complete, giode.NamedKey{Name: key.NameTab})
+```
+
+On phones, the arrow keys move the focus the same way, and a shortcut naming `Up`,
+`Down`, `Left` or `Right` takes them.
+
 ## File drop
 
 ```go

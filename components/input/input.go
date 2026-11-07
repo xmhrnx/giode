@@ -53,9 +53,14 @@ func (i *Input) Text() string {
 	return i.editor.Text()
 }
 
-// SetText replaces the content without invoking OnChange.
+// SetText replaces the content without invoking OnChange, and leaves
+// the caret at the end, as typing it would: a recalled history line or
+// a restored draft continues where it ends. SetCaret places it
+// elsewhere.
 func (i *Input) SetText(s string) {
 	i.editor.SetText(s)
+	n := i.editor.Len()
+	i.editor.SetCaret(n, n)
 }
 
 // Submit sets the handler invoked when Enter is pressed in a
