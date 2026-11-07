@@ -218,6 +218,26 @@ export const PROJECTS = [
 	},
 
 	{
+		slug: "gocode",
+		name: "GoCode",
+		repo: "xmhrnx/gocode",
+		tagline: "A coding agent that doesn't eat your RAM.",
+		description: "GoCode is a coding agent for the desktop, written in Go and drawn straight to the GPU. There is no browser engine inside it, so it opens instantly and stays fast through a thousand-message chat. The model streams its replies, calls tools, sees their results and keeps going until the task is done, with an approval card for each step you want to check.",
+		accent: "#7d8cff",
+		platforms: ["windows", "macos", "linux"],
+		category: "Developer tools",
+		highlights: [
+			"An agent loop with file, search, shell, web fetch and web search tools, sub-agents for self-contained jobs and context compaction near the model's limit.",
+			"Approval cards with the diff for each edit, and per-chat modes from Ask to Full access, Read-only (plan) and Chat only.",
+			"34 providers built in - Anthropic, Gemini, OpenAI and many OpenAI-compatible APIs, plus LM Studio, Ollama, llama.cpp and other local servers - and any custom endpoint.",
+			"MCP servers over stdio or HTTP, and Agent Skills installed from a folder, a zip or a GitHub repository.",
+			"Messages queued while the agent works, attachments by drop or paste, and text selection across the whole conversation.",
+			"Tabs in a custom title bar that reopen where you left off, nine themes, and API keys in the system keychain.",
+		],
+		giode: ["Tabs in a custom title bar, dragged to reorder, with a right-click menu", "Markdown replies in a LazyList that stays fast while a reply streams in", "Text selection across messages and pasted clipboard images", "Keyboard shortcuts, dialogs and nine themes"],
+		screenshots: [],
+	},
+	{
 		slug: "easysend",
 		name: "EasySend",
 		repo: "xmhrnx/easysend",
