@@ -30,6 +30,9 @@ import (
 // PageUp/PageDown and Home/End jump. A click selects, a double click
 // activates, a click on the arrow toggles.
 type Tree struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	roots  func() []Node
 	draw   func(n Node, s RowState) elements.Element
 	st     styles.Styles

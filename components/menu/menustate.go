@@ -20,10 +20,13 @@ import (
 // anywhere in the view (its panel renders via elements.RegisterPortal,
 // so it paints above everything else regardless of tree position).
 type Menu struct {
-	items  []Item
-	open   bool
-	pos    f32.Point
-	styles styles.Styles
+	items []Item
+	// laidOut is the frame the menu was last laid out open in; see
+	// LastLaidOut.
+	laidOut uint64
+	open    bool
+	pos     f32.Point
+	styles  styles.Styles
 	// itemPadding overrides the rows' padding when itemPaddingSet.
 	itemPadding    properties.Inset
 	itemPaddingSet bool

@@ -44,9 +44,10 @@ func layoutDrag(a *App, gtx layout.Context) {
 // It's registered after the rest of the view, not before: PassOp
 // keeps it from blocking ordinary (non-pass-through) widgets, but
 // does not make it immune to being blocked BY them, and almost every
-// pixel of a real UI is covered by some such widget - see
-// menu.Context's doc comment for the full reasoning, which applies
-// here identically.
+// pixel of a real UI is covered by some such widget, and Gio's
+// hit-test stops at the first one it meets: registered last, the
+// listener sits in front of them and sees every press, while still
+// leaving them their own.
 type windowPointer struct{}
 
 // layout registers the pointer region and processes events queued
@@ -86,7 +87,9 @@ func (w *windowPointer) layout(a *App, gtx layout.Context) {
 				a.window.Invalidate()
 			}
 		}
-		if a.ctxMenu != nil && e.Buttons.Contain(pointer.ButtonSecondary) {
+		// A press an element opened its own context menu for isn't the
+		// window's.
+		if a.ctxMenu != nil && e.Buttons.Contain(pointer.ButtonSecondary) && !elements.ContextClaimed(e) {
 			a.ctxMenu.OpenAt(e.Position)
 		}
 	}

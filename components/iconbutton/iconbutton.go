@@ -15,6 +15,9 @@ import (
 // New and lay it out every frame; the icon, styles and handler may
 // change at any time.
 type Button struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	icon      elements.Element
 	st        styles.Styles
 	variant   Variant

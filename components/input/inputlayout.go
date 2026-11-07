@@ -14,6 +14,14 @@ import (
 
 // Layout lays out and updates the field.
 func (i *Input) Layout(gtx layout.Context) layout.Dimensions {
+	dims := i.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	i.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if i.requestFocus {
 		i.requestFocus = false
 		gtx.Execute(key.FocusCmd{Tag: &i.editor})

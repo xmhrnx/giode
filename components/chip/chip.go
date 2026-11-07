@@ -21,6 +21,9 @@ var chipColor = properties.Mix("theme.text", "theme.background", 0.08)
 // can be built every frame; with them, create it once (or with Keyed),
 // since it then holds press state.
 type Chip struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	label    string
 	icon     elements.Element
 	selected bool
@@ -145,6 +148,14 @@ func (c *Chip) updateRemove(gtx layout.Context) bool {
 
 // Layout lays out the chip.
 func (c *Chip) Layout(gtx layout.Context) layout.Dimensions {
+	dims := c.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	c.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (c *Chip) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if c.onClick == nil {
 		return c.content(elements.PressState{}).Layout(gtx)
 	}

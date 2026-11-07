@@ -25,6 +25,9 @@ var palette = []properties.Color{"#ef4444", "#f97316", "#eab308", "#22c55e", "#1
 // Avatar is a circle showing an image, or the initials of a name. It's
 // stateless: build it in the view function every frame.
 type Avatar struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	name string
 	img  image.Image
 	st   styles.Styles
@@ -76,6 +79,14 @@ func Color(name string) properties.Color {
 
 // Layout lays out the avatar.
 func (a *Avatar) Layout(gtx layout.Context) layout.Dimensions {
+	dims := a.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	a.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (a *Avatar) layoutSelf(gtx layout.Context) layout.Dimensions {
 	d := a.st.Width
 	if d <= 0 {
 		d = 40

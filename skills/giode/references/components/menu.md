@@ -16,7 +16,33 @@ app := giode.New(giode.Config{...})
 app.SetContextMenu(menu) // right-click anywhere in the window opens it
 ```
 
-The app registers the right-click area and renders the menu on top automatically.
+The app registers the right-click area and renders the menu on top automatically. A
+right-click on an element with its own menu (see below) opens that one instead.
+
+## On one element: Context
+
+Every element and component has `Context(menu)`: a right-click on it, or a long-press on a
+touch screen, opens the menu at the pointer, wherever the element sits in the layout.
+
+```go
+rowMenu := giode.Menu().
+	Item("Rename", rename).
+	Item("Delete", remove)
+
+row := giode.Box(giode.Styles{Padding: giode.UniformInset(8)}, giode.Text(name))
+row.Context(rowMenu)
+```
+
+That's all: the menu doesn't need to be laid out anywhere, the frame draws it while it's
+open. The element still gets its own presses, so a `Pressable` with a context menu still
+clicks. With elements inside each other, the innermost one with a menu opens its own: a
+menu on a list and another on one of its rows open on the row for the row's, elsewhere on
+the list for the list's. One menu can be anchored to many elements; to know which one
+opened it, set a variable from the element instead (see `OpenAtClick` below).
+`Context(nil)` removes it.
+
+Elements in a view are built every frame, so call `Context` where the element is built.
+Dialog, Sheet, Drawer, Menu and Toaster, which paint over the window, don't have one.
 
 ## Manual control
 
@@ -50,6 +76,8 @@ tab := giode.Pressable(content).
 ```
 
 A keyboard click (Enter or Space on the focused element) opens it below the element.
+Use this when the menu's actions depend on which element opened it; otherwise `Context`
+is simpler.
 
 ## Dropdown menu: Trigger
 
@@ -102,6 +130,7 @@ Escape) closes every open submenu with it.
 | `Separator() *Menu` | Horizontal line. |
 | `SubMenu(label string, submenu *Menu) *Menu` | Item that reveals submenu on hover. |
 | `Trigger(el Element) Element` | Wraps el; clicking it opens the menu anchored below. |
+| `el.Context(m)` | On any element or component: a right-click or long-press on el opens m at the pointer. |
 | `OpenAtClick(e ClickEvent)` | Opens the menu where the click happened: at the pointer, or below the element for a keyboard click. |
 | `OpenAt(p f32.Point)` / `Toggle(p f32.Point)` | Opens (or toggles) the menu at a window position in pixels. |
 

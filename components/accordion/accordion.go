@@ -31,6 +31,9 @@ type item struct {
 // once with New and lay it out every frame; sections may be added at
 // any time.
 type Accordion struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	items  []*item
 	single bool
 	st     styles.Styles
@@ -88,6 +91,14 @@ func (a *Accordion) SetExpanded(i int, v bool) {
 // Layout lays out every section header, and the content of whichever
 // sections are expanded.
 func (a *Accordion) Layout(gtx layout.Context) layout.Dimensions {
+	dims := a.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	a.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (a *Accordion) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	st := styles.Merge(styles.Styles{

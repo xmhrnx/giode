@@ -23,6 +23,9 @@ const DefaultFeedback = 1500 * time.Millisecond
 //
 //	copy := giode.CopyButton(func() string { return apiKey.Text() })
 type CopyButton struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	text     func() string
 	label    string
 	copied   string
@@ -125,6 +128,14 @@ func (c *CopyButton) content(s elements.PressState) elements.Element {
 
 // Layout lays out and updates the button.
 func (c *CopyButton) Layout(gtx layout.Context) layout.Dimensions {
+	dims := c.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	c.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (c *CopyButton) layoutSelf(gtx layout.Context) layout.Dimensions {
 	c.showing = !c.copiedAt.IsZero() && gtx.Now.Before(c.copiedAt.Add(c.feedback))
 	dims := c.press.Layout(gtx)
 	if c.pending != nil {

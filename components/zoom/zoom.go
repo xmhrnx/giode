@@ -30,6 +30,9 @@ import (
 // Create it once and lay it out every frame. Its methods are for the UI
 // goroutine.
 type Zoom struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	content func() elements.Element
 
 	minScale, maxScale, doubleTap float32

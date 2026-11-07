@@ -39,6 +39,9 @@ func Frame(gtx layout.Context, view Element) (needsAnotherFrame bool) {
 	if view != nil {
 		view.Layout(gtx)
 	}
+	// The context menus elements opened (see Contextual), drawn through
+	// portals.
+	elements.DrainContextMenus(gtx)
 	elements.DrainPortals(gtx)
 	keepReleases(gtx)
 	elements.DispatchBack(gtx)

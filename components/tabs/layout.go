@@ -17,6 +17,14 @@ import (
 
 // Layout lays out the tab bar and the active view below it.
 func (t *Tabs) Layout(gtx layout.Context) layout.Dimensions {
+	dims := t.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	t.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (t *Tabs) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if len(t.tabs) == 0 {
 		return layout.Dimensions{}
 	}

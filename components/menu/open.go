@@ -5,6 +5,8 @@
 package menu
 
 import (
+	"image"
+
 	"gioui.org/f32"
 
 	"github.com/xmhrnx/giode/elements"
@@ -14,6 +16,12 @@ import (
 func (m *Menu) OpenAt(p f32.Point) {
 	m.pos = p
 	m.open = true
+}
+
+// OpenAtWindow opens the menu at p, in window pixels. Elements given the
+// menu with Context open it this way, at the pointer.
+func (m *Menu) OpenAtWindow(p image.Point) {
+	m.OpenAt(f32.Pt(float32(p.X), float32(p.Y)))
 }
 
 // OpenAtClick opens the menu where e happened: at the pointer for a

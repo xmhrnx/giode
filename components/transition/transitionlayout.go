@@ -16,6 +16,14 @@ import (
 
 // Layout lays out and animates the component.
 func (t *Transition) Layout(gtx layout.Context) layout.Dimensions {
+	dims := t.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	t.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (t *Transition) layoutSelf(gtx layout.Context) layout.Dimensions {
 	t.advance(gtx)
 	if t.progress <= 0 && !t.visible || t.child == nil {
 		return layout.Dimensions{}

@@ -20,6 +20,14 @@ import (
 // it paints above everything else regardless of where Layout is
 // called from.
 func (s *Select) Layout(gtx layout.Context) layout.Dimensions {
+	dims := s.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	s.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (s *Select) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	st := styles.Merge(styles.Styles{

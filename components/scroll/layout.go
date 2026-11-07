@@ -19,6 +19,14 @@ import (
 
 // Layout lays out the scrollable content.
 func (s *Scroll) Layout(gtx layout.Context) layout.Dimensions {
+	dims := s.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	s.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (s *Scroll) layoutSelf(gtx layout.Context) layout.Dimensions {
 	s.pxPerDp = gtx.Metric.PxPerDp
 	s.rtl = kit.RTL(gtx)
 	vert, horiz := s.vertical(), s.horizontal()

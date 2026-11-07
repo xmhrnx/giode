@@ -3,13 +3,12 @@ package dropdown
 
 import (
 	"image"
-
 	"image/color"
 
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode/components/scroll"
-
+	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -24,6 +23,9 @@ var (
 // Select is a stateful dropdown. Create it once with New and lay it
 // out every frame.
 type Select struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	options   []string
 	selected  int
 	open      bool

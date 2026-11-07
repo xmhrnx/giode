@@ -19,6 +19,9 @@ import (
 //
 // A hidden transition takes no space and lays nothing out.
 type Transition struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	child    elements.Element
 	kind     Kind
 	duration time.Duration

@@ -7,15 +7,19 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"github.com/xmhrnx/giode/components/kit"
-	"github.com/xmhrnx/giode/styles/properties"
 
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // DividerElement is a thin horizontal line. Chain OnHover to add
 // hover styles.
 type DividerElement struct {
+	// Contextual gives it a context menu (Context).
+	base.Contextual
+
 	st styles.Styles
 
 	kit.HoverTracker
@@ -45,6 +49,14 @@ func (d *DividerElement) OnHover(st styles.Styles) *DividerElement {
 }
 
 func (d *DividerElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := d.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	d.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (d *DividerElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	d.Update(gtx)
 	st := d.st
 	if d.Enabled() && d.Hovered() && d.hoverSt != nil {

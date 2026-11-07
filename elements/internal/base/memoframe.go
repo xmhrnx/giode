@@ -39,4 +39,7 @@ func EndFrame() {
 		}
 	}
 	sweepKeyed()
+	if frameNumber%60 == 0 {
+		sweepAnchors()
+	}
 }

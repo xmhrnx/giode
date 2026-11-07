@@ -120,6 +120,11 @@ type (
 	Painter         = ui.Painter
 	CanvasPath      = ui.CanvasPath
 	OutOfFlow       = ui.OutOfFlow
+	// ContextMenu is what an element's Context takes: a Menu, or a
+	// menu of your own.
+	ContextMenu = ui.ContextMenu
+	// Contextual gives a custom element Context; see extending.md.
+	Contextual = ui.Contextual
 )
 
 type Tab = ui.Tab

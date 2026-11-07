@@ -19,6 +19,9 @@ import (
 // The scroll offset reacts to the mouse wheel and touch drags, and
 // the scrollbar thumb can be dragged with the mouse.
 type Scroll struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	offset        float32
 	scroll        gesture.Scroll
 	bar           kit.Scrollbar

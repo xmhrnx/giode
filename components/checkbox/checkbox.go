@@ -17,6 +17,9 @@ import (
 // Checkbox is a stateful checkbox with an optional label. Create it
 // once with New and lay it out every frame.
 type Checkbox struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	label    string
 	bool     widget.Bool
 	pass     func(gtx layout.Context) bool
@@ -115,6 +118,14 @@ func (c *Checkbox) update(gtx layout.Context) bool {
 
 // Layout lays out and updates the checkbox.
 func (c *Checkbox) Layout(gtx layout.Context) layout.Dimensions {
+	dims := c.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	c.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (c *Checkbox) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// The output recorded last time is replayed until the label, the
 	// value, the styles, hover, press, constraints or direction change.
 	if c.cache == nil {

@@ -20,6 +20,14 @@ import (
 
 // Layout lays out and updates the control.
 func (c *Control) Layout(gtx layout.Context) layout.Dimensions {
+	dims := c.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	c.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (c *Control) layoutSelf(gtx layout.Context) layout.Dimensions {
 	n := len(c.options)
 	if n == 0 {
 		return layout.Dimensions{}

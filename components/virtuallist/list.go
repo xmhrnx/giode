@@ -31,6 +31,9 @@ import (
 // state (a Pressable, a field) should be looked up by the item's key
 // with Keyed, since rows are built only while visible.
 type List struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	count    func() int
 	itemH    unit.Dp
 	item     func(i int) elements.Element

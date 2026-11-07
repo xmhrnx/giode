@@ -21,6 +21,14 @@ import (
 
 // Layout lays out the bar across the available width.
 func (t *TitleBar) Layout(gtx layout.Context) layout.Dimensions {
+	dims := t.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	t.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (t *TitleBar) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	for i := range t.buttons {

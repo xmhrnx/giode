@@ -33,6 +33,14 @@ type resolvedSpan struct {
 
 // Layout shapes and paints the paragraph.
 func (r *RichTextElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := r.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	r.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	shaper := fonts.Shaper()
 	if shaper == nil || r.st.Display == properties.DisplayNone {
 		return layout.Dimensions{}

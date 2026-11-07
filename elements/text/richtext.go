@@ -3,11 +3,15 @@ package text
 import (
 	"strings"
 
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 )
 
 // RichTextElement is a wrapping paragraph of differently styled spans.
 type RichTextElement struct {
+	// Contextual gives it a context menu (Context).
+	base.Contextual
+
 	st     styles.Styles
 	spans  []Span
 	onLink func(url string)

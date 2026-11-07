@@ -19,6 +19,9 @@ import (
 // Slider is a stateful horizontal slider in the range [0, 1]. Create
 // it once with New and lay it out every frame.
 type Slider struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	value    float32
 	drag     gesture.Drag
 	hover    gesture.Hover
@@ -128,6 +131,14 @@ func (s *Slider) update(gtx layout.Context) {
 // Layout lays out and updates the slider. It expands to the available
 // width.
 func (s *Slider) Layout(gtx layout.Context) layout.Dimensions {
+	dims := s.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	s.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (s *Slider) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// The output recorded last time is replayed until the value, the
 	// styles, hover, a drag, constraints or direction change.
 	if s.cache == nil {

@@ -28,6 +28,9 @@ var (
 // elements.RegisterPortal) while the current text matches at least
 // one option. Create it once with New and lay it out every frame.
 type AutoComplete struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	field    *input.Input
 	options  []string
 	onSelect func(value string)
@@ -79,6 +82,14 @@ func (a *AutoComplete) OnSelect(fn func(value string)) *AutoComplete {
 // Layout lays out the field and, while it has matching suggestions,
 // queues the suggestion panel as a portal anchored just below it.
 func (a *AutoComplete) Layout(gtx layout.Context) layout.Dimensions {
+	dims := a.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	a.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (a *AutoComplete) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	dims := a.field.Layout(gtx)

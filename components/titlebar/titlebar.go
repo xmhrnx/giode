@@ -26,6 +26,9 @@ import (
 // and dragging to a screen edge snaps. Everything placed in it -
 // buttons, menus - stays clickable.
 type TitleBar struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	win     Window
 	title   string
 	icon    elements.Element

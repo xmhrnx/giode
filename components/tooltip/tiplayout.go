@@ -19,6 +19,14 @@ import (
 // Layout lays out the trigger and, while hovered or long-pressed,
 // queues the tooltip panel as a portal beside it (see Placement).
 func (t *Tooltip) Layout(gtx layout.Context) layout.Dimensions {
+	dims := t.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	t.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (t *Tooltip) layoutSelf(gtx layout.Context) layout.Dimensions {
 	t.update(gtx)
 	dims := t.trigger.Layout(gtx)
 

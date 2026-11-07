@@ -37,6 +37,9 @@ import (
 // frame - or, for items of a list that changes, look it up by key with
 // Keyed.
 type Pressable struct {
+	// Contextual gives it a context menu (Context).
+	base.Contextual
+
 	content func(PressState) base.Element
 	st      styles.Styles
 

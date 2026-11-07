@@ -10,6 +10,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -17,6 +18,9 @@ import (
 // ImageElement renders an image scaled into its box. Chain OnHover to
 // add hover styles.
 type ImageElement struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	img image.Image
 	st  styles.Styles
 
@@ -37,6 +41,14 @@ func (i *ImageElement) OnHover(st styles.Styles) *ImageElement {
 
 // Layout renders the image.
 func (i *ImageElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := i.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	i.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (i *ImageElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	i.Update(gtx)
 	st := i.st
 	if i.Enabled() && i.Hovered() && i.hoverSt != nil {

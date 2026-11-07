@@ -17,6 +17,9 @@ import (
 // Control is a stateful segmented control. Create it once with New and
 // lay it out every frame.
 type Control struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	options  []string
 	icons    []elements.Element
 	selected int

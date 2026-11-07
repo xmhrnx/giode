@@ -23,6 +23,9 @@ import (
 // every frame. The content should paint an opaque background, since
 // the actions sit behind it.
 type Swipeable struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	content           func() elements.Element
 	leading, trailing []Action
 	leadClicks        []widget.Clickable

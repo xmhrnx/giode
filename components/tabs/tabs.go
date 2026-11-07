@@ -23,6 +23,9 @@ type Tab struct {
 // Tabs is a stateful tab bar. Create it once with New and lay it out
 // every frame; only the selected tab's view is built.
 type Tabs struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	tabs     []Tab
 	selected int
 	clicks   []*widget.Clickable

@@ -16,6 +16,9 @@ import (
 // ProgressElement is the bar: a rounded track box holding a row of the
 // fill and the rest, sized by flex growth in proportion to the value.
 type ProgressElement struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	value float32
 	st    styles.Styles
 
@@ -39,6 +42,14 @@ const growScale = 1000
 
 // Layout lays the bar out.
 func (p *ProgressElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := p.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	p.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (p *ProgressElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	p.Update(gtx)
 	st := p.st
 	if p.Enabled() && p.Hovered() && p.hoverSt != nil {

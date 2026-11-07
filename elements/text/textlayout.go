@@ -32,6 +32,14 @@ func (t *TextElement) resolveStyles() styles.Styles {
 
 // Layout shapes and paints the text with its decoration.
 func (t *TextElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := t.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	t.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (t *TextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if t.Update(gtx) != t.lastHovered {
 		t.lastHovered = !t.lastHovered
 		kit.MarkLive()

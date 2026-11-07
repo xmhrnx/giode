@@ -31,6 +31,9 @@ const (
 // lay it out every frame; label, styles and handler may change at any
 // time.
 type Button struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	label     string
 	st        styles.Styles
 	variant   Variant
@@ -175,6 +178,14 @@ func (b *Button) update(gtx layout.Context) bool {
 // recorded last time until its label, styles, state, hover or press,
 // constraints or direction change.
 func (b *Button) Layout(gtx layout.Context) layout.Dimensions {
+	dims := b.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	b.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (b *Button) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if b.CacheSafe() {
 		if b.cache == nil {
 			b.cache = elements.NewMemoCache()

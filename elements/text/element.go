@@ -2,12 +2,16 @@ package text
 
 import (
 	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 )
 
 // TextElement renders a single string with its styles. Chain OnHover
 // to add hover styles.
 type TextElement struct {
+	// Contextual gives it a context menu (Context).
+	base.Contextual
+
 	str string
 	st  styles.Styles
 

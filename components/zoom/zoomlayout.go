@@ -19,6 +19,14 @@ import (
 
 // Layout lays out the content, scaled and moved, clipped to the view.
 func (z *Zoom) Layout(gtx layout.Context) layout.Dimensions {
+	dims := z.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	z.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (z *Zoom) layoutSelf(gtx layout.Context) layout.Dimensions {
 	view := gtx.Constraints.Max
 	if view.X >= 1<<24 || view.Y >= 1<<24 {
 		// Unbounded: take the content's size.

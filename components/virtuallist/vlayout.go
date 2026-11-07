@@ -22,6 +22,14 @@ import (
 
 // Layout lays out the visible rows.
 func (l *List) Layout(gtx layout.Context) layout.Dimensions {
+	dims := l.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	l.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	viewport := gtx.Constraints.Max

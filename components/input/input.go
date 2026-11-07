@@ -4,12 +4,17 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
+
+	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 )
 
 // Input is a stateful text field, single-line by default. Create it
 // once with New and lay it out every frame.
 type Input struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	pass         func(gtx layout.Context) bool
 	editor       widget.Editor
 	placeholder  string

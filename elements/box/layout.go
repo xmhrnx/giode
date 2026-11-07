@@ -18,6 +18,14 @@ type boxBody struct{ b *BoxElement }
 // recorded last time until its hover or press state, its content's
 // state, its constraints or its direction change.
 func (b *BoxElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := b.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	b.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (b *BoxElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if (b.hover != nil || b.press != nil) && b.CacheSafe() {
 		if b.cache == nil {
 			b.cache = base.NewMemoCache()

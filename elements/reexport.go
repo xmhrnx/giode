@@ -20,6 +20,12 @@ type (
 	// NamedKey is a key, with its modifiers, that an OnKey handler asks
 	// Gio for by name (Tab).
 	NamedKey = base.NamedKey
+	// Contextual gives an element a context menu (Context); every
+	// element and component embeds it.
+	Contextual = base.Contextual
+	// ContextMenu is a menu an element opens at the pointer when it's
+	// right-clicked or long-pressed.
+	ContextMenu = base.ContextMenu
 	// Element is anything that can lay itself out in a frame.
 	Element = base.Element
 	// SemanticKind classifies a node of the semantic tree.
@@ -131,7 +137,15 @@ var (
 	HandleDismiss = base.HandleDismiss
 	DispatchBack  = base.DispatchBack
 	OnKey         = base.OnKey
-	DispatchKeys  = base.DispatchKeys
+	// DrainContextMenus lays out the context menus elements opened;
+	// the app calls it every frame.
+	DrainContextMenus = base.DrainContextMenus
+	// FrameNumber is the number of the frame being laid out.
+	FrameNumber = base.FrameNumber
+	// ContextClaimed reports whether an element opened its context
+	// menu for a press.
+	ContextClaimed = base.ContextClaimed
+	DispatchKeys   = base.DispatchKeys
 )
 
 // Touch input and diagnostics.

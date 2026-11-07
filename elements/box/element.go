@@ -10,6 +10,9 @@ import (
 // BoxElement is a container element: a flex container and a
 // containing block for absolutely positioned children.
 type BoxElement struct {
+	// Contextual gives it a context menu (Context).
+	base.Contextual
+
 	st       styles.Styles
 	children []base.Element
 

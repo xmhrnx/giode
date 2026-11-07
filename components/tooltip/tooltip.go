@@ -18,6 +18,9 @@ import (
 // stays for a moment once the finger lifts. Create it once with New
 // and lay it out every frame in trigger's place.
 type Tooltip struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	pass    func(gtx layout.Context) bool
 	trigger elements.Element
 	content string

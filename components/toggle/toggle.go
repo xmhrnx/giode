@@ -23,6 +23,9 @@ const animDuration = 150 * time.Millisecond
 // Switch is a stateful on/off switch with an optional label. Create it
 // once with New and lay it out every frame.
 type Switch struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	label    string
 	st       styles.Styles
 	click    widget.Clickable
@@ -124,6 +127,14 @@ func (s *Switch) update(gtx layout.Context) bool {
 }
 
 func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
+	dims := s.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	s.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (s *Switch) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// The output recorded last time is replayed until the label, the
 	// value, the styles, the knob's animation, hover, press,
 	// constraints or direction change.

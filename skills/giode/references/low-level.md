@@ -89,9 +89,9 @@ Notes for custom loops:
 
 - Queue pointer/key events into `input.Router` in the same pixel space as the layout
   constraints; priority, pass-through and grab semantics are all handled by the router.
-- The context menu works manually: call `menu.Context(gtx)` **before** the view and
-  `menu.Layout(gtx)` **after** it, inside the element given to `ui.Frame` (the
-  equivalent of `SetContextMenu`).
+- Context menus anchored with an element's `Context(menu)` work as in an `App`:
+  `ui.Frame` draws the open ones. For a window-wide menu (`SetContextMenu`'s
+  equivalent), wrap the view in a `Box` and give the box the menu.
 - `Config.Draggable` relies on Gio's window driver (`system.ActionInputOp(ActionMove)`)
   and is a no-op under GLFW — use native window dragging there instead.
 - The `Config` window options and the `App` action methods (fullscreen, minimize,

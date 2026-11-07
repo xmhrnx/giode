@@ -18,6 +18,9 @@ import (
 // or a dot when the text is empty. It's stateless: build it in the
 // view function every frame.
 type Badge struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	text   string
 	st     styles.Styles
 	target elements.Element
@@ -54,6 +57,14 @@ func (b *Badge) pill() elements.Element {
 
 // Layout lays out the badge, or el with the badge on its corner.
 func (b *Badge) Layout(gtx layout.Context) layout.Dimensions {
+	dims := b.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	b.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (b *Badge) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if b.target == nil {
 		return b.pill().Layout(gtx)
 	}

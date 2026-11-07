@@ -25,6 +25,7 @@ func (m *Menu) Layout(gtx layout.Context) layout.Dimensions {
 	if !m.open {
 		return layout.Dimensions{}
 	}
+	m.laidOut = elements.FrameNumber()
 
 	if m.isSubmenu {
 		// Placed by its parent row (see submenuX), which moves with the
@@ -50,6 +51,13 @@ func (m *Menu) Layout(gtx layout.Context) layout.Dimensions {
 		return elements.Raw(m.panel)
 	})
 	return layout.Dimensions{}
+}
+
+// LastLaidOut is the frame (elements.FrameNumber) the menu was last
+// laid out open in: the frame doesn't lay out an element's context
+// menu again when the view already did.
+func (m *Menu) LastLaidOut() uint64 {
+	return m.laidOut
 }
 
 // layoutScrim covers the window under the open menu: a press of any

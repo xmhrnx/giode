@@ -72,7 +72,7 @@ func TestFrameKeepsReleaseThroughReplay(t *testing.T) {
 		event.Op(gtx.Ops, button)
 		cl.Pop()
 		// A window-wide, pass-through listener that takes only presses,
-		// as menu.Context's right-click area does.
+		// as the window-wide context menu's does.
 		for {
 			if _, ok := gtx.Event(pointer.Filter{Target: area, Kinds: pointer.Press}); !ok {
 				break

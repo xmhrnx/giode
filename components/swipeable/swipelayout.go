@@ -16,6 +16,14 @@ import (
 )
 
 func (s *Swipeable) Layout(gtx layout.Context) layout.Dimensions {
+	dims := s.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	s.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (s *Swipeable) layoutSelf(gtx layout.Context) layout.Dimensions {
 	aw := gtx.Dp(unit.Dp(actionWidth))
 	left, leftClicks, right, rightClicks := s.sides(gtx)
 	leftW, rightW := float32(aw*len(left)), float32(aw*len(right))

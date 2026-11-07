@@ -7,14 +7,18 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op"
-	"github.com/xmhrnx/giode/components/kit"
-	"github.com/xmhrnx/giode/styles/properties"
 
+	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // SpinnerElement renders the rotating arc.
 type SpinnerElement struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	st styles.Styles
 
 	kit.HoverTracker
@@ -33,6 +37,14 @@ func (s *SpinnerElement) OnHover(st styles.Styles) *SpinnerElement {
 
 // Layout draws one frame of the animation and requests the next.
 func (s *SpinnerElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := s.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	s.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (s *SpinnerElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	s.Update(gtx)
 	st := s.st
 	if s.Enabled() && s.Hovered() && s.hoverSt != nil {

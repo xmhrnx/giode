@@ -42,6 +42,23 @@ themselves are made of.
 
 5. **Chain your setters**: return the component itself from `OnClick`-style methods.
 
+6. **Embed `giode.Contextual`** to give the component `Context(menu)`, as every built-in
+   one has, and call `AnchorContext(gtx, dims.Size)` at the end of `Layout`, outside any
+   cache of the component's own:
+
+   ```go
+   type Rating struct {
+   	giode.Contextual
+   	// ...
+   }
+
+   func (r *Rating) Layout(gtx layout.Context) layout.Dimensions {
+   	dims := r.layoutStars(gtx)
+   	r.AnchorContext(gtx, dims.Size)
+   	return dims
+   }
+   ```
+
 ## Kit helpers
 
 The `components/kit` package (re-exported from the root) provides the shared pieces

@@ -21,6 +21,9 @@ var defaultEllipsisColor = "#94a3b8"
 // the current one, with an ellipsis for the gap). Create it once with
 // New and lay it out every frame.
 type Pagination struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	current  int
 	total    int
 	onChange func(page int)
@@ -137,6 +140,14 @@ func (p *Pagination) windowed() []int {
 
 // Layout lays out prev, the windowed page buttons, and next.
 func (p *Pagination) Layout(gtx layout.Context) layout.Dimensions {
+	dims := p.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	p.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (p *Pagination) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	if p.total <= 0 {

@@ -15,6 +15,14 @@ import (
 
 // Layout lays out the content over the hit area.
 func (p *Pressable) Layout(gtx layout.Context) layout.Dimensions {
+	dims := p.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	p.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (p *Pressable) layoutSelf(gtx layout.Context) layout.Dimensions {
 	p.update(gtx)
 	if p.st.Display == properties.DisplayNone {
 		return layout.Dimensions{}

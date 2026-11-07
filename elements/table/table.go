@@ -16,6 +16,9 @@ import (
 // all of them: each row's Nth cell shares a width with every other
 // row's Nth cell, the widest among them.
 type tableElement struct {
+	// Contextual gives it a context menu (Context).
+	base.Contextual
+
 	st   styles.Styles
 	rows []base.Element
 }
@@ -30,6 +33,14 @@ func Table(st styles.Styles, rows ...base.Element) *tableElement {
 // Layout measures every row's cells to find each column's shared
 // width, then lays the rows out with their cells wrapped to it.
 func (t *tableElement) Layout(gtx layout.Context) layout.Dimensions {
+	dims := t.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	t.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (t *tableElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	widths := t.MeasureColumnWidths(gtx)
 
 	children := make([]base.Element, len(t.rows))

@@ -14,6 +14,14 @@ import (
 
 // Layout lays out and updates the button.
 func (b *Button) Layout(gtx layout.Context) layout.Dimensions {
+	dims := b.layoutSelf(gtx)
+	// A right-click or long-press anywhere on it opens its context menu.
+	b.AnchorContext(gtx, dims.Size)
+	return dims
+}
+
+// layoutSelf lays it out without its context menu area.
+func (b *Button) layoutSelf(gtx layout.Context) layout.Dimensions {
 	b.update(gtx)
 	// On touch screens the hit area grows to 48dp around the visual.
 	dims := kit.LayoutClickable(gtx, &b.clickable, kit.Unselectable(func(gtx layout.Context) layout.Dimensions {

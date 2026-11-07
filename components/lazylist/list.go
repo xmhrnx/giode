@@ -40,6 +40,9 @@ import (
 // (a Pressable, a field) should be looked up by the row's key with
 // Keyed, since rows are built only while near the viewport.
 type List struct {
+	// Contextual gives it a context menu (Context).
+	elements.Contextual
+
 	count   func() int
 	key     func(i int) any
 	item    func(i int) elements.Element

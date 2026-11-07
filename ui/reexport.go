@@ -144,6 +144,11 @@ type (
 	Painter         = elements.Painter
 	CanvasPath      = elements.Path
 	OutOfFlow       = elements.OutOfFlow
+	// ContextMenu is what an element's Context takes: a Menu, or a
+	// menu of your own.
+	ContextMenu = elements.ContextMenu
+	// Contextual gives a custom element Context; see extending.md.
+	Contextual = elements.Contextual
 )
 
 type Tab = tabs.Tab
