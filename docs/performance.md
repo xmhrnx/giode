@@ -204,6 +204,17 @@ Line images are kept while drawn and dropped after about five seconds unused, wi
 budget; layouts are dropped after about two seconds unused. Text scrolled back into view is
 drawn again from the cached glyphs.
 
+Gio's text shaper keeps its own cache of the last thousand paragraphs it laid out, however
+long they are: in a long chat, a hundred megabytes and more, kept after the chat is closed.
+Giode keeps its own layouts, so it replaces the shaper with a fresh one, over the same
+fonts, once a quarter of a megabyte of text has been shaped with it - which caps Gio's copy
+at about 25 MB. A new shaper takes well under a millisecond.
+
+These caches are swept as frames are drawn, and a window that stops drawing would keep
+everything it last held. So once a window has drawn nothing for ten seconds, Giode drops
+the text images and layouts its last frame didn't use, and Gio's shaper cache: an idle window
+keeps what it shows.
+
 Icons (SVG, path data, IconVG and the built-in glyphs) are rasterized the same way, once
 per size and color.
 

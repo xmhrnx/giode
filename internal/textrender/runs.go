@@ -7,6 +7,7 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/op"
@@ -14,17 +15,81 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/xmhrnx/giode/fonts"
 )
 
 // frame counts frames, to tell which cached entries are in use.
 var frame atomic.Uint64
 
 // Tick advances the frame counter and drops cache entries no frame has
-// used for a while. The app calls it once per frame.
+// used for a while. The app calls it once per frame, before laying it
+// out, and FrameDone after.
 func Tick() {
+	startIdleSweep.Do(func() { go idleSweeper() })
+	between.Lock()
+	inFrame.Store(true)
+	between.Unlock()
 	f := frame.Add(1)
+	// Text laid out this frame uses a fresh shaper once Gio's cache of
+	// laid out paragraphs has grown; see fonts.Refresh.
+	fonts.Refresh(shapeBudget)
 	if f%60 == 0 {
 		sweepLayouts(f)
+	}
+}
+
+// FrameDone marks the end of a frame's layout: until the next Tick, the
+// idle sweeper may clear the caches.
+func FrameDone() {
+	inFrame.Store(false)
+}
+
+// shapeBudget is how much text, in bytes, is shaped with one shaper
+// before it's replaced: Gio keeps about a hundred times that in laid
+// out glyphs, some 25 MB.
+const shapeBudget = 256 << 10
+
+var (
+	startIdleSweep sync.Once
+	// inFrame is set from Tick to FrameDone; between is held while the
+	// idle sweeper clears the caches, so a frame waits for it.
+	inFrame atomic.Bool
+	between sync.Mutex
+)
+
+// idleSweep is how long a window draws no frame before the caches let
+// go of what the last frame didn't draw (a variable for tests).
+var idleSweep atomic.Int64
+
+func init() { idleSweep.Store(int64(10 * time.Second)) }
+
+// idleSweeper clears the caches of a window that has stopped drawing:
+// the caches are otherwise swept only as frames are drawn, so an idle
+// window kept everything it had shown - a closed chat, a long-gone
+// page - until the next input. Once no frame has been drawn for
+// idleSweep, it drops what the last frame didn't use and lets Gio's
+// shaper cache go; what's on screen stays.
+func idleSweeper() {
+	var last, swept uint64
+	idle := 0
+	for {
+		time.Sleep(time.Duration(idleSweep.Load()) / 2)
+		f := frame.Load()
+		if f != last {
+			last, idle = f, 0
+			continue
+		}
+		if idle++; idle < 2 || swept == f {
+			continue
+		}
+		between.Lock()
+		if !inFrame.Load() {
+			sweepUnused(f)
+			fonts.Refresh(0)
+			swept = f
+		}
+		between.Unlock()
 	}
 }
 

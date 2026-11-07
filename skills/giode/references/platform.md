@@ -31,6 +31,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `Dictate` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
 | `ReadClipboardImage` | ✓ | ✓ | ✓ | ✓ | `wl-paste` or `xclip` | ✓ (async clipboard) |
+| `PlaySound` | AudioTrack | AVAudioPlayer | NSSound | PlaySound (one at a time) | `pw-play`, `paplay` or `aplay` | Web Audio |
 | `OnShareReceived` (share target) | `app.share_target` | share extension, `app.share_target` | – | – | – | – |
 | `SaveToDownloads` | Download (Android 10+) | Documents, in Files | Downloads | Downloads | XDG Downloads | – |
 | `OpenDownloads` / `OpenFolder` | ✓ / – | Files app | Finder | Explorer | `xdg-open` | – |
@@ -80,6 +81,38 @@ err := app.Notify("Research finished", "3 sources, 2 minutes")
 setting. `Notify` uses `gioui.org/x/notify`; on Android 13+ the system asks for permission
 the first time, and an app built with `-targetsdk 33` or higher can't notify at all,
 because gogio can't declare `POST_NOTIFICATIONS`. iOS notifications aren't implemented.
+
+## Sounds
+
+`PlaySound` plays a short sound - a chime when a task is done, an alert - and returns
+straight away, without waiting for it to finish. It takes the contents of a WAV file: PCM
+samples of 8, 16, 24 or 32 bits, or 32-bit floats, mono or stereo. Embed one, or make one
+in code with `EncodeWAV`, which turns samples from -1 to 1 into a 16-bit mono WAV:
+
+```go
+const rate = 44100
+volume := 0.6 // from the app's settings, 0 to 1
+samples := make([]float32, rate/4) // a quarter of a second
+for i := range samples {
+	t := float64(i) / rate
+	fade := 1 - float64(i)/float64(len(samples))
+	samples[i] = float32(volume * 0.3 * fade * math.Sin(2*math.Pi*520*t)) // soft and low
+}
+err := app.PlaySound(giode.EncodeWAV(samples, rate))
+```
+
+Scale the samples for the volume; there's no separate setting. Sounds overlap, except on
+Windows, where a new sound stops the one still playing. It's an error for data that isn't
+such a WAV, and `ErrNotSupported` where nothing can play it.
+
+| Platform | Plays through |
+| --- | --- |
+| Windows | `PlaySound` (winmm) |
+| macOS | `NSSound` |
+| iOS | `AVAudioPlayer` in the ambient session: mixed with other audio, silent in silent mode |
+| Android | `AudioTrack`, as a notification sound |
+| Linux | `pw-play` (PipeWire), `paplay` (PulseAudio) or `aplay` (ALSA), whichever is installed |
+| Web | Web Audio; browsers play sound only once the user has interacted with the page |
 
 ## Staying awake
 

@@ -12,6 +12,8 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/text"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/xmhrnx/giode/fonts"
 )
 
 // Laid is a laid out text: its glyphs in lines, positioned as Gio's
@@ -112,6 +114,40 @@ func Layout(sh *text.Shaper, p text.Parameters, cs layout.Constraints, str strin
 	layouts.m[key] = l
 	layouts.Unlock()
 	return l
+}
+
+// sweepUnused drops everything the frame f didn't use: what an idle
+// window keeps is what it shows.
+func sweepUnused(f uint64) {
+	runCache.Lock()
+	for k, v := range runCache.m {
+		if v.used < f {
+			runCache.bytes -= v.bytes
+			delete(runCache.m, k)
+		}
+	}
+	runCache.Unlock()
+	layouts.Lock()
+	for k, l := range layouts.m {
+		if l.used < f {
+			delete(layouts.m, k)
+		}
+	}
+	layouts.Unlock()
+	richLayouts.Lock()
+	for k, l := range richLayouts.m {
+		if l.used < f {
+			delete(richLayouts.m, k)
+		}
+	}
+	richLayouts.Unlock()
+	streams.Lock()
+	for k, e := range streams.m {
+		if e.used < f {
+			delete(streams.m, k)
+		}
+	}
+	streams.Unlock()
 }
 
 // sweepLayouts drops layouts unused for two seconds or so, and line
@@ -263,6 +299,7 @@ func lineAdvance(p text.Parameters) int {
 // iteration.
 func layoutWhole(sh *text.Shaper, p text.Parameters, cs layout.Constraints, str string) *Laid {
 	sh.LayoutString(p, str)
+	fonts.Shaped(len(str))
 	it := iterator{viewport: image.Rectangle{Max: cs.Max}, maxLines: p.MaxLines}
 	l := &Laid{}
 	lineStart := 0

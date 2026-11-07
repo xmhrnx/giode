@@ -8,6 +8,8 @@ package fonts
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 
 	"gioui.org/font"
 	"gioui.org/font/gofont"
@@ -18,20 +20,58 @@ import (
 )
 
 var (
-	shaper     *text.Shaper
+	shaper atomic.Pointer[text.Shaper]
+	// shaped counts the bytes of text shaped since the shaper was made.
+	shaped atomic.Int64
+
+	mu         sync.Mutex
 	collection []font.FontFace
 )
 
 // Register replaces the font collection used to shape text.
 func Register(faces []font.FontFace) {
+	mu.Lock()
 	collection = faces
-	shaper = text.NewShaper(text.WithCollection(faces))
+	mu.Unlock()
+	shaper.Store(text.NewShaper(text.WithCollection(faces)))
+	shaped.Store(0)
 }
 
 // Collection returns the registered font collection, in the order the
 // shaper loaded it.
 func Collection() []font.FontFace {
+	mu.Lock()
+	defer mu.Unlock()
 	return collection
+}
+
+// Shaped records that n bytes of text were laid out with the shaper, for
+// Refresh.
+func Shaped(n int) {
+	shaped.Add(int64(n))
+}
+
+// Refresh replaces the shaper with a fresh one over the same fonts once
+// more than limit bytes of text were shaped with it, and reports whether
+// it did. Gio's shaper keeps the last thousand paragraphs it laid out,
+// however long - in a long chat, a hundred megabytes and more, kept
+// after the chat is gone - and Giode keeps its own cache of laid out
+// text, so letting Gio's go costs little: a new shaper over loaded
+// fonts takes well under a millisecond. Call it between frames: text
+// laid out from then on uses the new shaper.
+func Refresh(limit int) bool {
+	if shaped.Load() <= int64(limit) {
+		return false
+	}
+	mu.Lock()
+	faces := collection
+	mu.Unlock()
+	if shaper.Load() == nil {
+		return false
+	}
+	shaper.Store(text.NewShaper(text.WithCollection(faces)))
+	shaped.Store(0)
+	return true
 }
 
 // UseGofont embeds the Go fonts for portable text rendering.
@@ -41,7 +81,7 @@ func UseGofont() {
 
 // Shaper returns the text shaper, or nil if no fonts were registered.
 func Shaper() *text.Shaper {
-	return shaper
+	return shaper.Load()
 }
 
 // File is a font file to register with RegisterFont: the TTF, OTF or

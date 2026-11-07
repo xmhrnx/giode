@@ -45,6 +45,9 @@ func KeepScreenOn(vm, ctx, view uintptr, on bool) error { return ErrUnsupported 
 // SecureSet reports ErrUnsupported outside Android.
 func SecureSet(vm, ctx uintptr, name string, value []byte) error { return ErrUnsupported }
 
+// PlaySound plays 16-bit PCM samples once (Android only).
+func PlaySound(vm, ctx uintptr, pcm []byte, rate, channels int) error { return ErrUnsupported }
+
 // SecureGet reports ErrUnsupported outside Android.
 func SecureGet(vm, ctx uintptr, name string) ([]byte, bool, error) { return nil, false, ErrUnsupported }
 

@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/gpu/headless"
@@ -433,5 +434,59 @@ func TestLayoutRich_StreamingReuse(t *testing.T) {
 	}
 	if !reused {
 		t.Error("the long span's lines were never kept")
+	}
+}
+
+// A window that stops drawing lets go of what its last frame didn't
+// show, and of Gio's shaper cache; what it shows stays.
+func TestIdleSweep(t *testing.T) {
+	fonts.UseGofont()
+	defer idleSweep.Store(idleSweep.Load())
+	idleSweep.Store(int64(20 * time.Millisecond))
+	sh := fonts.Shaper()
+	cs := layout.Constraints{Max: image.Pt(400, 1000)}
+	frameOf := func(texts ...string) {
+		Tick()
+		for _, s := range texts {
+			Layout(fonts.Shaper(), params(16), cs, s)
+		}
+		FrameDone()
+	}
+	frameOf("gone soon", "still here")
+	frameOf("still here")
+	if _, _, plain, _ := CacheStats(); plain < 2 {
+		t.Fatalf("%d layouts cached, want both", plain)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for fonts.Shaper() == sh && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if fonts.Shaper() == sh {
+		t.Fatal("the idle window kept its shaper and Gio's cache")
+	}
+	layouts.Lock()
+	var kept []string
+	for k := range layouts.m {
+		kept = append(kept, k.str)
+	}
+	layouts.Unlock()
+	if len(kept) != 1 || kept[0] != "still here" {
+		t.Errorf("after the idle sweep the layouts are %q, want only what the last frame drew", kept)
+	}
+}
+
+// The shaper is replaced once enough text has been shaped with it.
+func TestShaperRefresh(t *testing.T) {
+	fonts.UseGofont()
+	sh := fonts.Shaper()
+	cs := layout.Constraints{Max: image.Pt(400, 1<<20)}
+	para := strings.Repeat("Text that keeps arriving, a new paragraph every frame. ", 40)
+	for i := 0; fonts.Shaper() == sh && i < 400; i++ {
+		Tick()
+		Layout(fonts.Shaper(), params(16), cs, fmt.Sprint(i, para))
+		FrameDone()
+	}
+	if fonts.Shaper() == sh {
+		t.Error("the shaper was never replaced")
 	}
 }

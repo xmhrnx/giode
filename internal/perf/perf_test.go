@@ -261,3 +261,32 @@ func TestRetainedMemory(t *testing.T) {
 			(round+1)*500, float64(heap())/1e6, float64(start)/1e6, runs, float64(runBytes)/1e6, plain, rich)
 	}
 }
+
+// TestRetainedMemoryDistinctText reports the heap kept after a chat of
+// long, distinct messages - each new paragraph Gio's shaper would
+// otherwise keep, up to a thousand of them.
+func TestRetainedMemoryDistinctText(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	msgs := make([]msg, 50)
+	for i := range msgs {
+		msgs[i] = msg{id: i, text: fmt.Sprintf("Message %d. %s", i, strings.Repeat(lorem+" ", 8))}
+	}
+	next := len(msgs)
+	h := newHost(1000, 900, chatView(&msgs, false))
+	heap := func() float64 {
+		runtime.GC()
+		runtime.GC()
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		return float64(m.HeapAlloc) / 1e6
+	}
+	start := heap()
+	for i := 0; i < 1500; i++ {
+		msgs = append(msgs[1:], msg{id: next, text: fmt.Sprintf("Message %d. %s", next, strings.Repeat(lorem+" ", 8))})
+		next++
+		h.frame()
+	}
+	t.Logf("after 1500 frames of new 1.5 KB messages: heap %.1f MB (start %.1f MB)", heap(), start)
+}

@@ -238,6 +238,15 @@ func StopKeepAlive(vm, ctx uintptr) error {
 	})
 }
 
+// PlaySound plays 16-bit PCM samples once, as a notification sound.
+// Any thread.
+func PlaySound(vm, ctx uintptr, pcm []byte, rate, channels int) error {
+	return callClass(vm, ctx, servicesClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "playSound", "(Landroid/content/Context;[BII)V")
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(ctx), jni.Value(jni.NewByteArray(env, pcm)), jni.Value(rate), jni.Value(channels))
+	})
+}
+
 // SecureSet stores value under name, encrypted with a key in the
 // Android Keystore.
 func SecureSet(vm, ctx uintptr, name string, value []byte) error {

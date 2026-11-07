@@ -32,6 +32,7 @@ func BeginFrame() {
 // EndFrame finishes a frame, releasing keyed memos (see Memo) that
 // weren't laid out during it. The app calls it after every frame.
 func EndFrame() {
+	defer textrender.FrameDone()
 	for k, c := range memos {
 		if c.alive != frameNumber {
 			delete(memos, k)

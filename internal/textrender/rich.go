@@ -19,6 +19,8 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/xmhrnx/giode/fonts"
 )
 
 // Span is a run of text with its own style.
@@ -164,6 +166,7 @@ func shapeSpan(sh *text.Shaper, gtx layout.Context, p RichParams, maxWidth int, 
 	if truncate {
 		maxLines = 1
 	}
+	fonts.Shaped(len(span.Content))
 	sh.LayoutString(text.Parameters{
 		Font:            span.Font,
 		PxPerEm:         fixed.I(gtx.Sp(span.Size)),
@@ -445,6 +448,7 @@ func hasRTL(s string) bool {
 
 // shapeLines is spanLines without reuse.
 func shapeLines(sh *text.Shaper, gtx layout.Context, p RichParams, maxWidth int, span spanState) []spanResult {
+	fonts.Shaped(len(span.Content))
 	sh.LayoutString(text.Parameters{
 		Font:            span.Font,
 		PxPerEm:         fixed.I(gtx.Sp(span.Size)),

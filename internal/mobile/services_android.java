@@ -4,8 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -116,6 +122,48 @@ public final class services_android {
 	// secureDelete removes the value stored under name.
 	public static void secureDelete(Context ctx, String name) {
 		prefs(ctx).edit().remove(name).commit();
+	}
+
+	// playSound plays 16-bit PCM once through a static AudioTrack, as a
+	// notification sound, and releases the track when it has played.
+	// Any thread.
+	public static void playSound(Context ctx, byte[] pcm, int rate, int channels) {
+		int mask = channels == 2 ? AudioFormat.CHANNEL_OUT_STEREO : AudioFormat.CHANNEL_OUT_MONO;
+		final AudioTrack track;
+		if (Build.VERSION.SDK_INT >= 21) {
+			track = new AudioTrack(
+				new AudioAttributes.Builder()
+					.setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+					.setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+					.build(),
+				new AudioFormat.Builder()
+					.setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+					.setSampleRate(rate)
+					.setChannelMask(mask)
+					.build(),
+				pcm.length, AudioTrack.MODE_STATIC, AudioManager.AUDIO_SESSION_ID_GENERATE);
+		} else {
+			track = new AudioTrack(AudioManager.STREAM_NOTIFICATION, rate, mask,
+				AudioFormat.ENCODING_PCM_16BIT, pcm.length, AudioTrack.MODE_STATIC);
+		}
+		if (track.getState() != AudioTrack.STATE_INITIALIZED) {
+			track.release();
+			throw new IllegalStateException("AudioTrack not initialized");
+		}
+		track.write(pcm, 0, pcm.length);
+		int frames = pcm.length / (2 * channels);
+		track.setNotificationMarkerPosition(frames);
+		track.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
+			@Override
+			public void onMarkerReached(AudioTrack t) {
+				t.release();
+			}
+
+			@Override
+			public void onPeriodicNotification(AudioTrack t) {
+			}
+		}, new Handler(Looper.getMainLooper()));
+		track.play();
 	}
 
 	private static SharedPreferences prefs(Context ctx) {
