@@ -121,7 +121,6 @@ var interRegular []byte
 //go:embed fonts/Inter-SemiBold.ttf
 var interSemiBold []byte
 
-giode.UseGofont() // a fallback for text in other families
 err := giode.RegisterFont(
 	giode.FontFile{Family: "Inter", Data: interRegular},
 	giode.FontFile{Family: "Inter", Weight: giode.FontWeightSemiBold, Data: interSemiBold},

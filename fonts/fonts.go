@@ -1,9 +1,8 @@
 // Package fonts holds the text shaper shared by all Giode elements.
 //
-// Register a font collection once before running the app, or call
-// UseGofont to embed the Go fonts. When no fonts are registered the
-// shaper still falls back to system fonts where the platform supports
-// them.
+// Text uses the Go fonts unless the app registers its own (Register,
+// RegisterFont); characters a font lacks fall back to the system's
+// fonts where the platform has them.
 package fonts
 
 import (
@@ -80,15 +79,29 @@ func Refresh(limit int) bool {
 	return true
 }
 
-// UseGofont embeds the Go fonts for portable text rendering.
+// UseGofont uses the Go fonts, embedded in the binary, for text. They're
+// the default; call it to go back to them after Register.
 func UseGofont() {
 	Register(gofont.Collection())
 }
 
-// Shaper returns the text shaper, or nil if no fonts were registered.
+// Shaper returns the text shaper. With no fonts registered it loads the
+// Go fonts, so text shows without any setup.
 func Shaper() *text.Shaper {
+	if s := shaper.Load(); s != nil {
+		return s
+	}
+	defaultFonts.Do(func() {
+		if shaper.Load() == nil {
+			UseGofont()
+		}
+	})
 	return shaper.Load()
 }
+
+// defaultFonts loads the Go fonts once when text is shaped before any
+// fonts were registered.
+var defaultFonts sync.Once
 
 // File is a font file to register with RegisterFont: the TTF, OTF or
 // TTC data, and the family, weight and style Styles select it by
@@ -103,8 +116,8 @@ type File struct {
 }
 
 // RegisterFont adds font files to the fonts used to shape text, beside
-// any registered before (with UseGofont, say, which also gives text in
-// families you don't register something to fall back to):
+// any registered before, or beside the default Go fonts, which text in
+// families you don't register falls back to:
 //
 //	//go:embed fonts/Inter-Regular.ttf
 //	var interRegular []byte
@@ -122,6 +135,10 @@ type File struct {
 // collection (TTC) registers all its faces.
 func RegisterFont(files ...File) error {
 	faces := append([]font.FontFace(nil), Collection()...)
+	if shaper.Load() == nil {
+		// Beside the default Go fonts.
+		faces = gofont.Collection()
+	}
 	var added []alias
 	for _, f := range files {
 		parsed, err := opentype.ParseCollection(f.Data)

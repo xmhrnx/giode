@@ -115,8 +115,6 @@ import (
 )
 
 func main() {
-	giode.UseGofont() // embed a font for text
-
 	count := 0
 	btn := giode.Button("Click me",
 		giode.Styles{

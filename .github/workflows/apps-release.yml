@@ -1,0 +1,33 @@
+name: Apps release
+
+# Collects the installers and packages of the apps built with Giode
+# (web/src/projects.js) into the "apps" release, so visitors can try
+# them without installing Go. Weekly, and on demand.
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apps-release
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect the apps' latest releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: a token that can read the apps' repositories, if
+          # any of them is private.
+          APPS_TOKEN: ${{ secrets.APPS_TOKEN }}
+        run: .github/scripts/apps-release.sh

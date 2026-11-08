@@ -65,8 +65,6 @@ import (
 )
 
 func main() {
-	giode.UseGofont() // a font for text; giode.RegisterFont(giode.FontFile{Family, Weight, Data}) adds TTF/OTF files
-
 	count := 0
 	btn := giode.Button("Add", giode.Styles{Background: "theme.primary", Color: "theme.onprimary", BorderRadius: 8}).
 		OnClick(func() { count++ }) // created once, outside the view
@@ -254,8 +252,8 @@ for every key before editing giode.toml.
 - Offsets of 0 are unset; use `giode.Flush`.
 - Mixed colors computed once from fixed hex values don't follow theme switches; mix theme tokens.
 - Translucent overlays look too bright; use `Mix` for opaque tints.
-- `Text` needs a font: call `giode.UseGofont()` or register fonts (the bundled ones cover
-  Latin, Greek and Cyrillic; load a font for Arabic, Hebrew, CJK, ...).
+- Text uses the embedded Go fonts by default (Latin, Greek and Cyrillic), falling back to
+  system fonts; register a font with `giode.RegisterFont` for Arabic, Hebrew, CJK, ...
 - Wrapping a component in a `widget.Clickable` clips what it paints, shadows included; use
   `kit.LayoutClickable` or `giode.Pressable`.
 - On Android and iOS there are no folders beside the app: embed translations and assets

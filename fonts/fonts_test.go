@@ -1,6 +1,7 @@
 package fonts
 
 import (
+	"sync"
 	"testing"
 
 	"gioui.org/font"
@@ -77,5 +78,30 @@ func TestResolve(t *testing.T) {
 	UseGofont()
 	if got := Resolve(font.Font{Typeface: "Inter"}); got.Typeface != "Inter" {
 		t.Errorf("after Register, Resolve still maps Inter to %+v", got)
+	}
+}
+
+// With no fonts registered, text gets the Go fonts rather than nothing.
+func TestDefaultFonts(t *testing.T) {
+	defer Register(nil)
+	shaper.Store(nil)
+	collection = nil
+	defaultFonts = sync.Once{}
+	if Shaper() == nil {
+		t.Fatal("no shaper without registered fonts")
+	}
+	if len(Collection()) == 0 {
+		t.Error("the default shaper has no fonts")
+	}
+
+	// RegisterFont first adds beside the Go fonts.
+	shaper.Store(nil)
+	collection = nil
+	defaultFonts = sync.Once{}
+	if err := RegisterFont(File{Family: "Brand", Data: goregular.TTF}); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(Collection()); n < 2 {
+		t.Errorf("%d faces after RegisterFont, want the Go fonts and Brand", n)
 	}
 }
