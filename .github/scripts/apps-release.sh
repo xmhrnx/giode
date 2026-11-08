@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Collects the latest release files of the apps built with Giode (the
+# Collects the newest release files of the apps built with Giode (the
 # examples pages' list, web/src/projects.js) into this repository's
 # "apps" release, so visitors can try them without a toolchain. Run by
 # .github/workflows/apps-release.yml; needs gh, jq and node, and
@@ -31,7 +31,7 @@ if ! gh release view "$tag" -R "$repo" >/dev/null 2>&1; then
 fi
 
 {
-	echo "Installers and packages of the apps built with [Giode](https://github.com/$repo), taken from each app's latest release. Refreshed weekly: see each app's repository for its full history and release notes."
+	echo "Installers and packages of the apps built with [Giode](https://github.com/$repo), taken from each app's newest release with files. Refreshed weekly: see each app's repository for its full history and release notes."
 	echo
 	echo "| App | Version | Platforms |"
 	echo "| --- | --- | --- |"
@@ -39,8 +39,16 @@ fi
 
 failed=()
 while IFS=$'\t' read -r slug name app platforms; do
-	if ! release="$(read_app api "repos/$app/releases/latest" 2>"$work/err")"; then
-		echo "::warning::$name ($app): no release found: $(cat "$work/err")"
+	# The newest release with files, prereleases included, as the
+	# website's download buttons pick it.
+	if ! releases="$(read_app api "repos/$app/releases?per_page=10" 2>"$work/err")"; then
+		echo "::warning::$name ($app): couldn't list releases: $(cat "$work/err")"
+		failed+=("$name")
+		continue
+	fi
+	release="$(jq -c '[.[] | select(.draft | not) | select(.assets | length > 0)][0] // empty' <<<"$releases")"
+	if [ -z "$release" ]; then
+		echo "::warning::$name ($app): no release with files"
 		failed+=("$name")
 		continue
 	fi
