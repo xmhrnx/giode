@@ -28,6 +28,7 @@ export const NAV = [
 			{ path: "routing", label: "Routing" },
 			{ path: "window", label: "Window" },
 			{ path: "platform", label: "Platform services" },
+			{ path: "support", label: "Reports and donations" },
 			{ path: "mobile", label: "Mobile" },
 			{ path: "threading", label: "Threading" },
 			{ path: "performance", label: "Rendering performance" },

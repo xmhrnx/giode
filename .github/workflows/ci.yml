@@ -34,6 +34,9 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test -race ./...
+      - name: Test the support relay
+        if: runner.os == 'Linux'
+        run: node --test support/relay/worker.test.mjs
 
   android:
     # Builds the showcase as an APK, so a change that breaks Android
@@ -64,6 +67,14 @@ jobs:
           for c in camera/camera_android biometric/biometric_android printing/printing_android ocr/ocr_android; do
             unzip -p scanner.apk 'classes*.dex' | grep -aq "Lorg/giode/$c;" || { echo "missing $c"; exit 1; }
           done
+      - name: Compile the store and support packages for Android
+        # Their Android code (Play Billing, the installer check) is in no
+        # example app.
+        run: |
+          ndk="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
+          CGO_ENABLED=1 GOOS=android GOARCH=arm64 \
+            CC="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang" \
+            go vet ./store ./support
       - uses: actions/upload-artifact@v4
         with:
           name: showcase-apk

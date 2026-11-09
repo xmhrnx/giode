@@ -56,6 +56,7 @@ and the [FAQ](faq.md) answers the common questions.
 - [Window configuration](window.md)
 - [Mobile (Android)](mobile.md)
 - [Platform services](platform.md)
+- [Reports and donations](support.md)
 - [Elements](elements.md)
 - [Style properties](styles.md)
 - [Components](components/)

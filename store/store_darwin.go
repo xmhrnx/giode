@@ -10,6 +10,7 @@ void giodeStoreProducts(int id, const char *ids);
 void giodeStoreBuy(int id, const char *product);
 void giodeStoreFinish(int id, const char *token);
 void giodeStoreRestore(int id);
+int giodeStoreBillingRequired(void);
 */
 import "C"
 
@@ -94,3 +95,5 @@ func giodeStoreUpdate(js *C.char) {
 		update(p)
 	}
 }
+
+func billingRequired() bool { return C.giodeStoreBillingRequired() != 0 }

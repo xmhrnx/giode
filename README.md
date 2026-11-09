@@ -159,6 +159,8 @@ components.
 The full documentation is in [`docs/`](docs/index.md), also published as a website:
 
 - [Getting started](docs/getting-started.md)
+- [Reports and donations](docs/support.md): a Report a problem form that opens GitHub
+  issues, and a Donate button that follows the stores' rules
 - [Window configuration](docs/window.md): config fields, files, sharing, Back button,
   background and foreground
 - [Mobile (Android)](docs/mobile.md): building with gogio, permissions, storage, testing

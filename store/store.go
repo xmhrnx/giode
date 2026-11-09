@@ -69,6 +69,16 @@ type Purchase struct {
 	Signature string
 }
 
+// BillingRequired reports whether the app was installed from a store
+// whose rules require its own payments for tips and digital goods: the
+// App Store (every iOS app, and a Mac app with an App Store receipt) and
+// Google Play (its installer). There, sell through Buy rather than link
+// to a payment page. It's false for direct downloads and the Microsoft
+// Store, which allows other payments.
+func BillingRequired() bool {
+	return billingRequired()
+}
+
 // Products returns the products with the given ids; ids the store
 // doesn't know are left out.
 func Products(ctx context.Context, ids ...string) ([]Product, error) {

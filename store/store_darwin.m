@@ -2,6 +2,7 @@
 
 #import <Foundation/Foundation.h>
 #import <StoreKit/StoreKit.h>
+#include <TargetConditionals.h>
 #include "_cgo_export.h"
 
 // giode/store on StoreKit's original API, the one Objective-C can call.
@@ -237,4 +238,15 @@ void giodeStoreRestore(int rid) {
 		[restored removeAllObjects];
 		[[SKPaymentQueue defaultQueue] restoreCompletedTransactions];
 	});
+}
+
+// giodeStoreBillingRequired reports an App Store install: every iOS app,
+// and a Mac app with an App Store receipt (Developer ID apps have none).
+int giodeStoreBillingRequired(void) {
+#if TARGET_OS_IPHONE
+	return 1;
+#else
+	NSURL *u = [[NSBundle mainBundle] appStoreReceiptURL];
+	return u != nil && [[NSFileManager defaultManager] fileExistsAtPath:u.path];
+#endif
 }

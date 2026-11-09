@@ -606,6 +606,11 @@ days; the App Store redelivers them through `OnUpdate` on every launch. Pending 
 (paid in cash later, or waiting for a parent's approval) arrive through `OnUpdate` once
 paid. The Apple side uses StoreKit's original API, which Objective-C can call.
 
+`store.BillingRequired()` reports whether the app came from a store that requires its own
+payments (the App Store, the Mac App Store, Google Play), where tips and digital goods
+must go through `Buy`. [Reports and donations](support.md) uses it to offer tips there
+and a donation link elsewhere.
+
 ## Rating prompt
 
 `review.Request(ctx, app)` shows the store's rating prompt: Play's in-app review on
