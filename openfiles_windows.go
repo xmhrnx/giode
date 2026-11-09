@@ -1,11 +1,8 @@
 package giode
 
 import (
-	"io"
-	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -30,32 +27,10 @@ type filterSpec struct {
 	name, spec *uint16
 }
 
-// fileDialogMu shows one file dialog at a time, as Gio's explorer did.
-var fileDialogMu sync.Mutex
-
-// chooseFiles shows the system open dialog (IFileOpenDialog), owned by
-// the app's window so it stays in front of it and is modal to it, and
-// opens the chosen files. Each file comes back as its own shell item, so
-// one file and many go the same way.
-func (a *App) chooseFiles(exts []string, multiple bool) ([]io.ReadCloser, error) {
-	paths, err := a.openFileDialog(exts, multiple)
-	if err != nil {
-		return nil, err
-	}
-	files := make([]io.ReadCloser, 0, len(paths))
-	for _, p := range paths {
-		f, err := os.Open(p)
-		if err != nil {
-			for _, f := range files {
-				f.Close()
-			}
-			return nil, err
-		}
-		files = append(files, f)
-	}
-	return files, nil
-}
-
+// openFileDialog shows the system open dialog (IFileOpenDialog), owned
+// by the app's window so it stays in front of it and is modal to it.
+// Each file comes back as its own shell item, so one file and many go
+// the same way.
 func (a *App) openFileDialog(exts []string, multiple bool) ([]string, error) {
 	fileDialogMu.Lock()
 	defer fileDialogMu.Unlock()

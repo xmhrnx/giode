@@ -140,8 +140,10 @@ go func() {
 
 `OpenFile`, `OpenFiles` and `SaveFile(ctx, "speech.wav")` show the platform's own picker:
 the system picker on Android and iOS, the only way apps there can reach the user's files,
-and the native dialogs on desktops (through the XDG desktop portal on Linux). They're
-built on `gioui.org/x/explorer`, which giode feeds the window events it needs.
+and the native dialogs on desktops: IFileOpenDialog on Windows and NSOpenPanel on macOS
+(both attached to the app's window, choosing several files with `OpenFiles`), the XDG
+desktop portal on Linux. The rest is built on `gioui.org/x/explorer`, which giode feeds
+the window events it needs.
 
 They block until the user decides, so **call them from a goroutine**, never from a click
 handler: the picker needs the event loop running. `ErrCanceled` means the user closed the

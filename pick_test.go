@@ -96,3 +96,13 @@ func TestTypeByExtension_NoSystemTable(t *testing.T) {
 		t.Errorf("text/markdown gave %v", got)
 	}
 }
+
+func TestSplitPaths(t *testing.T) {
+	got := splitPaths([]byte("/Users/me/a b.txt\x00/Users/me/line\nbreak.pdf\x00"))
+	if !slices.Equal(got, []string{"/Users/me/a b.txt", "/Users/me/line\nbreak.pdf"}) {
+		t.Errorf("splitPaths: %q", got)
+	}
+	if got := splitPaths(nil); got != nil {
+		t.Errorf("no paths: %q", got)
+	}
+}

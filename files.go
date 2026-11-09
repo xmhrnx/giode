@@ -131,3 +131,15 @@ func await[T any](ctx context.Context, f func() (T, error), discard func(T)) (T,
 		return zero, ctx.Err()
 	}
 }
+
+// splitPaths splits paths that each end with a NUL, the one byte a
+// path can't hold, leaving out empty ones.
+func splitPaths(b []byte) []string {
+	var out []string
+	for _, p := range strings.Split(string(b), "\x00") {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
