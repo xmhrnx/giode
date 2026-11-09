@@ -4,7 +4,7 @@ package giode
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
-#cgo LDFLAGS: -framework AppKit -weak_framework ServiceManagement
+#cgo LDFLAGS: -framework AppKit -framework ServiceManagement
 
 #include <stdlib.h>
 
