@@ -67,6 +67,33 @@ submission repository and check it with
 `flatpak-builder --user --install-deps-from=flathub --force-clean build <id>.json`. Libraries
 in `native.linux` aren't built from source; add them as modules before the app's.
 
+## Mac App Store
+
+`giode build mas` makes `dist/macos/appstore/<App>-<version>.pkg`, the format Transporter
+takes for the Mac App Store:
+
+- the app is signed with the certificate in the Mac App Store provisioning profile (Apple
+  Distribution), which is embedded, with its entitlements and the App Sandbox's;
+- `macos.store.entitlements` names the sandbox's (`network.client`, `network.server`,
+  `files.user-selected.read-write`, `files.downloads.read-write`, ...). With user-selected
+  files, folders the user chooses keep a bookmark, so giode reopens them after a relaunch;
+- it isn't notarized (the store reviews it instead), and has no update feed;
+- `productbuild` wraps it in a package signed with the Mac installer certificate ("3rd Party
+  Mac Developer Installer"), found in the keychain or named by
+  `macos.store.installer_identity`.
+
+The store needs a category: `LSApplicationCategoryType` in `[macos.plist]`. Context actions
+are Services in every macOS build (`NSServices`), which the sandbox allows.
+
+In `giode ci`, with `[macos.store]` set, the macOS job builds the package too when the
+repository has `MACOS_STORE_CERT_BASE64` and `MACOS_STORE_CERT_PASS` (the Apple Distribution
+.p12), `MACOS_INSTALLER_CERT_BASE64` and `MACOS_INSTALLER_CERT_PASS` (the installer .p12),
+and `MACOS_PROFILE_BASE64` (the profile). It attaches the .pkg to the release beside the
+.dmg; upload it with Transporter.
+
+`-release` builds of `macos` and `dmg` sign with `macos.identity` (Developer ID) when it's set,
+and use `macos.profile` only without it.
+
 ## Snap Store
 
 `giode build snap` writes a snapcraft project in `dist/linux/snap` with the built app:

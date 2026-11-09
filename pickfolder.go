@@ -25,6 +25,10 @@ type FolderOptions struct {
 // from a goroutine. It returns ErrCanceled when the user closes the
 // picker, and ErrNotSupported on Android, iOS and the web, where apps
 // get no plain paths to the user's folders.
+//
+// In the macOS App Sandbox (Mac App Store builds), access to the folder
+// would end when the app quits; giode keeps a security-scoped bookmark
+// of it and reopens it at every start, so the path keeps working.
 func (a *App) PickFolder(ctx context.Context, opts FolderOptions) (string, error) {
 	return await(ctx, func() (string, error) {
 		pickMu.Lock()

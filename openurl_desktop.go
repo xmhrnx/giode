@@ -14,7 +14,7 @@ func (a *App) openURL(ctx context.Context, u string) error {
 	case "windows":
 		cmd = exec.CommandContext(ctx, "rundll32", "url.dll,FileProtocolHandler", u)
 	case "darwin":
-		cmd = exec.CommandContext(ctx, "open", u)
+		return workspaceOpen(u, false)
 	default:
 		cmd = exec.CommandContext(ctx, "xdg-open", u)
 	}

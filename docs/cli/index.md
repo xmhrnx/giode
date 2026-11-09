@@ -58,6 +58,7 @@ giode doctor     # what this computer has, and what each platform still needs
 | --- | --- | --- |
 | `android`, `aab` | Linux, macOS, Windows | Android SDK with build tools, a platform and the NDK; a JDK |
 | `ios`, `ios-sim`, `macos`, `dmg` | macOS | Xcode; for `ios`, a provisioning profile |
+| `mas` | macOS | Xcode; the Mac App Store profile, and the Apple Distribution and Mac installer certificates in the keychain |
 | `windows` | Linux, macOS, Windows | nothing extra for pure-Go apps (Gio doesn't need cgo on Windows); a cgo app needs a MinGW-w64 compiler and pkg-config for Windows: `windows.cc` |
 | `msix`, `winget` | Linux, macOS, Windows | nothing extra for `msix` (giode writes it); `winget` builds the setup program, so NSIS |
 | `windows-installer` | Linux, macOS, Windows | [NSIS](https://nsis.sourceforge.io) (`winget install NSIS.NSIS`, `brew install makensis`, `apt install nsis`) |

@@ -509,6 +509,27 @@ The app restarts with the same arguments; the old version is deleted on the next
 Apps installed by a package manager or store (`.deb`, `.rpm`, Flatpak, Snap, MSIX, the Mac
 App Store) are updated by it: `Check` returns `update.ErrManaged`.
 
+## The Mac App Store's sandbox
+
+Mac App Store builds (`giode build mas`) run in the App Sandbox, with the entitlements in
+`[macos.store]`. giode works within it:
+
+- `SetLaunchAtLogin` registers a login item with SMAppService, which needs macOS 13. Below
+  13 it returns `ErrNotSupported`, so hide the setting there. `LaunchedAtLogin` is false in
+  the sandbox.
+- A folder from `PickFolder` keeps a security-scoped bookmark in the app's container, and
+  giode reopens it at every start, so a download folder chosen once keeps working. This
+  needs `files.user-selected.read-write`, which adds the bookmark entitlement.
+- `OpenURL`, `OpenFolder` and `Share` (which shows the file in Finder on desktops) go
+  through NSWorkspace rather than running `open`.
+  `SaveToDownloads` writes through the container's link to the user's Downloads, which
+  needs `files.downloads.read-write`.
+- The single-instance lock lives in the container's temporary folder. A second launch
+  hands its arguments over a local connection, which needs `network.client` and
+  `network.server`.
+- Context actions are Services (`NSServices`), which the sandbox allows. Finder gives the
+  app access to the files it sends.
+
 ## Crash reports
 
 The `crash` package records the app's crashes and hands them back on the next start, on

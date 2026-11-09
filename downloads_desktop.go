@@ -48,7 +48,7 @@ func (a *App) openFolder(ctx context.Context, path string) error {
 	case "windows":
 		cmd = exec.Command("explorer.exe", abs)
 	case "darwin":
-		cmd = exec.Command("open", abs)
+		return workspaceOpen(abs, true)
 	default:
 		cmd = exec.Command("xdg-open", abs)
 	}

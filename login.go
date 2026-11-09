@@ -75,7 +75,9 @@ func (s StartInTray) startsInTray() bool {
 // SetLaunchAtLogin registers the app to start when the user signs in,
 // or removes the registration: a Run key entry on Windows (or, in an
 // MSIX package, its startup task: set windows.msix.startup_task in
-// giode.toml), a LaunchAgent on macOS, an XDG autostart entry on Linux
+// giode.toml), a LaunchAgent on macOS (a login item with SMAppService
+// in the App Sandbox, as Mac App Store builds are: macOS 13 and later,
+// ErrNotSupported before), an XDG autostart entry on Linux
 // (running the AppImage or the Flatpak when the app is one). The app
 // then starts with LaunchedAtLogin true. It returns ErrNotSupported on
 // Android, iOS and the web.

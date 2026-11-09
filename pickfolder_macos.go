@@ -44,5 +44,7 @@ func pickFolder(a *App, opts FolderOptions) (string, error) {
 	if path == "\x00" {
 		return "", ErrCanceled
 	}
+	// In the sandbox, the folder stays reachable after the app quits.
+	rememberFolderAccess(path)
 	return path, nil
 }

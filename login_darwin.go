@@ -18,6 +18,11 @@ func launchAgentFile(name string) (string, error) {
 }
 
 func setLaunchAtLogin(e loginEntry, on bool) error {
+	if sandboxed() {
+		// A sandboxed app can't write a LaunchAgent; App Review rejects
+		// one that tries. It's a login item instead (macOS 13 and later).
+		return setLoginItem(on)
+	}
 	name := e.name
 	path, err := launchAgentFile(name)
 	if err != nil {
@@ -71,6 +76,9 @@ func setLaunchAtLogin(e loginEntry, on bool) error {
 }
 
 func launchAtLogin(name string) bool {
+	if sandboxed() {
+		return loginItemEnabled()
+	}
 	path, err := launchAgentFile(name)
 	if err != nil {
 		return false
