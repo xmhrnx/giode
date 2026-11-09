@@ -155,7 +155,7 @@ func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	for _, seg := range laid.Segments {
 		s := spans[seg.Span]
 		st := op.Offset(seg.Offset).Push(gtx.Ops)
-		paintDecoration(gtx, seg.Size, s.st.TextDecoration, colors[seg.Span])
+		paintSegmentDecoration(gtx, seg.Size, seg.Ascent, s.st.TextDecoration, colors[seg.Span])
 		if s.click != nil {
 			cl := clip.Rect{Max: seg.Size}.Push(gtx.Ops)
 			pointer.CursorPointer.Add(gtx.Ops)

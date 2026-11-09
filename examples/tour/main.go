@@ -117,7 +117,7 @@ func main() {
 			if (view == 1) || (view == 2 && !t.done) {
 				continue
 			}
-			title := giode.Styles{Color: "theme.text", FontSize: 15}
+			title := giode.Styles{FlexGrow: 1, Color: "theme.text", FontSize: 15}
 			if t.done {
 				title.Color, title.TextDecoration = "theme.muted", giode.TextDecorationLineThrough
 			}
@@ -125,7 +125,7 @@ func main() {
 				Align: giode.AlignCenter, Wrap: giode.WrapNoWrap, BorderRadius: 10, Background: "theme.surface",
 				BorderWidth: 1, BorderColor: "theme.border"},
 				t.check,
-				giode.Box(giode.Styles{FlexGrow: 1}, giode.Text(t.title, title)),
+				giode.Text(t.title, title),
 				giode.Chip(t.tag, giode.Styles{Background: "theme.primary/0.12", Color: "theme.primary", BorderColor: "theme.primary/0.12"}),
 			))
 		}

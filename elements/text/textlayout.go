@@ -87,21 +87,27 @@ func (t *TextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	}
 	str := st.TabWidth.Expand(st.TextTransform.Apply(t.str))
 	var dims layout.Dimensions
+	params := text.Parameters{
+		Font:            face,
+		PxPerEm:         fixed.I(gtx.Sp(properties.ResolveFontSize(st.FontSize))),
+		MaxLines:        label.MaxLines,
+		Truncator:       label.Truncator,
+		Alignment:       label.Alignment,
+		Locale:          gtx.Locale,
+		LineHeight:      fixed.I(gtx.Sp(label.LineHeight)),
+		LineHeightScale: label.LineHeightScale,
+	}
+	var l *textrender.Laid
 	if t.selKey != nil && st.Visibility != properties.VisibilityHidden {
 		dims = t.layoutSelectable(gtx, st, str, face, properties.ResolveFontSize(st.FontSize), textColor)
+		if decorated(st.TextDecoration) {
+			// The same layout, for where the lines are.
+			l = textrender.Layout(shaper, params, gtx.Constraints, str)
+		}
 	} else {
 		// Laid out from cache and drawn as cached line images; see
 		// internal/textrender.
-		l := textrender.Layout(shaper, text.Parameters{
-			Font:            face,
-			PxPerEm:         fixed.I(gtx.Sp(properties.ResolveFontSize(st.FontSize))),
-			MaxLines:        label.MaxLines,
-			Truncator:       label.Truncator,
-			Alignment:       label.Alignment,
-			Locale:          gtx.Locale,
-			LineHeight:      fixed.I(gtx.Sp(label.LineHeight)),
-			LineHeightScale: label.LineHeightScale,
-		}, gtx.Constraints, str)
+		l = textrender.Layout(shaper, params, gtx.Constraints, str)
 		if st.Visibility != properties.VisibilityHidden {
 			registerSelectable(gtx, str, l.Dims.Size, l.StopLines, st.Color)
 			semantic.LabelOp(str).Add(gtx.Ops)
@@ -110,7 +116,7 @@ func (t *TextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 		dims = l.Dims
 	}
 
-	paintDecoration(gtx, dims.Size, st.TextDecoration, col)
+	paintDecoration(gtx, l, st.TextDecoration, col)
 	if st.Visibility != properties.VisibilityHidden {
 		base.RecordSemanticLabeled(gtx, base.SemanticText, str, "", dims.Size)
 	}
