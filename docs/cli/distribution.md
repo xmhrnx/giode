@@ -33,6 +33,52 @@ LAN discovery in the app works without Windows asking, and the uninstaller remov
 per-machine installer adds it while elevated; a per-user one asks for administrator
 rights once, for the rule alone, and installs anyway if that's declined.
 
+An MSIX package can't run netsh: with `firewall = true` its manifest declares the rules
+instead (`windows.firewallRules`), allowing the app on every TCP and UDP port, or only on
+`firewall_ports` (`"tcp:53317-53318"`, `"udp:53317"`).
+
+## MSIX and the Microsoft Store
+
+A packaged app's registry writes stay inside its package, so the File Explorer entries
+giode's `InstallContextActions` writes never reach Explorer in a Store install. The MSIX
+declares `context_actions` itself (`windows.fileExplorerContextMenus`, on files, by
+extension, folders or a folder's background), each a COM class of a small handler packed
+beside the program (`GiodeContextMenu.dll`, x64 and ARM64 packages). Choosing an entry
+starts the app once with `--giode-action=<id>` and every selected path, as giode's context
+actions take them.
+
+## Flathub
+
+Flathub builds open-source apps from source, offline, on its own servers.
+`giode build flathub` writes a submission into `dist/linux/flathub`:
+
+- a manifest building the app from its git tag (the tag on the checked-out commit, or
+  `v<version>.<build>` or `v<version>`, with its commit), with Go from the
+  `org.freedesktop.Sdk.Extension.golang` SDK extension on runtime 25.08;
+- every file in `go.sum` as a source, hashed, in a module proxy directory that the build
+  uses with no network;
+- Gio's zip with giode's patches as `gio-giode.patch`;
+- the desktop entry, AppStream file (with `linux.screenshots`, which Flathub requires) and
+  icons.
+
+`linux.app_id` sets the Flathub ID when it can't be `app.id`: Flathub accepts only an ID
+under a domain you control, or `io.github.<user>.<App>`. Copy the folder into the
+submission repository and check it with
+`flatpak-builder --user --install-deps-from=flathub --force-clean build <id>.json`. Libraries
+in `native.linux` aren't built from source; add them as modules before the app's.
+
+## Snap Store
+
+`giode build snap` writes a snapcraft project in `dist/linux/snap` with the built app:
+`core24`, strict confinement, the GNOME extension for the desktop libraries, and
+`linux.snap.plugs`. It packs it into a `.snap` when snapcraft is installed. With
+`linux.snap.name` set (register it first with `snapcraft register`), `giode ci`'s workflow
+builds the snap on each Linux runner and attaches it to the release. On a tag, it uploads
+it to `linux.snap.channel` (stable by default) when the repository has the
+`SNAPCRAFT_STORE_CREDENTIALS` secret (`snapcraft export-login -`). Plugs the store doesn't
+connect on its own, such as `network-observe` and `removable-media`, need a request in the
+Snap forum, or users connect them with `snap connect`.
+
 ## Launch screen colour
 
 `splash_color` fills the screen from launch until the app's first frame, instead of white:

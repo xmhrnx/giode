@@ -65,6 +65,8 @@ giode doctor     # what this computer has, and what each platform still needs
 | `deb`, `rpm` | Linux | as `linux`; packages are written by giode itself |
 | `appimage` | Linux | as `linux`, plus [appimagetool](https://github.com/AppImage/appimagetool/releases) on PATH |
 | `flatpak` | Linux | as `linux`; with `flatpak-builder` a `.flatpak` bundle, without it the manifest |
+| `snap` | Linux | as `linux`; with `snapcraft` a `.snap`, without it the snapcraft project |
+| `flathub` | Linux, macOS | git and Go: a manifest building the app from its git tag, for a Flathub submission |
 | `web` | anywhere | nothing extra |
 
 `giode doctor` checks all of these.
