@@ -2,7 +2,7 @@ package giode
 
 /*
 #cgo CFLAGS: -Werror -fmodules -fobjc-arc -x objective-c
-#cgo LDFLAGS: -framework UIKit -framework PhotosUI -framework Photos -framework AVFoundation -framework Speech
+#cgo LDFLAGS: -framework UIKit -framework PhotosUI -framework Photos -framework AVFoundation
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -18,8 +18,6 @@ void giodeWatchLifecycle(void);
 int giodePickPhoto(CFTypeRef vc, int id, int maxSide);
 int giodeHasInfoKey(const char *key);
 int giodePickCamera(CFTypeRef vc, int id, int maxSide);
-void giodeDictate(int id, const char *lang);
-void giodeStopDictation(int id);
 int giodePickPhotos(CFTypeRef vc, int id, int maxSide, int limit);
 void giodeShareFiles(CFTypeRef vc, const char *paths);
 void giodeSaveToPhotos(int id, const char *path, int video);
@@ -385,76 +383,4 @@ func requireInfoKeys(keys ...string) error {
 		return fmt.Errorf("%w: Info.plist lacks %s (see docs/platform.md)", ErrNotSupported, strings.Join(missing, ", "))
 	}
 	return nil
-}
-
-var speechReqs struct {
-	sync.Mutex
-	next int
-	ch   map[int]chan Transcript
-}
-
-func (a *App) dictate(ctx context.Context, lang string) (<-chan Transcript, error) {
-	if err := requireInfoKeys("NSMicrophoneUsageDescription", "NSSpeechRecognitionUsageDescription"); err != nil {
-		return nil, err
-	}
-	in := make(chan Transcript, 16)
-	speechReqs.Lock()
-	if speechReqs.ch == nil {
-		speechReqs.ch = map[int]chan Transcript{}
-	}
-	speechReqs.next++
-	id := speechReqs.next
-	speechReqs.ch[id] = in
-	speechReqs.Unlock()
-	cl, free := cstr(lang)
-	C.giodeDictate(C.int(id), cl)
-	free()
-	out := make(chan Transcript, 16)
-	go func() {
-		defer close(out)
-		stopped := false
-		for {
-			select {
-			case t := <-in:
-				out <- t
-				if t.Final {
-					return
-				}
-			case <-ctx.Done():
-				if !stopped {
-					stopped = true
-					C.giodeStopDictation(C.int(id))
-				}
-				ctx = context.Background() // keep waiting for the final result
-			}
-		}
-	}()
-	return out, nil
-}
-
-//export giodeSpeech
-func giodeSpeech(id C.int, text *C.char, final C.int, errMsg *C.char) {
-	speechReqs.Lock()
-	ch := speechReqs.ch[int(id)]
-	if final != 0 {
-		delete(speechReqs.ch, int(id))
-	}
-	speechReqs.Unlock()
-	if ch == nil {
-		return
-	}
-	t := Transcript{Text: C.GoString(text), Final: final != 0}
-	if errMsg != nil {
-		t.Err = errors.New(C.GoString(errMsg))
-	}
-	if t.Final {
-		// Never block the main thread on a slow reader; the final
-		// result still arrives.
-		go func() { ch <- t }()
-		return
-	}
-	select {
-	case ch <- t:
-	default: // a slow reader misses partial results
-	}
 }

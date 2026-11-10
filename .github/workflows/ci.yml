@@ -106,3 +106,9 @@ jobs:
         env:
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.scanner -o scanner.app ./examples/scanner
+      - name: Build the dictation example for the simulator
+        # Compiles the dictate package's Objective-C (Speech, the
+        # microphone) with the iOS SDK.
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.dictation -o dictation.app ./examples/dictation

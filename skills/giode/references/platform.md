@@ -28,7 +28,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
-| `Dictate` | ✓ | Info.plist keys | – | – | – | – |
+| `dictate.Start` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
 | `ReadClipboardImage` | ✓ | ✓ | ✓ | ✓ | `wl-paste` or `xclip` | ✓ (async clipboard) |
 | `PlaySound` | AudioTrack | AVAudioPlayer | NSSound | PlaySound (one at a time) | `pw-play`, `paplay` or `aplay` | Web Audio |
@@ -410,20 +410,28 @@ small elevated helper process is the safer design.
 
 ## Dictation
 
+Dictation is in its own package, `github.com/xmhrnx/giode/dictate`, so that only apps
+that dictate link the speech recognizer and record from the microphone: the App Store
+asks any iOS app whose binary does for microphone and speech recognition purpose strings.
+
 ```go
-results, err := app.Dictate(ctx, "en-US")
+import "github.com/xmhrnx/giode/dictate"
+
+results, err := dictate.Start(ctx, app, "en-US")
 for r := range results {
 	composer.SetText(r.Text) // the whole transcript so far
 	if r.Final { break }
 }
 ```
 
-On Android it uses `SpeechRecognizer`, asking for the microphone permission the first
-time; import `gioui.org/app/permission/microphone`. On iOS it uses `SFSpeechRecognizer`
-with the microphone, asking for both permissions the first time, and ends after a two
-second pause, as Android does. It needs `NSMicrophoneUsageDescription` and
-`NSSpeechRecognitionUsageDescription` in Info.plist; without them `Dictate` returns an
-error wrapping `ErrNotSupported`.
+`app.Dictate` does the same once the package is imported; without it, it returns an error
+wrapping `ErrNotSupported`. On Android it uses `SpeechRecognizer`, asking for the
+microphone permission the first time; the package adds it to the manifest. On iOS it uses
+`SFSpeechRecognizer` with the microphone, asking for both permissions the first time, and
+ends after a two second pause, as Android does. It needs `NSMicrophoneUsageDescription`
+and `NSSpeechRecognitionUsageDescription` in Info.plist (`ios.usage.microphone` and
+`ios.usage.speech` in giode.toml); without them it returns an error wrapping
+`ErrNotSupported`. See `examples/dictation`.
 
 ## Info.plist keys on iOS
 
