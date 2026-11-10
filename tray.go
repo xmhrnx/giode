@@ -291,7 +291,7 @@ func (a *App) ShowWindow() {
 	a.viewMu.Unlock()
 	was := a.windowHidden.Swap(false)
 	a.showNativeWindow()
-	a.window.Invalidate()
+	a.invalidate()
 	if was && a.cfg.OnForeground != nil {
 		a.Post(a.cfg.OnForeground)
 	}

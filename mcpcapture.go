@@ -56,7 +56,7 @@ func (b *mcpBridge) afterFrame(ctx context.Context, a *App, fn func(ops *op.Ops,
 	b.mu.Lock()
 	b.after = append(b.after, func(ops *op.Ops, size image.Point) { fn(ops, size); close(done) })
 	b.mu.Unlock()
-	a.window.Invalidate()
+	a.invalidate()
 	select {
 	case <-done:
 		return nil

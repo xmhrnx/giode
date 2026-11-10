@@ -96,7 +96,7 @@ func (a *App) handleConfig(cfg app.Config) {
 		return
 	}
 	elements.InvalidateCaches()
-	a.window.Invalidate()
+	a.invalidate()
 	if old != s {
 		a.logf(LogLevelDebug, "giode: window %s", s)
 		if s == WindowMinimized && a.minimizesToTray() && !a.windowHidden.Load() {

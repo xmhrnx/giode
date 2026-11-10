@@ -31,7 +31,7 @@ func (a *App) SetClipboard(text string) {
 	a.uiMu.Lock()
 	a.clip.write = &text
 	a.uiMu.Unlock()
-	a.window.Invalidate()
+	a.invalidate()
 }
 
 // ReadClipboard reads the system clipboard's text and calls fn with it
@@ -42,7 +42,7 @@ func (a *App) ReadClipboard(fn func(text string)) {
 	a.uiMu.Lock()
 	a.clip.readers = append(a.clip.readers, fn)
 	a.uiMu.Unlock()
-	a.window.Invalidate()
+	a.invalidate()
 }
 
 // layoutClipboard applies queued clipboard work and delivers read

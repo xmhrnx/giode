@@ -174,7 +174,7 @@ func New(cfg Config) *App {
 	i18n.OnChange(func() {
 		// New text and maybe a new reading direction.
 		elements.InvalidateCaches()
-		a.window.Invalidate()
+		a.invalidate()
 	})
 	if cfg.SingleInstanceLock == nil {
 		// Restarted by an update: let the old process finish first.

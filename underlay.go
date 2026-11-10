@@ -89,5 +89,5 @@ func underlayFrameDone(t GPUTarget) {
 // Invalidate asks for a new frame. It's safe to call from any
 // goroutine: an underlay's new video frame is ready, say.
 func (a *App) Invalidate() {
-	a.window.Invalidate()
+	a.invalidate()
 }

@@ -18,7 +18,7 @@ func (a *App) Post(fn func()) {
 	a.uiMu.Lock()
 	a.uiCalls = append(a.uiCalls, fn)
 	a.uiMu.Unlock()
-	a.window.Invalidate()
+	a.invalidate()
 }
 
 // RunOnUI runs fn on the UI goroutine before the next frame is laid
@@ -31,7 +31,7 @@ func (a *App) RunOnUI(ctx context.Context, fn func()) error {
 	a.uiMu.Lock()
 	a.uiCalls = append(a.uiCalls, func() { fn(); close(done) })
 	a.uiMu.Unlock()
-	a.window.Invalidate()
+	a.invalidate()
 	select {
 	case <-done:
 		return nil

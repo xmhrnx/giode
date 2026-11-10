@@ -72,7 +72,7 @@ func (a *App) frameContext(ops *op.Ops, e app.FrameEvent) layout.Context {
 // goroutine.
 func (a *App) HideKeyboard() {
 	a.hideKeyboard.Store(true)
-	a.window.Invalidate()
+	a.invalidate()
 }
 
 // applyHideKeyboard carries out a pending HideKeyboard.
