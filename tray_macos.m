@@ -28,25 +28,73 @@ static NSWindow *windowOf(uintptr_t view) {
 	return v.window;
 }
 
+// giodeHidden is set while giode keeps the window hidden (HideWindow,
+// CloseToTray). Gio goes on drawing into a window that is off screen,
+// and its Metal layer never lets nextDrawable time out: a hidden window
+// gets no drawables back, so after a few frames the main thread would
+// wait forever, and the window could never be shown again. Gio's view
+// doesn't draw while the window is hidden; showing it draws again.
+static BOOL giodeHidden;
+
+static void (*gioDisplayLayer)(id, SEL, CALayer *);
+static void (*gioDrawRect)(id, SEL, NSRect);
+
+static BOOL giodeSkipDraw(NSView *v) {
+	return giodeHidden && !v.window.visible;
+}
+
+static void giodeDisplayLayer(id self, SEL _cmd, CALayer *layer) {
+	if (!giodeSkipDraw(self)) {
+		gioDisplayLayer(self, _cmd, layer);
+	}
+}
+
+static void giodeDrawRect(id self, SEL _cmd, NSRect r) {
+	if (!giodeSkipDraw(self)) {
+		gioDrawRect(self, _cmd, r);
+	}
+}
+
+__attribute__((constructor)) static void giodeInstallHiddenDraw(void) {
+	Class c = objc_getClass("GioView");
+	if (c == nil) {
+		return;
+	}
+	Method m = class_getInstanceMethod(c, @selector(displayLayer:));
+	if (m != NULL) {
+		gioDisplayLayer = (void (*)(id, SEL, CALayer *))method_setImplementation(m, (IMP)giodeDisplayLayer);
+	}
+	m = class_getInstanceMethod(c, @selector(drawRect:));
+	if (m != NULL) {
+		gioDrawRect = (void (*)(id, SEL, NSRect))method_setImplementation(m, (IMP)giodeDrawRect);
+	}
+}
+
 void giodeHideWindow(uintptr_t view) {
 	dispatch_async(dispatch_get_main_queue(), ^{
+		giodeHidden = YES;
 		[windowOf(view) orderOut:nil];
 	});
 }
 
 void giodeShowWindow(uintptr_t view) {
 	dispatch_async(dispatch_get_main_queue(), ^{
-		NSWindow *w = windowOf(view);
+		NSView *v = (__bridge NSView *)(void *)view;
+		NSWindow *w = v.window;
+		giodeHidden = NO;
 		if (w.miniaturized) {
 			[w deminiaturize:nil];
 		}
 		[NSApp activateIgnoringOtherApps:YES];
 		[w makeKeyAndOrderFront:nil];
+		// The frames skipped while hidden: draw the window as it is now.
+		[v setNeedsDisplay:YES];
 	});
 }
 
 static BOOL giodeWindowShouldClose(id self, SEL _cmd, NSWindow *sender) {
 	if (giodeShouldHideOnClose()) {
+		giodeHidden = YES;
 		[sender orderOut:nil];
 		giodeHiddenOnClose();
 		return NO;
