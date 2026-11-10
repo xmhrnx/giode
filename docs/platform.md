@@ -21,9 +21,9 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `PickedFile.Path` | – | – | ✓ | ✓ | ✓ | – |
 | `PickFolder` | – | – | ✓ | ✓ | ✓ (portal, zenity, kdialog) | – |
 | `RestartElevated` | – | – | admin prompt | UAC | pkexec | – |
-| `PickPhoto` library / camera | ✓ / ✓ | ✓ / Info.plist key | file / – | file / – | file / – | file / – |
+| `PickPhoto` / `takephoto.Take` | ✓ / ✓ | ✓ / Info.plist key | file / – | file / – | file / – | file / – |
 | `PickPhotos` (several) | ✓ | ✓ (iOS 14+) | files | files | files | – |
-| `SaveToPhotos` | Pictures (Android 10+) | Photos, Info.plist key | ~/Pictures | Pictures | XDG Pictures | – |
+| `gallery.Save` | Pictures (Android 10+) | Photos, Info.plist key | ~/Pictures | Pictures | XDG Pictures | – |
 | `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | – | – | – |
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
@@ -175,10 +175,22 @@ for work that needs the file rather than a stream (a disk image read at random o
 it's empty on Android, iOS and the web. `PickPhoto` returns an upright JPEG scaled to
 `MaxSide`: Android's photo picker (Android 13+, the image picker before) or camera, and
 PHPicker on iOS 14+, decode HEIC on the device, so HEIC never reaches the app. On desktops
-it picks an image file (JPEG, PNG, GIF, WebP). The iOS camera needs
-`NSCameraUsageDescription` in Info.plist (see [Info.plist keys on iOS](#infoplist-keys-on-ios));
-without it `PickPhoto` returns an error wrapping `ErrNotSupported` rather than letting iOS
-end the app. Like `OpenFile`, these block: call them from a goroutine.
+it picks an image file (JPEG, PNG, GIF, WebP). Like `OpenFile`, these block: call them
+from a goroutine.
+
+Taking a photo with the camera (`Source: giode.Camera`) needs the `takephoto` package
+imported, so that only apps that take photos carry the camera code (the App Store asks any
+iOS app whose binary uses the camera for a purpose string); without it `PickPhoto` returns
+an error wrapping `ErrNotSupported`. `takephoto.Take(ctx, app, maxSide)` is the same call.
+The iOS camera needs `NSCameraUsageDescription` in Info.plist (`ios.usage.camera`; see
+[Info.plist keys on iOS](#infoplist-keys-on-ios)); without it it returns an error wrapping
+`ErrNotSupported` rather than letting iOS end the app.
+
+```go
+import "github.com/xmhrnx/giode/takephoto"
+
+photo, err := takephoto.Take(ctx, app, 2048)
+```
 
 `PickPhotos` picks several at once, up to a limit (0 for as many as the picker allows), in
 the order picked, each an upright JPEG scaled to `MaxSide`:
@@ -190,13 +202,18 @@ pages, err := app.PickPhotos(ctx, giode.PhotoOptions{MaxSide: 2400}, 0)
 On desktops both decode the file in Go and turn it upright by its EXIF orientation, as the
 phones' pickers do.
 
-`SaveToPhotos` adds a picture or video to the gallery: Android's Pictures (Movies for
-videos) through MediaStore, Android 10 or later and no permission; the iOS photo library,
-asking for add-only access the first time (`ios.usage.photos_add`); the Pictures folder on
-desktops. The second argument is the album folder, the app's name when empty.
+The `gallery` package adds a picture or video to the gallery: Android's Pictures (Movies
+for videos) through MediaStore, Android 10 or later and no permission; the iOS photo
+library, asking for add-only access the first time (`ios.usage.photos_add`); the Pictures
+folder on desktops. The last argument is the album folder, the app's name when empty. It is
+a package of its own so that only apps that save photos carry the photo library code;
+importing it also makes `app.SaveToPhotos` work, which otherwise returns an error wrapping
+`ErrNotSupported`.
 
 ```go
-err := app.SaveToPhotos(ctx, "/path/page-1.jpg", "Scans")
+import "github.com/xmhrnx/giode/gallery"
+
+err := gallery.Save(ctx, app, "/path/page-1.jpg", "Scans")
 ```
 
 `giode.ShareFiles{Paths: pages}` shares several files in one share sheet (`Share` above
@@ -298,7 +315,7 @@ while discovering: it costs battery.
 
 ## Camera
 
-`PickPhoto` with `Camera` hands over to the system camera app for one shot. For a
+`takephoto.Take` hands over to the system camera app for one shot. For a
 viewfinder inside the app (a scanner outlining the page, auto-capture when it's steady, a
 QR reader) use the `camera` package:
 

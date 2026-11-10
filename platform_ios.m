@@ -1,6 +1,5 @@
 #import <UIKit/UIKit.h>
 #import <PhotosUI/PhotosUI.h>
-#import <Photos/Photos.h>
 #import <AVFoundation/AVFoundation.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -299,95 +298,9 @@ void giodeShareFiles(CFTypeRef vcRef, const char *paths) {
 	});
 }
 
-// giodeSaveToPhotos adds a picture or video to the photo library, asking
-// for add-only access first, and answers giodeSavedToPhotos.
-void giodeSaveToPhotos(int rid, const char *path, int video) {
-	NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path]];
-	void (^save)(void) = ^{
-		[[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-			if (video) {
-				[PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:url];
-			} else {
-				[PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:url];
-			}
-		} completionHandler:^(BOOL ok, NSError *err) {
-			giodeSavedToPhotos(rid, ok ? NULL : (char *)(err.localizedDescription ?: @"can't save to Photos").UTF8String);
-		}];
-	};
-	if (@available(iOS 14, *)) {
-		[PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelAddOnly handler:^(PHAuthorizationStatus st) {
-			if (st == PHAuthorizationStatusAuthorized || st == PHAuthorizationStatusLimited) {
-				save();
-			} else {
-				giodeSavedToPhotos(rid, "adding to Photos isn't allowed for this app (Settings > Privacy & Security > Photos)");
-			}
-		}];
-	} else {
-		save();
-	}
-}
-
 int giodeHasInfoKey(const char *key) {
 	NSString *k = [NSString stringWithUTF8String:key];
 	return [[NSBundle mainBundle] objectForInfoDictionaryKey:k] != nil;
-}
-
-@interface GiodeCameraDelegate : NSObject <UIImagePickerControllerDelegate, UINavigationControllerDelegate>
-@property int requestID;
-@property int maxSide;
-@end
-
-@implementation GiodeCameraDelegate
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> *)info {
-	int rid = self.requestID;
-	int maxSide = self.maxSide;
-	[pending removeObject:self];
-	[picker dismissViewControllerAnimated:YES completion:nil];
-	UIImage *img = info[UIImagePickerControllerOriginalImage];
-	if (img == nil) {
-		giodePhotoDone(rid, NULL, 0, NULL, (char *)"the camera returned no image");
-		return;
-	}
-	dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-		NSData *jpeg = giodeJPEG(img, maxSide);
-		giodePhotoDone(rid, (void *)jpeg.bytes, (int)jpeg.length, (char *)"photo", NULL);
-	});
-}
-
-- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
-	int rid = self.requestID;
-	[pending removeObject:self];
-	[picker dismissViewControllerAnimated:YES completion:nil];
-	giodePhotoDone(rid, NULL, 0, NULL, NULL);
-}
-@end
-
-// giodePickCamera opens the camera. It returns 1 when the camera opens,
-// 0 when the device has none (the simulator), and -1 when the user has
-// denied the app camera access.
-int giodePickCamera(CFTypeRef vcRef, int rid, int maxSide) {
-	if (![UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
-		return 0;
-	}
-	AVAuthorizationStatus st = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-	if (st == AVAuthorizationStatusDenied || st == AVAuthorizationStatusRestricted) {
-		return -1;
-	}
-	UIViewController *vc = (__bridge UIViewController *)vcRef;
-	onMain(^{
-		UIImagePickerController *picker = [[UIImagePickerController alloc] init];
-		picker.sourceType = UIImagePickerControllerSourceTypeCamera;
-		GiodeCameraDelegate *d = [[GiodeCameraDelegate alloc] init];
-		d.requestID = rid;
-		d.maxSide = maxSide;
-		if (pending == nil) {
-			pending = [NSMutableSet set];
-		}
-		[pending addObject:d];
-		picker.delegate = d;
-		[vc presentViewController:picker animated:YES completion:nil];
-	});
-	return 1;
 }
 
 // Universal links arrive as a browsing-web user activity, which Gio's

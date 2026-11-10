@@ -2,7 +2,7 @@ package giode
 
 /*
 #cgo CFLAGS: -Werror -fmodules -fobjc-arc -x objective-c
-#cgo LDFLAGS: -framework UIKit -framework PhotosUI -framework Photos -framework AVFoundation
+#cgo LDFLAGS: -framework UIKit -framework PhotosUI -framework AVFoundation
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -17,10 +17,8 @@ void giodeEndBackgroundTask(uintptr_t task);
 void giodeWatchLifecycle(void);
 int giodePickPhoto(CFTypeRef vc, int id, int maxSide);
 int giodeHasInfoKey(const char *key);
-int giodePickCamera(CFTypeRef vc, int id, int maxSide);
 int giodePickPhotos(CFTypeRef vc, int id, int maxSide, int limit);
 void giodeShareFiles(CFTypeRef vc, const char *paths);
-void giodeSaveToPhotos(int id, const char *path, int video);
 */
 import "C"
 
@@ -31,6 +29,8 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/xmhrnx/giode/internal/optin"
 )
 
 func cstr(s string) (*C.char, func()) {
@@ -168,57 +168,11 @@ func giodePhotosDone(id C.int, count C.int, errMsg *C.char) {
 	set.done <- err
 }
 
-var savedToPhotos struct {
-	sync.Mutex
-	next int
-	m    map[int]chan error
-}
-
 func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) error {
-	if err := requireInfoKeys("NSPhotoLibraryAddUsageDescription"); err != nil {
-		return err
+	if optin.SavePhoto == nil {
+		return notLinked("gallery")
 	}
-	savedToPhotos.Lock()
-	if savedToPhotos.m == nil {
-		savedToPhotos.m = map[int]chan error{}
-	}
-	savedToPhotos.next++
-	id := savedToPhotos.next
-	ch := make(chan error, 1)
-	savedToPhotos.m[id] = ch
-	savedToPhotos.Unlock()
-	cp, free := cstr(path)
-	defer free()
-	video := 0
-	if strings.HasPrefix(mime, "video/") {
-		video = 1
-	}
-	C.giodeSaveToPhotos(C.int(id), cp, C.int(video))
-	select {
-	case err := <-ch:
-		return err
-	case <-ctx.Done():
-		savedToPhotos.Lock()
-		delete(savedToPhotos.m, id)
-		savedToPhotos.Unlock()
-		return ctx.Err()
-	}
-}
-
-//export giodeSavedToPhotos
-func giodeSavedToPhotos(id C.int, errMsg *C.char) {
-	savedToPhotos.Lock()
-	ch := savedToPhotos.m[int(id)]
-	delete(savedToPhotos.m, int(id))
-	savedToPhotos.Unlock()
-	if ch == nil {
-		return
-	}
-	var err error
-	if errMsg != nil {
-		err = errors.New(C.GoString(errMsg))
-	}
-	ch <- err
+	return optin.SavePhoto(ctx, path, strings.HasPrefix(mime, "video/"))
 }
 
 var lifecycleApp struct {
@@ -296,15 +250,19 @@ type photoResult struct {
 }
 
 func (a *App) pickPhoto(ctx context.Context, opts PhotoOptions) (PickedFile, error) {
-	if opts.Source == Camera {
-		// Using the camera without its usage text crashes the app.
-		if err := requireInfoKeys("NSCameraUsageDescription"); err != nil {
-			return PickedFile{}, err
-		}
-	}
 	vc, err := a.viewController()
 	if err != nil {
 		return PickedFile{}, err
+	}
+	if opts.Source == Camera {
+		if optin.TakePhoto == nil {
+			return PickedFile{}, notLinked("takephoto")
+		}
+		jpeg, err := optin.TakePhoto(ctx, uintptr(vc), opts.MaxSide)
+		if err != nil {
+			return PickedFile{}, err
+		}
+		return jpegFile("photo", jpeg), nil
 	}
 	photoReqs.Lock()
 	if photoReqs.ch == nil {
@@ -320,16 +278,7 @@ func (a *App) pickPhoto(ctx context.Context, opts PhotoOptions) (PickedFile, err
 		delete(photoReqs.ch, id)
 		photoReqs.Unlock()
 	}
-	if opts.Source == Camera {
-		switch C.giodePickCamera(vc, C.int(id), C.int(opts.MaxSide)) {
-		case 0:
-			forget()
-			return PickedFile{}, fmt.Errorf("%w: this device has no camera", ErrNotSupported)
-		case -1:
-			forget()
-			return PickedFile{}, errors.New("camera access isn't allowed for this app (Settings > Privacy & Security > Camera)")
-		}
-	} else if C.giodePickPhoto(vc, C.int(id), C.int(opts.MaxSide)) == 0 {
+	if C.giodePickPhoto(vc, C.int(id), C.int(opts.MaxSide)) == 0 {
 		forget()
 		return PickedFile{}, ErrNotSupported // PHPicker needs iOS 14
 	}

@@ -3,6 +3,8 @@ package giode
 import (
 	"context"
 	"os"
+
+	"github.com/xmhrnx/giode/internal/optin"
 )
 
 // PickPhotos lets the user pick several photos at once, up to limit (0
@@ -33,8 +35,15 @@ func (a *App) PickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]P
 // user's Pictures folder, under album. album is a folder name, the app's
 // name when empty; iOS ignores it.
 //
+// It needs the github.com/xmhrnx/giode/gallery package imported, so that
+// only apps that save to the photo library carry that code; without it
+// it returns an error wrapping ErrNotSupported.
+//
 // It copies the whole file: call it from a goroutine.
 func (a *App) SaveToPhotos(ctx context.Context, path, album string) error {
+	if !optin.SavePhotoLinked {
+		return notLinked("gallery")
+	}
 	if _, err := os.Stat(path); err != nil {
 		return err
 	}

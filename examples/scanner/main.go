@@ -25,6 +25,7 @@ import (
 	"github.com/xmhrnx/giode/biometric"
 	"github.com/xmhrnx/giode/camera"
 	"github.com/xmhrnx/giode/components/zoom"
+	"github.com/xmhrnx/giode/gallery"
 	"github.com/xmhrnx/giode/ocr"
 	"github.com/xmhrnx/giode/printing"
 )
@@ -244,7 +245,7 @@ func (s *scanner) share() {
 
 func (s *scanner) save() {
 	for _, p := range s.paths() {
-		if err := s.app.SaveToPhotos(context.Background(), p, "Scanner"); err != nil {
+		if err := gallery.Save(context.Background(), s.app, p, "Scanner"); err != nil {
 			s.setStatus("save: %v", err)
 			return
 		}

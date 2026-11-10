@@ -2,9 +2,8 @@ package giode
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/xmhrnx/giode/internal/dictation"
+	"github.com/xmhrnx/giode/internal/optin"
 )
 
 // Transcript is one result of Dictate: the text recognized so far,
@@ -37,10 +36,10 @@ type Transcript struct {
 // ErrNotSupported. lang is a BCP 47 tag ("en-US"), or "" for the
 // device's language.
 func (a *App) Dictate(ctx context.Context, lang string) (<-chan Transcript, error) {
-	if !dictation.Linked {
+	if !optin.DictateLinked {
 		return nil, errDictateNotLinked
 	}
 	return a.dictate(ctx, lang)
 }
 
-var errDictateNotLinked = fmt.Errorf("%w: dictation needs the github.com/xmhrnx/giode/dictate package imported", ErrNotSupported)
+var errDictateNotLinked = notLinked("dictate")

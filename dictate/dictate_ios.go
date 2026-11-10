@@ -20,11 +20,11 @@ import (
 	"unsafe"
 
 	"github.com/xmhrnx/giode"
-	"github.com/xmhrnx/giode/internal/dictation"
+	"github.com/xmhrnx/giode/internal/optin"
 )
 
 func init() {
-	dictation.Start = start
+	optin.Dictate = start
 }
 
 // reqs holds the running dictations' emit functions by id.

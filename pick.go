@@ -18,6 +18,8 @@ import (
 
 	"golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
+
+	"github.com/xmhrnx/giode/internal/optin"
 )
 
 // PickedFile is a file the user picked, open for reading, with what's
@@ -192,7 +194,9 @@ const (
 	// Android, an image file elsewhere.
 	PhotoLibrary PhotoSource = iota
 	// Camera takes a new photo with the camera: Android, and iOS when
-	// the app's Info.plist has NSCameraUsageDescription.
+	// the app's Info.plist has NSCameraUsageDescription. It needs the
+	// github.com/xmhrnx/giode/takephoto package imported, so that only
+	// apps that take photos carry the camera code.
 	Camera
 )
 
@@ -212,6 +216,9 @@ type PhotoOptions struct {
 // re-encodes it. It blocks until the user decides: call it from a
 // goroutine. It returns ErrCanceled when the user backs out.
 func (a *App) PickPhoto(ctx context.Context, opts PhotoOptions) (PickedFile, error) {
+	if opts.Source == Camera && !optin.TakePhotoLinked {
+		return PickedFile{}, notLinked("takephoto")
+	}
 	return a.pickPhoto(ctx, opts)
 }
 

@@ -26,7 +26,7 @@ import (
 	"context"
 
 	"github.com/xmhrnx/giode"
-	"github.com/xmhrnx/giode/internal/dictation"
+	"github.com/xmhrnx/giode/internal/optin"
 )
 
 // Transcript is one result: the text recognized so far, replaced by
@@ -34,7 +34,7 @@ import (
 type Transcript = giode.Transcript
 
 func init() {
-	dictation.Linked = true
+	optin.DictateLinked = true
 }
 
 // Start listens through the microphone and transcribes speech, asking
