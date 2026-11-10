@@ -5,6 +5,7 @@ import (
 
 	"context"
 	"fmt"
+	"image/color"
 	"os"
 	"time"
 
@@ -184,6 +185,9 @@ func (a *App) runLoop(view func() Element) error {
 			}
 			if !ready {
 				ready = true
+				// The frame is on screen: later ones paint over the
+				// window themselves.
+				setNativeBackground(color.NRGBA{}, false)
 				a.logf(LogLevelDebug, "giode: first frame presented")
 				if a.cfg.OnReady != nil {
 					a.cfg.OnReady()

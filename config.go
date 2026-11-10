@@ -38,7 +38,10 @@ type Config struct {
 	// use TitleBar, which marks its own area as the drag handle.
 	Draggable bool
 	// Background is the window background color. Theme tokens
-	// ("theme.background") follow SetMode and SetPalette.
+	// ("theme.background") follow SetMode and SetPalette. On Windows,
+	// built with the giode CLI's Gio patches, a new window shows it
+	// (as it is when New runs) until the first frame, rather than
+	// white.
 	Background string
 	// StatusBar and NavigationBar color Android's status bar and
 	// navigation bar. Both default to Background and follow theme
