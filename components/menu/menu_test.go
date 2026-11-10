@@ -176,3 +176,41 @@ func TestOpenAtClick(t *testing.T) {
 		t.Errorf("opened %v at %v, want (30, 40)", m.Opened(), m.pos)
 	}
 }
+
+// A click on the trigger asks for a frame, so the menu shows (or goes)
+// at once rather than at the next input, such as a mouse move.
+func TestMenu_Trigger_ClickRequestsFrame(t *testing.T) {
+	m := New().Item("Item", func() {})
+	wrapped := m.Trigger(elements.Box(styles.Styles{Width: 60, Height: 30}))
+
+	var ops op.Ops
+	var router input.Router
+	gtx := layout.Context{Ops: &ops, Source: router.Source(), Constraints: layout.Exact(image.Pt(400, 400))}
+	// The menu laid out before its trigger, as when it's placed earlier
+	// in the tree: the frame handling the click has drawn it already.
+	frame := func() {
+		ops.Reset()
+		m.Layout(gtx)
+		wrapped.Layout(gtx)
+		elements.DrainPortals(gtx)
+		router.Frame(&ops)
+	}
+	click := func() {
+		router.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: f32.Pt(10, 10), Buttons: pointer.ButtonPrimary})
+		frame()
+		router.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: f32.Pt(10, 10)})
+		frame()
+	}
+
+	frame()
+	for _, want := range []bool{true, false} {
+		click()
+		if m.Opened() != want {
+			t.Fatalf("Opened() = %v, want %v", m.Opened(), want)
+		}
+		if _, ok := router.WakeupTime(); !ok {
+			t.Errorf("the click that made Opened() %v asked for no frame", want)
+		}
+		frame() // the requested frame
+	}
+}

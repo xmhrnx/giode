@@ -43,6 +43,9 @@ func (t *menuTrigger) Layout(gtx layout.Context) layout.Dimensions {
 		} else {
 			t.menu.open = true
 		}
+		// The menu's panel was already laid out (or not) this frame:
+		// draw it opened or closed now, not on the next input.
+		kit.RequestFrame(gtx)
 	}
 	dims := t.click.Layout(gtx, kit.Unselectable(func(gtx layout.Context) layout.Dimensions {
 		return t.trigger.Layout(gtx)
