@@ -11,6 +11,11 @@ static IOPMAssertionID giodeAssert(int display, const char *reason) {
 	CFStringRef r = CFStringCreateWithCString(NULL, reason, kCFStringEncodingUTF8);
 	IOPMAssertionID id = 0;
 	CFStringRef type = display ? kIOPMAssertionTypeNoDisplaySleep : kIOPMAssertionTypePreventUserIdleSystemSleep;
+	if (r == NULL) {
+		// Not UTF-8: no reason rather than CFRelease(NULL), which crashes.
+		r = CFSTR("");
+		CFRetain(r);
+	}
 	if (IOPMAssertionCreateWithName(type, kIOPMAssertionLevelOn, r, &id) != kIOReturnSuccess) {
 		id = 0;
 	}

@@ -14,10 +14,16 @@ static CFMutableDictionaryRef giodeQuery(const char *service, const char *accoun
 	CFStringRef s = CFStringCreateWithCString(NULL, service, kCFStringEncodingUTF8);
 	CFStringRef a = CFStringCreateWithCString(NULL, account, kCFStringEncodingUTF8);
 	CFDictionarySetValue(q, kSecClass, kSecClassGenericPassword);
-	CFDictionarySetValue(q, kSecAttrService, s);
-	CFDictionarySetValue(q, kSecAttrAccount, a);
-	CFRelease(s);
-	CFRelease(a);
+	// Strings that aren't UTF-8 give NULL, which neither the dictionary
+	// nor CFRelease takes.
+	if (s != NULL) {
+		CFDictionarySetValue(q, kSecAttrService, s);
+		CFRelease(s);
+	}
+	if (a != NULL) {
+		CFDictionarySetValue(q, kSecAttrAccount, a);
+		CFRelease(a);
+	}
 	return q;
 }
 
