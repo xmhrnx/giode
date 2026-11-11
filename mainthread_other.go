@@ -1,6 +1,6 @@
-//go:build !darwin || ios
+//go:build !darwin
 
 package giode
 
-// onMainThread reports false: only macOS needs invalidate's hop.
+// onMainThread reports false: only Apple platforms need the hops.
 func onMainThread() bool { return false }

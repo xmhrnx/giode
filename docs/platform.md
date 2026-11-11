@@ -13,7 +13,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `FollowSystemTheme`, `SystemDarkMode` | ✓ | ✓ | ✓ | ✓ | ✓ (XDG portal) | ✓ |
 | `Device` | ✓ | ✓ | ✓ | ✓ | ✓ | OS only |
 | `Haptic` | ✓ | ✓ | – | – | – | – |
-| `Notify` | ✓ | – | ✓ | ✓ | ✓ | – |
+| `Notify` | ✓ | ✓ | ✓ | ✓ | ✓ | – |
 | `KeepScreenOn` | ✓ | ✓ | ✓ | ✓ | ✓ | – |
 | `KeepAlive` | manifest entry (see below) | ~30 s | ✓ | ✓ | ✓ (logind) | – |
 | `SecureStore` | Keystore | Keychain | Keychain | DPAPI | Secret Service | – |
@@ -78,9 +78,11 @@ err := app.Notify("Research finished", "3 sources, 2 minutes")
 ```
 
 `OnLongPress` plays `HapticHeavy`. On Android, haptics follow the user's touch feedback
-setting. `Notify` uses `gioui.org/x/notify`; on Android 13+ the system asks for permission
-the first time, and an app built with `-targetsdk 33` or higher can't notify at all,
-because gogio can't declare `POST_NOTIFICATIONS`. iOS notifications aren't implemented.
+setting. `Notify` asks for permission the first time on iOS, macOS and Android 13+ (the
+user can change it later in the system's notification settings for the app). On iOS and
+macOS notifications show as banners while the app is in front too, which the system
+otherwise hides; macOS needs an app bundle (a `giode build`, not `go run`). Windows and Linux
+use `gioui.org/x/notify`.
 
 ## Sounds
 

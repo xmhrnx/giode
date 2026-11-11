@@ -1,36 +1,18 @@
 package giode
 
-import (
-	"sync"
-
-	"gioui.org/x/notify"
-
-	"github.com/xmhrnx/giode/internal/bridge"
-)
-
-var (
-	notifierOnce sync.Once
-	notifier     notify.Notifier
-	notifierErr  error
-)
-
 // Notify shows a system notification with title and body - to tell
-// the user a run or a download finished while the app was in the
-// background. It works on Android, macOS, Windows and Linux (through
-// gioui.org/x/notify). On Android 13 and later the system asks the
-// user for permission the first time; an app built with a target SDK
-// of 33 or more can't show notifications at all, since gogio can't
-// declare the POST_NOTIFICATIONS permission.
+// the user a transfer arrived or a download finished. It works on
+// Android, iOS, macOS, Windows and Linux.
+//
+// On iOS and macOS the system asks the user for permission the first
+// time, and notifications show as banners while the app is in front
+// too (the system hides them otherwise). macOS needs an app bundle (a
+// giode build, not go run). On Android 13 and later the system asks
+// for permission the first time; the user can turn notifications on
+// later in the system's settings for the app.
+//
+// It returns once the system took the notification, or after a moment
+// while the permission prompt is still up.
 func (a *App) Notify(title, body string) error {
-	notifierOnce.Do(func() {
-		notifier, notifierErr = notify.NewNotifier()
-		if bridge.AfterNotifier != nil {
-			bridge.AfterNotifier()
-		}
-	})
-	if notifierErr != nil {
-		return notifierErr
-	}
-	_, err := notifier.CreateNotification(title, body)
-	return err
+	return a.notify(title, body)
 }
