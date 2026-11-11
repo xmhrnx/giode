@@ -38,6 +38,9 @@ func (a *App) keepAlive(reason string) (func(), error) {
 	if !ok {
 		return func() {}, fmt.Errorf("%w: the app manifest doesn't declare giode's foreground service (see docs/platform.md)", ErrNotSupported)
 	}
+	// The service's notification needs the notification permission:
+	// without it Android hides it (the service still runs).
+	a.askNotificationsOnce()
 	keepAlives.Lock()
 	defer keepAlives.Unlock()
 	if err := mobile.StartKeepAlive(vm, ctx, reason); err != nil {

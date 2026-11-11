@@ -28,6 +28,12 @@ func OpenDownloads(vm, ctx, view uintptr) error { return ErrUnsupported }
 // SaveToGallery reports ErrUnsupported outside Android.
 func SaveToGallery(vm, ctx uintptr, path, mime, album string) error { return ErrUnsupported }
 
+// NotificationsEnabled reports ErrUnsupported outside Android.
+func NotificationsEnabled(vm, ctx uintptr) (bool, error) { return false, ErrUnsupported }
+
+// RequestNotifications reports ErrUnsupported outside Android.
+func RequestNotifications(vm, ctx, view uintptr) (<-chan bool, error) { return nil, ErrUnsupported }
+
 // PickDocuments reports ErrUnsupported outside Android.
 func PickDocuments(vm, ctx, view uintptr, mimes []string, multiple bool, limit int, media bool) (<-chan Documents, error) {
 	return nil, ErrUnsupported

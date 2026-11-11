@@ -56,8 +56,7 @@ void giodeNotify(int rid, const char *title, const char *body) {
 	UNAuthorizationOptions opts = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
 	[nc requestAuthorizationWithOptions:opts completionHandler:^(BOOL granted, NSError *err) {
 		if (!granted) {
-			NSString *msg = err != nil ? err.localizedDescription : @"notifications aren't allowed for this app (turn them on in the system's notification settings)";
-			giodeNotified(rid, (char *)msg.UTF8String);
+			giodeNotified(rid, 1, err != nil ? (char *)err.localizedDescription.UTF8String : NULL);
 			return;
 		}
 		UNMutableNotificationContent *c = [[UNMutableNotificationContent alloc] init];
@@ -66,7 +65,16 @@ void giodeNotify(int rid, const char *title, const char *body) {
 		c.sound = [UNNotificationSound defaultSound];
 		UNNotificationRequest *req = [UNNotificationRequest requestWithIdentifier:[NSUUID UUID].UUIDString content:c trigger:nil];
 		[nc addNotificationRequest:req withCompletionHandler:^(NSError *e) {
-			giodeNotified(rid, e != nil ? (char *)e.localizedDescription.UTF8String : NULL);
+			giodeNotified(rid, 0, e != nil ? (char *)e.localizedDescription.UTF8String : NULL);
 		}];
+	}];
+}
+
+// giodeNotifyRequest asks for permission (the system prompts only the
+// first time) and answers giodeNotifyAllowed.
+void giodeNotifyRequest(int rid) {
+	UNAuthorizationOptions opts = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
+	[[UNUserNotificationCenter currentNotificationCenter] requestAuthorizationWithOptions:opts completionHandler:^(BOOL granted, NSError *err) {
+		giodeNotifyAllowed(rid, granted ? 1 : 0);
 	}];
 }

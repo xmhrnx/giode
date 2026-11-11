@@ -122,7 +122,7 @@ IconVG), `Markdown`, `RichText`, `Table`, `Canvas`. Constructors and options are
 File dialogs `OpenFile`/`OpenFiles`/`SaveFile`/`PickFiles` (`PickedFile.Path` on desktops),
 `PickFolder`, `PickPhoto`, `PickPhotos` (several, upright JPEGs), `PickMedia` (photos and videos as original files, the Photos picker on iOS), taking a photo (`takephoto.Take`) and saving to the gallery (`gallery.Save`) and dictation (`dictate.Start`) in opt-in packages so only apps using them carry the camera, photo library and microphone code,
 `SaveToDownloads`, `OpenDownloads`, `OpenFolder`, `ReadClipboardImage`, `PlaySound` (with `EncodeWAV` for tones made in code); `Share` (`ShareFiles` for several);
-receiving shares (`Config.OnShareReceived` with giode.toml's `app.share_target`); `Notify`; `OpenURL`; clipboard; `KeepAlive`,
+receiving shares (`Config.OnShareReceived` with giode.toml's `app.share_target`); `Notify` (`RequestNotificationPermission`, `ErrNotificationsOff`); `OpenURL`; clipboard; `KeepAlive`,
 `KeepScreenOn`; `Tray` (`SetCloseToTray`, `SetMinimizeToTray` at runtime); start at login
 (`SetLaunchAtLogin`, `LaunchAtLogin`, `giode.LaunchedAtLogin()`, `Config.StartInTray`; MSIX
 needs `[windows.msix] startup_task = true`); window control (`Minimize`, `Maximize`, `SetFullscreen`,

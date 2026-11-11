@@ -79,8 +79,12 @@ err := app.Notify("Research finished", "3 sources, 2 minutes")
 ```
 
 `OnLongPress` plays `HapticHeavy`. On Android, haptics follow the user's touch feedback
-setting. `Notify` asks for permission the first time on iOS, macOS and Android 13+ (the
-user can change it later in the system's notification settings for the app). On iOS and
+setting. `Notify` asks for permission the first time on iOS, macOS and Android 13+, and
+shows that notification if the user allows; while notifications stay off it returns
+`ErrNotificationsOff` (the user can turn them on in the system's notification settings for
+the app). `RequestNotificationPermission` asks at a moment the app chooses - when the user
+turns a notification setting on, say - and reports whether they're allowed. On Android,
+`KeepAlive` asks too: its foreground-service notification needs the permission. On iOS and
 macOS notifications show as banners while the app is in front too, which the system
 otherwise hides; macOS needs an app bundle (a `giode build`, not `go run`). Windows and Linux
 use `gioui.org/x/notify`.

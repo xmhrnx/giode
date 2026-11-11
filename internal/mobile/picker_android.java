@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -40,6 +41,7 @@ public final class picker_android {
 	static native void onPhotos(int id, byte[][] jpegs, String[] names, String err);
 	static native void onSpeech(int id, String text, boolean done, String err);
 	static native void onDocuments(int id, int[] fds, String[] names, long[] sizes, String err);
+	static native void onNotifyPermission(int id, boolean enabled);
 
 	private static final String TAG = "giode_picker";
 
@@ -54,6 +56,7 @@ public final class picker_android {
 		String lang;
 		SpeechRecognizer recognizer;
 		boolean documents; // pickDocuments: original files, as descriptors
+		boolean notifications; // requestNotifications
 	}
 
 	public static class PickerFragment extends Fragment {
@@ -104,6 +107,11 @@ public final class picker_android {
 			if (r == null) {
 				return;
 			}
+			if (r.notifications) {
+				requests.remove(code);
+				onNotifyPermission(code, notificationsEnabled(getActivity()));
+				return;
+			}
 			if (results.length == 0 || results[0] != PackageManager.PERMISSION_GRANTED) {
 				requests.remove(code);
 				onSpeech(code, null, true, "microphone permission denied");
@@ -111,6 +119,33 @@ public final class picker_android {
 			}
 			listen(getActivity(), code, r);
 		}
+	}
+
+	// notificationsEnabled reports whether the app may post notifications:
+	// the user allows them and, on Android 13 and later, granted
+	// POST_NOTIFICATIONS.
+	public static boolean notificationsEnabled(Context ctx) {
+		if (Build.VERSION.SDK_INT >= 24) {
+			NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+			return nm != null && nm.areNotificationsEnabled();
+		}
+		return true;
+	}
+
+	// requestNotifications asks for POST_NOTIFICATIONS on Android 13 and
+	// later (the manifest must declare it; giode.toml's
+	// android.notifications does) and reports whether notifications are
+	// enabled to onNotifyPermission. Call on the main thread.
+	public static void requestNotifications(View view, int id) {
+		Activity activity = (Activity) view.getContext();
+		if (Build.VERSION.SDK_INT < 33 || activity.checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED) {
+			onNotifyPermission(id, notificationsEnabled(activity));
+			return;
+		}
+		Request r = new Request();
+		r.notifications = true;
+		requests.put(id, r);
+		fragment(activity).requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, id);
 	}
 
 	private static PickerFragment fragment(Activity activity) {
@@ -193,7 +228,7 @@ public final class picker_android {
 		Request r = new Request();
 		r.documents = true;
 		r.limit = limit;
-		String[] mimes = mimeList.isEmpty() ? new String[0] : mimeList.split("\n");
+		String[] mimes = mimeList == null || mimeList.isEmpty() ? new String[0] : mimeList.split("\n");
 		Intent intent;
 		if (media && photoPickerAvailable()) {
 			intent = new Intent(MediaStore.ACTION_PICK_IMAGES);

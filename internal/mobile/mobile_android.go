@@ -299,6 +299,7 @@ var (
 	photoSets = map[int]chan Photos{}
 	speech    = map[int]chan Speech{}
 	docSets   = map[int]chan Documents{}
+	notifyReq = map[int]chan bool{}
 )
 
 func newID() int {
@@ -428,6 +429,51 @@ func Java_org_giode_mobile_picker_1android_onDocuments(cenv *C.JNIEnv, cls C.jcl
 		return
 	}
 	ch <- ds
+}
+
+// NotificationsEnabled reports whether the app may post notifications.
+func NotificationsEnabled(vm, ctx uintptr) (bool, error) {
+	var ok bool
+	err := callClass(vm, ctx, pickerClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "notificationsEnabled", "(Landroid/content/Context;)Z")
+		var err error
+		ok, err = jni.CallStaticBooleanMethod(env, cls, m, jni.Value(ctx))
+		return err
+	})
+	return ok, err
+}
+
+// RequestNotifications asks for the notification permission (Android
+// 13 and later) and returns a channel receiving whether notifications
+// are enabled then. Call it on the main thread.
+func RequestNotifications(vm, ctx, view uintptr) (<-chan bool, error) {
+	id := newID()
+	ch := make(chan bool, 1)
+	reqMu.Lock()
+	notifyReq[id] = ch
+	reqMu.Unlock()
+	err := callClass(vm, ctx, pickerClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "requestNotifications", "(Landroid/view/View;I)V")
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(view), jni.Value(id))
+	})
+	if err != nil {
+		reqMu.Lock()
+		delete(notifyReq, id)
+		reqMu.Unlock()
+		return nil, err
+	}
+	return ch, nil
+}
+
+//export Java_org_giode_mobile_picker_1android_onNotifyPermission
+func Java_org_giode_mobile_picker_1android_onNotifyPermission(cenv *C.JNIEnv, cls C.jclass, id C.jint, enabled C.jboolean) {
+	reqMu.Lock()
+	ch := notifyReq[int(id)]
+	delete(notifyReq, int(id))
+	reqMu.Unlock()
+	if ch != nil {
+		ch <- enabled != 0
+	}
 }
 
 // Dictate starts speech recognition and returns its id and a channel
