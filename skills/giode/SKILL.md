@@ -120,7 +120,7 @@ IconVG), `Markdown`, `RichText`, `Table`, `Canvas`. Constructors and options are
 ## Platform features (on `*giode.App` unless noted)
 
 File dialogs `OpenFile`/`OpenFiles`/`SaveFile`/`PickFiles` (`PickedFile.Path` on desktops),
-`PickFolder`, `PickPhoto`, `PickPhotos` (several, upright JPEGs), taking a photo (`takephoto.Take`) and saving to the gallery (`gallery.Save`) and dictation (`dictate.Start`) in opt-in packages so only apps using them carry the camera, photo library and microphone code,
+`PickFolder`, `PickPhoto`, `PickPhotos` (several, upright JPEGs), `PickMedia` (photos and videos as original files, the Photos picker on iOS), taking a photo (`takephoto.Take`) and saving to the gallery (`gallery.Save`) and dictation (`dictate.Start`) in opt-in packages so only apps using them carry the camera, photo library and microphone code,
 `SaveToDownloads`, `OpenDownloads`, `OpenFolder`, `ReadClipboardImage`, `PlaySound` (with `EncodeWAV` for tones made in code); `Share` (`ShareFiles` for several);
 receiving shares (`Config.OnShareReceived` with giode.toml's `app.share_target`); `Notify`; `OpenURL`; clipboard; `KeepAlive`,
 `KeepScreenOn`; `Tray` (`SetCloseToTray`, `SetMinimizeToTray` at runtime); start at login

@@ -1,4 +1,4 @@
-//go:build windows || (darwin && !ios)
+//go:build windows || darwin
 
 package giode
 
@@ -13,7 +13,8 @@ import (
 var fileDialogMu sync.Mutex
 
 // chooseFiles shows the system's open dialog (openFileDialog: the
-// Windows one, NSOpenPanel on macOS) and opens the chosen files.
+// Windows one, NSOpenPanel on macOS, the document picker on iOS) and
+// opens the chosen files.
 func (a *App) chooseFiles(exts []string, multiple bool) ([]io.ReadCloser, error) {
 	paths, err := a.openFileDialog(exts, multiple)
 	if err != nil {

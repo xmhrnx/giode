@@ -35,8 +35,9 @@ type PickedFile struct {
 	Size int64
 	// Path is the file's absolute path on desktops, for work that
 	// needs the file itself rather than a stream (opening a disk image
-	// at random offsets, reopening it later). It's empty on Android,
-	// iOS and the web, whose pickers give content without a path.
+	// at random offsets, reopening it later); on iOS, the path of the
+	// picker's copy in the app's temporary directory. It's empty on
+	// Android and the web, whose pickers give content without a path.
 	Path string
 }
 

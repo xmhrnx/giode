@@ -23,6 +23,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `RestartElevated` | – | – | admin prompt | UAC | pkexec | – |
 | `PickPhoto` / `takephoto.Take` | ✓ / ✓ | ✓ / Info.plist key | file / – | file / – | file / – | file / – |
 | `PickPhotos` (several) | ✓ | ✓ (iOS 14+) | files | files | files | – |
+| `PickMedia` (originals) | files | ✓ (iOS 14+) | files | files | files | – |
 | `gallery.Save` | Pictures (Android 10+) | Photos, Info.plist key | ~/Pictures | Pictures | XDG Pictures | – |
 | `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | – | – | – |
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
@@ -173,8 +174,19 @@ photo, err := app.PickPhoto(ctx, giode.PhotoOptions{Source: giode.PhotoLibrary, 
 
 `PickedFile` is an `io.ReadCloser` with `Name`, `MIME` (from the extension, or sniffed from
 the content) and `Size` (-1 when unknown). On desktops `Path` is the file's absolute path,
-for work that needs the file rather than a stream (a disk image read at random offsets);
-it's empty on Android, iOS and the web. `PickPhoto` returns an upright JPEG scaled to
+for work that needs the file rather than a stream (a disk image read at random offsets); on
+iOS it's the picker's copy in the app's temporary directory; it's empty on Android and the
+web. On iOS `PickFiles` (and `OpenFiles`) uses the document picker, with several files at
+once when `Multiple` is set.
+
+`PickMedia` picks photos and videos, several at once, and returns the original files (HEIC,
+MOV ... at full size, not converted), in the order picked: on iOS through the Photos picker
+(iOS 14 and later, no permission needed), where most of what an iPhone user sends lives;
+elsewhere through the file picker for images and videos.
+
+```go
+files, err := app.PickMedia(ctx, giode.MediaOptions{}) // Limit: 0 for any number; Photos, Videos: both by default
+``` `PickPhoto` returns an upright JPEG scaled to
 `MaxSide`: Android's photo picker (Android 13+, the image picker before) or camera, and
 PHPicker on iOS 14+, decode HEIC on the device, so HEIC never reaches the app. On desktops
 it picks an image file (JPEG, PNG, GIF, WebP). Like `OpenFile`, these block: call them
