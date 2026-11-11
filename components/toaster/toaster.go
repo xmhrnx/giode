@@ -40,6 +40,8 @@ type Toaster struct {
 	// inset keeps toasts clear of bars along the window's edges, in dp,
 	// added to the margin.
 	inset properties.Inset
+	// noStripe hides the kind's colored bar.
+	noStripe bool
 
 	mu      sync.Mutex
 	nextID  int
@@ -78,6 +80,13 @@ func (t *Toaster) Inset(in properties.Inset) *Toaster {
 }
 
 // Duration sets how long toasts stay up (default 5s); zero or less
+// Stripe shows the kind's colored bar at each toast's start, the
+// default, or with on false shows none.
+func (t *Toaster) Stripe(on bool) *Toaster {
+	t.noStripe = !on
+	return t
+}
+
 // keeps them until dismissed. It returns t for chaining.
 func (t *Toaster) Duration(d time.Duration) *Toaster {
 	t.duration = d

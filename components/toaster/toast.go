@@ -10,7 +10,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
+	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/components/transition"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
@@ -36,6 +36,12 @@ type toast struct {
 	act   *elements.Pressable
 }
 
+// The accent bar's width and its distance from the toast's start edge.
+const (
+	stripeWidth = 3
+	stripeInset = 8
+)
+
 // toastView builds a toast's face.
 func (t *Toaster) toastView(ts *toast) elements.Element {
 	st := styles.Merge(styles.Styles{
@@ -58,24 +64,35 @@ func (t *Toaster) toastView(ts *toast) elements.Element {
 		Align:        properties.AlignCenter,
 		Wrap:         properties.WrapNoWrap,
 	}
-	children := []elements.Element{
-		elements.Box(styles.Styles{Width: 4}), // room for the accent stripe
+	var children []elements.Element
+	if !t.noStripe {
+		// Room for the accent bar.
+		children = append(children, elements.Box(styles.Styles{Width: stripeInset + stripeWidth}))
+	}
+	children = append(children,
 		elements.Box(styles.Styles{FlexGrow: 1, Padding: properties.SymmetricInset(12, 10)},
 			elements.Text(ts.msg, styles.Styles{FontSize: st.FontSize})),
-	}
+	)
 	if ts.act != nil {
 		children = append(children, ts.act)
 	}
 	children = append(children, elements.Box(styles.Styles{Padding: properties.Inset{End: 8, Start: 4}}, ts.close))
 	row := elements.Row(box, children...)
-	// The kind's accent stripe runs down the left edge at the toast's
-	// own height, painted once that height is known.
+	if t.noStripe {
+		return ts.body.Content(func(elements.PressState) elements.Element { return row })
+	}
+	// The kind's accent bar: a short rounded bar inset from the start
+	// edge (clear of the rounded corners), at the toast's own height,
+	// painted once that height is known.
 	face := elements.RawFunc(func(gtx layout.Context) layout.Dimensions {
 		dims := row.Layout(gtx)
-		corners := properties.UniformCorners(gtx.Dp(unit.Dp(st.BorderRadius)))
-		cl := properties.RRect(image.Rectangle{Max: dims.Size}, corners).Push(gtx.Ops)
-		paint.FillShape(gtx.Ops, properties.CalcColor(ts.kind.color()), clip.Rect{Max: image.Pt(gtx.Dp(4), dims.Size.Y)}.Op())
-		cl.Pop()
+		w, x := gtx.Dp(stripeWidth), gtx.Dp(stripeInset)
+		if kit.RTL(gtx) {
+			x = dims.Size.X - x - w
+		}
+		inset := min(gtx.Dp(10), dims.Size.Y/4)
+		bar := image.Rect(x, inset, x+w, dims.Size.Y-inset)
+		paint.FillShape(gtx.Ops, properties.CalcColor(ts.kind.color()), clip.UniformRRect(bar, w/2).Op(gtx.Ops))
 		return dims
 	})
 	return ts.body.Content(func(elements.PressState) elements.Element { return face })
