@@ -6,6 +6,14 @@ package mobile
 static jsize giodeArrayLength(JNIEnv *env, jarray a) {
 	return (*env)->GetArrayLength(env, a);
 }
+
+static void giodeIntArray(JNIEnv *env, jintArray a, jint *out, jsize n) {
+	(*env)->GetIntArrayRegion(env, a, 0, n, out);
+}
+
+static void giodeLongArray(JNIEnv *env, jlongArray a, jlong *out, jsize n) {
+	(*env)->GetLongArrayRegion(env, a, 0, n, out);
+}
 */
 import "C"
 
@@ -13,6 +21,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"syscall"
 	"unsafe"
 
 	"git.wow.st/gmp/jni"
@@ -289,6 +298,7 @@ var (
 	photos    = map[int]chan Photo{}
 	photoSets = map[int]chan Photos{}
 	speech    = map[int]chan Speech{}
+	docSets   = map[int]chan Documents{}
 )
 
 func newID() int {
@@ -346,6 +356,78 @@ func PickPhotos(vm, ctx, view uintptr, maxSide, limit int) (<-chan Photos, error
 		return nil, err
 	}
 	return ch, nil
+}
+
+// PickDocuments shows the document picker (with media, the system
+// Photo Picker where Android has it) for files of the MIME types mimes
+// (any when empty), several with multiple, up to limit (0 for no
+// limit), and returns a channel receiving them, unchanged, as file
+// descriptors. Call it on the main thread.
+func PickDocuments(vm, ctx, view uintptr, mimes []string, multiple bool, limit int, media bool) (<-chan Documents, error) {
+	id := newID()
+	ch := make(chan Documents, 1)
+	reqMu.Lock()
+	docSets[id] = ch
+	reqMu.Unlock()
+	err := callClass(vm, ctx, pickerClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "pickDocuments", "(Landroid/view/View;ILjava/lang/String;ZIZ)V")
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(view), jni.Value(id),
+			jni.Value(jni.JavaString(env, strings.Join(mimes, "\n"))), boolValue(multiple), jni.Value(limit), boolValue(media))
+	})
+	if err != nil {
+		reqMu.Lock()
+		delete(docSets, id)
+		reqMu.Unlock()
+		return nil, err
+	}
+	return ch, nil
+}
+
+// closeFD closes a descriptor PickDocuments returned.
+func closeFD(fd int) { syscall.Close(fd) }
+
+func boolValue(b bool) jni.Value {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+//export Java_org_giode_mobile_picker_1android_onDocuments
+func Java_org_giode_mobile_picker_1android_onDocuments(cenv *C.JNIEnv, cls C.jclass, id C.jint, fds C.jintArray, names C.jobjectArray, sizes C.jlongArray, errStr C.jstring) {
+	env := jni.EnvFor(uintptr(unsafe.Pointer(cenv)))
+	reqMu.Lock()
+	ch := docSets[int(id)]
+	delete(docSets, int(id))
+	reqMu.Unlock()
+	var ds Documents
+	switch msg := goString(env, errStr); {
+	case msg != "":
+		ds.Err = errors.New(msg)
+	case fds == 0:
+		ds.Err = ErrCanceled
+	default:
+		n := C.giodeArrayLength(cenv, C.jarray(fds))
+		if n > 0 {
+			fdv := make([]C.jint, n)
+			sizev := make([]C.jlong, n)
+			C.giodeIntArray(cenv, fds, &fdv[0], n)
+			C.giodeLongArray(cenv, sizes, &sizev[0], n)
+			for i := 0; i < int(n); i++ {
+				no, _ := jni.GetObjectArrayElement(env, jni.ObjectArray(names), jni.Size(i))
+				ds.Docs = append(ds.Docs, Document{FD: int(fdv[i]), Name: jni.GoString(env, jni.String(no)), Size: int64(sizev[i])})
+				jni.DeleteLocalRef(env, no)
+			}
+		}
+	}
+	if ch == nil {
+		// Nobody waits any more: don't leak the descriptors.
+		for _, d := range ds.Docs {
+			closeFD(d.FD)
+		}
+		return
+	}
+	ch <- ds
 }
 
 // Dictate starts speech recognition and returns its id and a channel

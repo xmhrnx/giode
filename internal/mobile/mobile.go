@@ -58,6 +58,22 @@ type Photos struct {
 	Err    error
 }
 
+// Document is a file PickDocuments returned: an open file descriptor
+// the receiver owns, with the file's display name and size (-1 when
+// unknown).
+type Document struct {
+	FD   int
+	Name string
+	Size int64
+}
+
+// Documents is a PickDocuments result: the files, or ErrCanceled when
+// the user picked none, or an error.
+type Documents struct {
+	Docs []Document
+	Err  error
+}
+
 // Speech is one dictation result: partial while Done is false, final
 // when it's true.
 type Speech struct {

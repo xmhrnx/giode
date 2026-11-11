@@ -15,9 +15,11 @@ type MediaOptions struct {
 // PickMedia lets the user pick photos and videos, several at once, and
 // returns the original files - full size, in their own format (HEIC,
 // MOV, ...), not converted - in the order picked. On iOS it's the Photos
-// picker (PHPicker, iOS 14 and later), which needs no permission:
-// where most of what an iPhone user sends lives. Elsewhere it's the file
-// picker for images and videos (PickFiles). On iOS and desktops each
+// picker (PHPicker, iOS 14 and later), on Android the system Photo
+// Picker (Android 13, or 11 and 12 with the updated media module): both
+// need no permission, and they're where most of what a phone user sends
+// lives. Elsewhere, and on Android without the Photo Picker, it's the
+// file picker for images and videos. On iOS and desktops each
 // file's Path is set (a temporary copy on iOS). It blocks until the
 // user decides: call it from a goroutine. It returns ErrCanceled when
 // the user picks nothing.

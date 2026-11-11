@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.os.ParcelFileDescriptor;
 import android.provider.OpenableColumns;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -38,6 +39,7 @@ public final class picker_android {
 	static native void onPhoto(int id, byte[] jpeg, String name, String err);
 	static native void onPhotos(int id, byte[][] jpegs, String[] names, String err);
 	static native void onSpeech(int id, String text, boolean done, String err);
+	static native void onDocuments(int id, int[] fds, String[] names, long[] sizes, String err);
 
 	private static final String TAG = "giode_picker";
 
@@ -51,6 +53,7 @@ public final class picker_android {
 		Uri output; // the camera's output, in MediaStore
 		String lang;
 		SpeechRecognizer recognizer;
+		boolean documents; // pickDocuments: original files, as descriptors
 	}
 
 	public static class PickerFragment extends Fragment {
@@ -61,6 +64,10 @@ public final class picker_android {
 				return;
 			}
 			final Context ctx = getActivity().getApplicationContext();
+			if (r.documents) {
+				pickedDocuments(ctx, code, r, result, data);
+				return;
+			}
 			if (r.multi) {
 				pickedMany(ctx, code, r, result, data);
 				return;
@@ -172,6 +179,125 @@ public final class picker_android {
 		r.limit = limit;
 		requests.put(id, r);
 		fragment(activity).startActivityForResult(intent, id);
+	}
+
+	// pickDocuments lets the user pick files - several with multiple, up
+	// to limit (0 for no limit) - and reports them unchanged to
+	// onDocuments, as file descriptors with their names and sizes. mimes
+	// (one per line) limits what's offered; empty allows any file. With
+	// media, it's the system Photo Picker (photos and videos, no
+	// permission needed) where Android has it, the document picker
+	// otherwise. Call on the main thread.
+	public static void pickDocuments(View view, int id, String mimeList, boolean multiple, int limit, boolean media) throws Exception {
+		Activity activity = (Activity) view.getContext();
+		Request r = new Request();
+		r.documents = true;
+		r.limit = limit;
+		String[] mimes = mimeList.isEmpty() ? new String[0] : mimeList.split("\n");
+		Intent intent;
+		if (media && photoPickerAvailable()) {
+			intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+			if (mimes.length == 1) {
+				intent.setType(mimes[0]);
+			}
+			if (multiple) {
+				int most = MediaStore.getPickImagesMaxLimit();
+				intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, limit > 1 && limit < most ? limit : most);
+			}
+		} else {
+			intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+			intent.addCategory(Intent.CATEGORY_OPENABLE);
+			if (mimes.length == 1) {
+				intent.setType(mimes[0]);
+			} else {
+				intent.setType("*/*");
+				if (mimes.length > 1) {
+					intent.putExtra(Intent.EXTRA_MIME_TYPES, mimes);
+				}
+			}
+			intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
+		}
+		requests.put(id, r);
+		fragment(activity).startActivityForResult(intent, id);
+	}
+
+	// photoPickerAvailable reports whether MediaStore.ACTION_PICK_IMAGES
+	// works: Android 13, or Android 11 and 12 with the updated media
+	// module.
+	static boolean photoPickerAvailable() {
+		if (Build.VERSION.SDK_INT >= 33) {
+			return true;
+		}
+		if (Build.VERSION.SDK_INT >= 30) {
+			return android.os.ext.SdkExtensions.getExtensionVersion(Build.VERSION_CODES.R) >= 2;
+		}
+		return false;
+	}
+
+	// pickedDocuments opens the files a pickDocuments returned, off the
+	// main thread.
+	static void pickedDocuments(final Context ctx, final int code, final Request r, int result, Intent data) {
+		final ArrayList<Uri> uris = new ArrayList<>();
+		if (result == Activity.RESULT_OK && data != null) {
+			if (data.getClipData() != null) {
+				for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+					uris.add(data.getClipData().getItemAt(i).getUri());
+				}
+			} else if (data.getData() != null) {
+				uris.add(data.getData());
+			}
+		}
+		if (r.limit > 0 && uris.size() > r.limit) {
+			uris.subList(r.limit, uris.size()).clear();
+		}
+		if (uris.isEmpty()) {
+			onDocuments(code, null, null, null, "");
+			return;
+		}
+		new Thread(new Runnable() {
+			public void run() {
+				int n = uris.size();
+				int[] fds = new int[n];
+				String[] names = new String[n];
+				long[] sizes = new long[n];
+				int opened = 0;
+				try {
+					ContentResolver cr = ctx.getContentResolver();
+					for (int i = 0; i < n; i++) {
+						Uri u = uris.get(i);
+						names[i] = displayName(ctx, u);
+						sizes[i] = size(ctx, u);
+						ParcelFileDescriptor pfd = cr.openFileDescriptor(u, "r");
+						if (pfd == null) {
+							throw new Exception("can't open " + names[i]);
+						}
+						fds[i] = pfd.detachFd();
+						opened++;
+					}
+					onDocuments(code, fds, names, sizes, "");
+				} catch (Throwable e) {
+					for (int i = 0; i < opened; i++) {
+						try {
+							ParcelFileDescriptor.adoptFd(fds[i]).close();
+						} catch (Exception ignored) {
+						}
+					}
+					onDocuments(code, null, null, null, e.toString());
+				}
+			}
+		}).start();
+	}
+
+	// size is the length of the content at uri, or -1 when unknown.
+	static long size(Context ctx, Uri uri) {
+		try (Cursor c = ctx.getContentResolver().query(uri, new String[]{OpenableColumns.SIZE}, null, null, null)) {
+			if (c != null && c.moveToFirst() && !c.isNull(0)) {
+				return c.getLong(0);
+			}
+		} catch (Exception e) {
+			// Fall through to unknown.
+		}
+		return -1;
 	}
 
 	// pickedMany converts the photos a multiple pick returned, off the
