@@ -14,7 +14,10 @@
 	if (@available(iOS 14.0, macOS 11.0, *)) {
 		done(UNNotificationPresentationOptionBanner | UNNotificationPresentationOptionList | UNNotificationPresentationOptionSound);
 	} else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 		done(UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionSound);
+#pragma clang diagnostic pop
 	}
 }
 
