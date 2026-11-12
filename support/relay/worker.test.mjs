@@ -92,3 +92,41 @@ test("labels the token can't apply are dropped", async () => {
 	assert.equal(calls.length, 2);
 	assert.equal(calls[1].body.labels, undefined);
 });
+
+test("failures say what went wrong", async () => {
+	const ghErr = (status, message) => () => new Response(JSON.stringify({ message }), { status });
+	const cases = [
+		[ghErr(404, "Not Found"), 502, /can't find xmhrnx\/sonora \(404\).*GitHub said: Not Found/],
+		[ghErr(401, "Bad credentials"), 502, /GITHUB_TOKEN \(401\).*Bad credentials/],
+		[ghErr(403, "Resource not accessible by personal access token"), 502, /Issues: Read and write.*not accessible/],
+	];
+	for (const [handler, status, want] of cases) {
+		mockGitHub(handler);
+		const resp = await worker.fetch(post({ app: "sonora", title: "t" }), env());
+		assert.equal(resp.status, status);
+		assert.match((await resp.json()).error, want);
+	}
+
+	mockGitHub(created);
+	let resp = await worker.fetch(post({ app: "other", title: "t" }), env());
+	assert.equal(resp.status, 400);
+	assert.match((await resp.json()).error, /unknown app "other": the relay's APPS lists sonora/);
+
+	resp = await worker.fetch(post({ app: "sonora", title: "t" }), env({ GITHUB_TOKEN: undefined }));
+	assert.equal(resp.status, 500);
+	assert.match((await resp.json()).error, /no GITHUB_TOKEN secret/);
+
+	resp = await worker.fetch(post({ app: "sonora", title: "t" }), env({ SUPPORT: undefined }));
+	assert.match((await resp.json()).error, /no SUPPORT KV namespace/);
+
+	resp = await worker.fetch(post({ app: "sonora", title: "t" }), env({ APPS: "{sonora: x}" }));
+	assert.equal(resp.status, 500);
+	assert.match((await resp.json()).error, /APPS isn't valid JSON/);
+
+	resp = await worker.fetch(new Request("https://relay.example/"), env());
+	assert.deepEqual(await resp.json(), { ok: true, apps: ["sonora"], github_token: true, admin_token: true, key_required: false, kv: true });
+
+	resp = await worker.fetch(new Request("https://relay.example/reports", { method: "POST", body: "{}" }), env());
+	assert.equal(resp.status, 404);
+	assert.match((await resp.json()).error, /must end in \/report/);
+});

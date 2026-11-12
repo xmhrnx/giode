@@ -23,23 +23,39 @@ You need Node.js and a free Cloudflare account.
 1. Create a GitHub token at <https://github.com/settings/personal-access-tokens/new>:
    fine-grained, with access to the apps' repositories only, and the **Issues: Read and
    write** permission.
-2. In this folder:
+2. In `wrangler.jsonc`, list each app in `APPS` under the name it passes as
+   `support.Options.App`, with its repository.
+3. In this folder:
 
    ```sh
-   npx wrangler login
-   npx wrangler kv namespace create SUPPORT   # put the id it prints in wrangler.toml
-   npx wrangler secret put GITHUB_TOKEN       # the token from step 1
-   npx wrangler secret put ADMIN_TOKEN        # any long random string, for /contact
-   npx wrangler secret put KEY                # optional: the key your apps send
+   npx wrangler@latest login
+   npx wrangler@latest deploy                  # creates the KV namespace too
+   npx wrangler@latest secret put GITHUB_TOKEN # the token from step 1
+   npx wrangler@latest secret put ADMIN_TOKEN  # any long random string, for /contact
+   npx wrangler@latest secret put KEY          # optional: the key your apps send
    ```
 
-3. In `wrangler.toml`, list each app in `APPS` under the name it passes as
-   `support.Options.App`, with its repository.
-4. `npx wrangler deploy`. It prints the address, such as
-   `https://giode-support.<you>.workers.dev`. The apps' `ReportURL` is that address plus
-   `/report`.
+   `deploy` prints the address, such as `https://giode-support.<you>.workers.dev`. The
+   apps' `ReportURL` is that address plus `/report`. Secrets take effect at once; changes
+   to `wrangler.jsonc` need another `deploy`.
 
-Check it with:
+`wrangler.jsonc` is the only configuration file: don't add a `wrangler.json` or
+`wrangler.toml` next to it (Wrangler reads just one, and a snippet pasted into a new
+file has no `name` or `main`, so nothing deploys). The KV namespace has no `id` there:
+`deploy` creates it. If your Wrangler asks for one instead, run
+`npx wrangler@latest kv namespace create SUPPORT`, let it add the id to `wrangler.jsonc`,
+and deploy again.
+
+## Check it
+
+Open the address in a browser. It shows what's set, without the secrets:
+
+```json
+{"ok":true,"apps":["sonora","easysend"],"github_token":true,"admin_token":true,"key_required":false,"kv":true}
+```
+
+`ok` is false while `apps` is empty, `GITHUB_TOKEN` is missing or the KV namespace isn't
+bound. Then send a test report:
 
 ```sh
 curl -X POST https://giode-support.<you>.workers.dev/report \
@@ -47,13 +63,30 @@ curl -X POST https://giode-support.<you>.workers.dev/report \
   -d '{"app":"sonora","title":"Test report","description":"Sent with curl."}'
 ```
 
-`npm test` runs its tests (Node 20 or later, nothing to install).
+Every answer is JSON, and a failure's `error` says what went wrong, with GitHub's own
+message when GitHub refused:
+
+| Error | Fix |
+| --- | --- |
+| `nothing at /...` (404) | `ReportURL` must end in `/report`. |
+| `unknown app "x": the relay's APPS lists ...` | Add the app to `APPS` and deploy. |
+| `the relay has no GITHUB_TOKEN secret` | `npx wrangler secret put GITHUB_TOKEN`. |
+| `GitHub rejected the relay's GITHUB_TOKEN (401)` | The token is wrong or expired: make a new one. |
+| `GitHub can't find owner/repo (404)` | Fix the name in `APPS`, or add the repository to the token's access. |
+| `GitHub refused to open an issue in owner/repo (403)` | Give the token **Issues: Read and write**. |
+
+A 404 or 401 the app shows without such a message didn't come from the relay: nothing is
+deployed at that address (or something in front of it, such as Cloudflare Access, turned
+the request away). Each request is logged with its error in Workers Logs (the dashboard's
+**Workers & Pages → giode-support → Logs**), or live with `npx wrangler tail`.
+
+`npm test` runs the relay's tests (Node 20 or later, nothing to install).
 
 ## Settings
 
 | Name | Kind | Meaning |
 | --- | --- | --- |
-| `APPS` | var | JSON object: app name to `owner/repo`. Reports from other apps are refused. |
+| `APPS` | var | App name to `owner/repo`. Reports from other apps are refused. |
 | `GITHUB_TOKEN` | secret | Opens the issues. |
 | `ADMIN_TOKEN` | secret | Reads reporters' emails at `/contact`. |
 | `KEY` | secret, optional | When set, reports must carry it (`support.Options.Key`). It ships inside the apps, so it stops casual spam, not someone who takes an app apart. |

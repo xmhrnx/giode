@@ -54,6 +54,27 @@ func TestSendErrors(t *testing.T) {
 	}
 }
 
+func TestSendNotTheRelay(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("<html><body><h1>There is nothing here yet</h1>\n<p>Deploy a Worker</p></body></html>"))
+	}))
+	defer srv.Close()
+	_, err := Send(context.Background(), srv.URL+"/report", "", Report{App: "a", Title: "t"})
+	if err == nil {
+		t.Fatal("no error for a 404 page")
+	}
+	for _, want := range []string{srv.URL + "/report", "404 Not Found", "There is nothing here yet Deploy a Worker", "not the relay"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("%q doesn't say %q", err, want)
+		}
+	}
+	if got := failure(err); !strings.HasPrefix(got, "Couldn't send the report: ") {
+		t.Errorf("failure: %q", got)
+	}
+}
+
 func TestTipLabel(t *testing.T) {
 	for _, c := range []struct {
 		p    store.Product

@@ -142,18 +142,51 @@ func Send(ctx context.Context, url, key string, r Report) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
 	var answer struct {
 		URL   string `json:"url"`
 		Error string `json:"error"`
 	}
-	json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&answer)
-	if resp.StatusCode/100 != 2 {
-		if answer.Error != "" {
-			return "", fmt.Errorf("support: %s", answer.Error)
-		}
-		return "", fmt.Errorf("support: sending the report: %s", resp.Status)
+	relay := json.Unmarshal(body, &answer) == nil
+	switch {
+	case resp.StatusCode/100 == 2 && answer.URL != "":
+		return answer.URL, nil
+	case relay && answer.Error != "":
+		return "", fmt.Errorf("support: %s (%s)", answer.Error, resp.Status)
 	}
-	return answer.URL, nil
+	// Not the relay's answer: say what came back, and from where.
+	msg := fmt.Sprintf("support: %s answered %s", url, resp.Status)
+	if text := bodyText(body); text != "" {
+		msg += ": " + text
+	}
+	if !relay {
+		msg += " (not the relay, which answers in JSON: is it deployed there, and does the address end in /report?)"
+	}
+	return "", errors.New(msg)
+}
+
+// bodyText returns the start of a response's text, without HTML tags,
+// on one line.
+func bodyText(b []byte) string {
+	s := string(b)
+	var out strings.Builder
+	tag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			tag = true
+		case r == '>' && tag:
+			tag = false
+			out.WriteByte(' ')
+		case !tag:
+			out.WriteRune(r)
+		}
+	}
+	s = strings.Join(strings.Fields(out.String()), " ")
+	if r := []rune(s); len(r) > 300 {
+		s = string(r[:300]) + "…"
+	}
+	return s
 }
 
 // truncate shortens s to at most n bytes, at a rune boundary, keeping

@@ -1,0 +1,21 @@
+// The Giode support relay; see README.md.
+{
+	"name": "giode-support",
+	"main": "worker.js",
+	"compatibility_date": "2025-06-01",
+
+	// Workers Logs: each request and its error, in the dashboard under
+	// Workers & Pages > giode-support > Logs (or npx wrangler tail).
+	"observability": { "enabled": true },
+
+	// No id: npx wrangler deploy creates the namespace and remembers it.
+	"kv_namespaces": [{ "binding": "SUPPORT" }],
+
+	"vars": {
+		// Each app's support.Options.App, and the repository its reports go to.
+		"APPS": { "sonora": "xmhrnx/sonora", "easysend": "xmhrnx/easysend" },
+		"LABELS": "user report",
+		"PER_HOUR": "5",
+		"PER_DAY": "20"
+	}
+}

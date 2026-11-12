@@ -3,7 +3,7 @@
 // no GitHub account and the GitHub token stays here, never in an app.
 // See README.md to deploy it.
 //
-// Settings (wrangler.toml [vars] and secrets):
+// Settings (wrangler.jsonc "vars", and secrets):
 //   APPS          JSON: app name (support.Options.App) to "owner/repo".
 //   GITHUB_TOKEN  secret: a fine-grained token with Issues read and write
 //                 on those repositories.
@@ -14,6 +14,10 @@
 //                 default "user report".
 //   PER_HOUR, PER_DAY  optional: reports one address may send; 5 and 20.
 // Binding: SUPPORT, a KV namespace for the rate limits and the emails.
+//
+// Every answer is JSON, and a failure's "error" says what went wrong in
+// full (GitHub's own message included), so the app can show it; each
+// request is also logged for Workers Logs.
 
 const LIMITS = { title: 120, description: 20000, attachment: 30000, email: 254 };
 const EMAIL_DAYS = 365;
@@ -22,23 +26,74 @@ const OS_NAMES = { darwin: "macOS", ios: "iOS", windows: "Windows", linux: "Linu
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
+		let resp;
 		try {
-			if (url.pathname === "/report" && request.method === "POST") {
-				return await report(request, env);
-			}
-			if (url.pathname === "/contact" && request.method === "GET") {
-				return await contact(request, url, env);
-			}
-			if (url.pathname === "/" && request.method === "GET") {
-				return json({ ok: true });
-			}
-			return json({ error: "not found" }, 404);
+			resp = await route(request, url, env);
 		} catch (e) {
-			console.error(e && e.stack ? e.stack : e);
-			return json({ error: "the relay failed; try again later" }, 500);
+			console.error(e && e.stack ? e.stack : String(e));
+			resp = json({ error: `the relay failed: ${e && e.message ? e.message : e}` }, 500);
 		}
+		let error;
+		if (resp.status >= 400) {
+			try {
+				error = (await resp.clone().json()).error;
+			} catch {}
+		}
+		console.log(JSON.stringify({ method: request.method, path: url.pathname, status: resp.status, error }));
+		return resp;
 	},
 };
+
+async function route(request, url, env) {
+	switch (url.pathname) {
+		case "/report":
+			if (request.method !== "POST") {
+				return json({ error: "reports are sent with POST to /report" }, 405);
+			}
+			return await report(request, env);
+		case "/contact":
+			return await contact(request, url, env);
+		case "/":
+			return json(status(env));
+	}
+	return json({ error: `nothing at ${url.pathname}: reports go to POST /report (support.Options.ReportURL must end in /report)` }, 404);
+}
+
+// status describes the relay's settings, without their secrets, so a
+// GET of its address shows what's missing.
+function status(env) {
+	let apps = [];
+	let appsError;
+	try {
+		apps = Object.keys(parseApps(env.APPS));
+	} catch (e) {
+		appsError = e.message;
+	}
+	const s = {
+		ok: apps.length > 0 && Boolean(env.GITHUB_TOKEN) && Boolean(env.SUPPORT),
+		apps,
+		github_token: Boolean(env.GITHUB_TOKEN),
+		admin_token: Boolean(env.ADMIN_TOKEN),
+		key_required: Boolean(env.KEY),
+		kv: Boolean(env.SUPPORT),
+	};
+	if (appsError) {
+		s.apps_error = appsError;
+	}
+	return s;
+}
+
+// configError returns what's missing from the relay's settings for
+// sending reports, or "".
+function configError(env) {
+	if (!env.GITHUB_TOKEN) {
+		return "the relay has no GITHUB_TOKEN secret: run npx wrangler secret put GITHUB_TOKEN";
+	}
+	if (!env.SUPPORT) {
+		return "the relay has no SUPPORT KV namespace: add it to kv_namespaces in wrangler.jsonc and deploy again";
+	}
+	return "";
+}
 
 async function report(request, env) {
 	if (env.KEY && request.headers.get("X-Support-Key") !== env.KEY) {
@@ -54,10 +109,22 @@ async function report(request, env) {
 	} catch {
 		return json({ error: "the report isn't valid JSON" }, 400);
 	}
-	const apps = parseApps(env.APPS);
+	const missing = configError(env);
+	if (missing) {
+		return json({ error: missing }, 500);
+	}
+	let apps;
+	try {
+		apps = parseApps(env.APPS);
+	} catch (e) {
+		return json({ error: e.message }, 500);
+	}
 	const repo = typeof r.app === "string" ? apps[r.app] : undefined;
 	if (!repo) {
-		return json({ error: "unknown app" }, 400);
+		const known = Object.keys(apps);
+		return json({
+			error: `unknown app ${JSON.stringify(r.app)}: the relay's APPS lists ${known.length ? known.join(", ") : "no apps"}`,
+		}, 400);
 	}
 	const title = clean(r.title).trim();
 	if (!title || title.length > LIMITS.title) {
@@ -84,13 +151,20 @@ async function report(request, env) {
 	const fields = { title: `[Report] ${title}`, body: issueBody(r, Boolean(email)) };
 	let issue;
 	try {
-		issue = await github(env, `repos/${repo}/issues`, { ...fields, labels });
+		try {
+			issue = await github(env, `repos/${repo}/issues`, { ...fields, labels });
+		} catch (e) {
+			// Labels the token can't apply: send the report without them.
+			if (e.status !== 422 && e.status !== 403) {
+				throw e;
+			}
+			issue = await github(env, `repos/${repo}/issues`, fields);
+		}
 	} catch (e) {
-		// Labels the token can't apply: send the report without them.
-		if (e.status !== 422 && e.status !== 403) {
+		if (!e.status) {
 			throw e;
 		}
-		issue = await github(env, `repos/${repo}/issues`, fields);
+		return json({ error: githubError(e, repo) }, 502);
 	}
 	if (email) {
 		await env.SUPPORT.put(`email:${repo}#${issue.number}`, email, { expirationTtl: EMAIL_DAYS * 86400 });
@@ -101,8 +175,17 @@ async function report(request, env) {
 // contact returns the email a report's sender left:
 // GET /contact?repo=owner/repo&issue=12 with Authorization: Bearer ADMIN_TOKEN.
 async function contact(request, url, env) {
-	if (!env.ADMIN_TOKEN || request.headers.get("Authorization") !== `Bearer ${env.ADMIN_TOKEN}`) {
-		return json({ error: "unauthorized" }, 401);
+	if (request.method !== "GET") {
+		return json({ error: "use GET for /contact" }, 405);
+	}
+	if (!env.ADMIN_TOKEN) {
+		return json({ error: "the relay has no ADMIN_TOKEN secret: run npx wrangler secret put ADMIN_TOKEN" }, 500);
+	}
+	if (request.headers.get("Authorization") !== `Bearer ${env.ADMIN_TOKEN}`) {
+		return json({ error: "unauthorized: send Authorization: Bearer <ADMIN_TOKEN>" }, 401);
+	}
+	if (!env.SUPPORT) {
+		return json({ error: configError(env) }, 500);
 	}
 	const repo = url.searchParams.get("repo");
 	const issue = url.searchParams.get("issue");
@@ -179,12 +262,34 @@ function clean(v) {
 	return typeof v === "string" ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "") : "";
 }
 
+// parseApps reads APPS, throwing when it isn't a JSON object.
 function parseApps(s) {
+	let apps;
 	try {
-		const apps = JSON.parse(s || "{}");
-		return apps && typeof apps === "object" ? apps : {};
-	} catch {
-		return {};
+		apps = typeof s === "object" && s !== null ? s : JSON.parse(s || "{}");
+	} catch (e) {
+		throw new Error(`the relay's APPS isn't valid JSON (${e.message}): it maps app names to "owner/repo"`);
+	}
+	if (!apps || typeof apps !== "object" || Array.isArray(apps)) {
+		throw new Error(`the relay's APPS must be a JSON object mapping app names to "owner/repo"`);
+	}
+	return apps;
+}
+
+// githubError explains why GitHub refused to open the issue.
+function githubError(e, repo) {
+	const why = e.message ? ` GitHub said: ${e.message}` : "";
+	switch (e.status) {
+		case 401:
+			return `GitHub rejected the relay's GITHUB_TOKEN (401): it's wrong, expired or revoked; set a new one with npx wrangler secret put GITHUB_TOKEN.${why}`;
+		case 403:
+			return `GitHub refused to open an issue in ${repo} (403): the token needs Issues: Read and write on that repository (or GitHub is rate-limiting it).${why}`;
+		case 404:
+			return `GitHub can't find ${repo} (404): check the name in APPS, and that the token's repository access includes it.${why}`;
+		case 410:
+			return `${repo} has issues turned off (410): turn them on in the repository's settings.${why}`;
+		default:
+			return `GitHub answered ${e.status} for ${repo}.${why}`;
 	}
 }
 
@@ -201,7 +306,13 @@ async function github(env, path, body) {
 		body: JSON.stringify(body),
 	});
 	if (!resp.ok) {
-		const e = new Error(`GitHub ${path}: ${resp.status} ${await resp.text()}`);
+		const text = await resp.text();
+		let message = text.slice(0, 500);
+		try {
+			const b = JSON.parse(text);
+			message = [b.message, ...(b.errors || []).map((x) => x.message || x.code)].filter(Boolean).join("; ") || message;
+		} catch {}
+		const e = new Error(message);
 		e.status = resp.status;
 		throw e;
 	}
