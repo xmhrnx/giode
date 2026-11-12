@@ -1,6 +1,8 @@
 package input
 
 import (
+	"image"
+
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -39,6 +41,9 @@ type Input struct {
 	tap int
 	// menu is the long-press (and right-click) editing menu.
 	menu editMenu
+	// fieldOrigin and fieldSize are where the field was laid out, in
+	// window coordinates once the frame's layout is done.
+	fieldOrigin, fieldSize image.Point
 }
 
 // New returns an Input with the given placeholder. The styles

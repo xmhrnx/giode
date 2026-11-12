@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"runtime"
 )
 
 // SelectAll selects the whole content.
@@ -159,6 +160,12 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 				i.onSubmit(e.Text)
 				kit.RequestFrame(gtx)
 			}
+			if i.editor.SingleLine && phone {
+				// Return (Done) on a single-line field closes the
+				// keyboard, as on native fields.
+				gtx.Execute(key.FocusCmd{})
+				gtx.Execute(key.SoftKeyboardCmd{Show: false})
+			}
 		case widget.ChangeEvent:
 			if i.onChange != nil {
 				i.onChange(i.editor.Text())
@@ -184,3 +191,7 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 	i.focused = focused
 	return changed
 }
+
+// phone is set on Android and iOS, whose keyboards close with Return on
+// single-line fields.
+const phone = runtime.GOOS == "android" || runtime.GOOS == "ios"

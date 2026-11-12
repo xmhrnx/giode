@@ -1,7 +1,10 @@
 package giode
 
 import (
+	"image"
+
 	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -48,7 +51,13 @@ func layoutDrag(a *App, gtx layout.Context) {
 // hit-test stops at the first one it meets: registered last, the
 // listener sits in front of them and sees every press, while still
 // leaving them their own.
-type windowPointer struct{}
+type windowPointer struct {
+	// The touch press being watched for a tap: where, and whether the
+	// focused text field (the keyboard's owner then) keeps the keyboard
+	// for it.
+	tapAt    image.Point
+	tapOwner elements.KeyboardOwner
+}
 
 // layout registers the pointer region and processes events queued
 // from the registration on a previous frame: recording whether the
@@ -70,14 +79,26 @@ func (w *windowPointer) layout(a *App, gtx layout.Context) {
 	cl.Pop()
 	ps.Pop()
 
+	owner := elements.TakeKeyboardOwner()
 	for {
 		ev, ok := gtx.Source.Event(pointer.Filter{Target: w, Kinds: pointer.Press | pointer.Release})
 		if !ok {
 			break
 		}
 		e, ok := ev.(pointer.Event)
-		if !ok || e.Kind != pointer.Press {
+		if !ok {
 			continue
+		}
+		if e.Kind == pointer.Release {
+			w.tapped(gtx, e, owner)
+			continue
+		}
+		if e.Kind != pointer.Press {
+			continue
+		}
+		w.tapOwner = nil
+		if e.Source == pointer.Touch && owner != nil && !owner.KeepsKeyboard(e.Position.Round()) {
+			w.tapAt, w.tapOwner = e.Position.Round(), owner
 		}
 		if elements.SetTouchInput(e.Source == pointer.Touch) {
 			// Touch targets change size: rebuild cached subtrees and
@@ -93,4 +114,22 @@ func (w *windowPointer) layout(a *App, gtx layout.Context) {
 			a.ctxMenu.OpenAt(e.Position)
 		}
 	}
+}
+
+// tapped dismisses the software keyboard after a tap (a touch press and
+// release in about the same place, not a scroll) outside the focused
+// text field, as native apps do: the field loses focus. Not when focus
+// moved since the press (the tap focused another field), nor on a
+// release that ends a drag.
+func (w *windowPointer) tapped(gtx layout.Context, e pointer.Event, owner elements.KeyboardOwner) {
+	start := w.tapOwner
+	w.tapOwner = nil
+	if start == nil || e.Source != pointer.Touch || owner != start {
+		return
+	}
+	if d := e.Position.Round().Sub(w.tapAt); d.X*d.X+d.Y*d.Y > gtx.Dp(12)*gtx.Dp(12) {
+		return
+	}
+	gtx.Execute(key.FocusCmd{})
+	gtx.Execute(key.SoftKeyboardCmd{Show: false})
 }
