@@ -44,10 +44,10 @@ app.Run(func() giode.Element {
 - recent logs, when `Options.Logs` is set.
 
 While a report sends, the Send button spins. When it's sent, a toast thanks the user and
-links to the issue. If sending fails, the form stays open with its text and says why in
-full: the connection error, the relay's reason (too many reports, an app missing from
-`APPS`, GitHub refusing the token, with GitHub's own message), or, when something other
-than the relay answered, the address, the status and the start of what came back.
+links to the issue. If sending fails, the form stays open with its text and says why:
+the connection, a reason the user can act on (too many reports, say), or otherwise a
+reason code ("Couldn't send the report: reason - ..."), which you look up in the relay's
+logs.
 
 To send a report without the form, use
 `support.Send(ctx, url, key, support.Report{...})`. `Report.System()` fills in the
@@ -68,9 +68,8 @@ deployed once for all your apps. Cloudflare's free plan covers it. It:
 
 Its README has the five-minute setup: a fine-grained GitHub token with **Issues: Read and
 write**, the `APPS` list of app names and repositories in `wrangler.jsonc`, and
-`npx wrangler deploy`, which also creates its KV namespace. Opening the relay's address
-shows which settings are missing, every failure answers with the reason, and requests
-are logged in Workers Logs.
+`npx wrangler deploy`, which also creates its KV namespace. Failures are logged with
+their details in Workers Logs.
 
 ## Donations and store rules
 

@@ -54,24 +54,37 @@ func TestSendErrors(t *testing.T) {
 	}
 }
 
-func TestSendNotTheRelay(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("<html><body><h1>There is nothing here yet</h1>\n<p>Deploy a Worker</p></body></html>"))
-	}))
-	defer srv.Close()
-	_, err := Send(context.Background(), srv.URL+"/report", "", Report{App: "a", Title: "t"})
-	if err == nil {
-		t.Fatal("no error for a 404 page")
-	}
-	for _, want := range []string{srv.URL + "/report", "404 Not Found", "There is nothing here yet Deploy a Worker", "not the relay"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("%q doesn't say %q", err, want)
+func TestSendReasons(t *testing.T) {
+	for _, c := range []struct {
+		status int
+		body   string
+		want   string
+	}{
+		{404, "<html><h1>There is nothing here yet</h1></html>", "Couldn't send the report: reason - drift"},
+		{401, "", "Couldn't send the report: reason - garnet"},
+		{403, "denied", "Couldn't send the report: reason - nimbus"},
+		{503, "", "Couldn't send the report: reason - tundra"},
+		{418, "", "Couldn't send the report: reason - mosaic"},
+		{200, "{}", "Couldn't send the report: reason - comet"},
+		{502, `{"error":"harbor","code":"harbor"}`, "Couldn't send the report: reason - harbor"},
+		{429, `{"error":"too many reports from this network; try again later"}`, "Couldn't send the report: too many reports from this network; try again later."},
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(c.status)
+			w.Write([]byte(c.body))
+		}))
+		_, err := Send(context.Background(), srv.URL+"/report", "", Report{App: "a", Title: "t"})
+		srv.Close()
+		if err == nil {
+			t.Errorf("%d: no error", c.status)
+			continue
 		}
-	}
-	if got := failure(err); !strings.HasPrefix(got, "Couldn't send the report: ") {
-		t.Errorf("failure: %q", got)
+		if got := failure(err); got != c.want {
+			t.Errorf("%d: %q, want %q", c.status, got, c.want)
+		}
+		if strings.Contains(err.Error(), "nothing here") || strings.Contains(err.Error(), "denied") {
+			t.Errorf("%d: the answer's text is shown: %q", c.status, err)
+		}
 	}
 }
 

@@ -266,18 +266,18 @@ func (s *Support) submit() {
 	}()
 }
 
-// failure says why a report wasn't sent: the relay's reason in full,
-// what answered instead of it, or why it couldn't be reached.
+// failure says why a report wasn't sent: the relay's reason, a reason
+// code, or that it couldn't be reached.
 func failure(err error) string {
 	var netErr *url.Error
 	if errors.As(err, &netErr) {
-		return "Couldn't reach the report server (" + netErr.Error() + "). Check your connection and try again."
+		return "Couldn't reach the report server. Check your connection and try again."
 	}
-	msg := "Couldn't send the report: " + strings.TrimPrefix(err.Error(), "support: ")
-	if !strings.HasSuffix(msg, ".") {
-		msg += "."
+	var reason *reasonError
+	if errors.As(err, &reason) {
+		return "Couldn't send the report: reason - " + reason.reason
 	}
-	return msg
+	return "Couldn't send the report: " + strings.TrimPrefix(err.Error(), "support: ") + "."
 }
 
 // osName is GOOS the way people write it.

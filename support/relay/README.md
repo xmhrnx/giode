@@ -48,14 +48,8 @@ and deploy again.
 
 ## Check it
 
-Open the address in a browser. It shows what's set, without the secrets:
-
-```json
-{"ok":true,"apps":["sonora","easysend"],"github_token":true,"admin_token":true,"key_required":false,"kv":true}
-```
-
-`ok` is false while `apps` is empty, `GITHUB_TOKEN` is missing or the KV namespace isn't
-bound. Then send a test report:
+Open the address in a browser: it answers `{"ok":true}` once `APPS`, `GITHUB_TOKEN` and
+the KV namespace are set. Then send a test report:
 
 ```sh
 curl -X POST https://giode-support.<you>.workers.dev/report \
@@ -63,22 +57,10 @@ curl -X POST https://giode-support.<you>.workers.dev/report \
   -d '{"app":"sonora","title":"Test report","description":"Sent with curl."}'
 ```
 
-Every answer is JSON, and a failure's `error` says what went wrong, with GitHub's own
-message when GitHub refused:
-
-| Error | Fix |
-| --- | --- |
-| `nothing at /...` (404) | `ReportURL` must end in `/report`. |
-| `unknown app "x": the relay's APPS lists ...` | Add the app to `APPS` and deploy. |
-| `the relay has no GITHUB_TOKEN secret` | `npx wrangler secret put GITHUB_TOKEN`. |
-| `GitHub rejected the relay's GITHUB_TOKEN (401)` | The token is wrong or expired: make a new one. |
-| `GitHub can't find owner/repo (404)` | Fix the name in `APPS`, or add the repository to the token's access. |
-| `GitHub refused to open an issue in owner/repo (403)` | Give the token **Issues: Read and write**. |
-
-A 404 or 401 the app shows without such a message didn't come from the relay: nothing is
-deployed at that address (or something in front of it, such as Cloudflare Access, turned
-the request away). Each request is logged with its error in Workers Logs (the dashboard's
-**Workers & Pages → giode-support → Logs**), or live with `npx wrangler tail`.
+A failure the reporter can act on (too many reports, a summary too long) says so. Any
+other answers with only a reason code, which the app shows ("reason - ..."); the details
+are in Workers Logs (the dashboard's **Workers & Pages → giode-support → Logs**), or live
+with `npx wrangler tail`.
 
 `npm test` runs the relay's tests (Node 20 or later, nothing to install).
 

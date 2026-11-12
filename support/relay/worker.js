@@ -15,9 +15,10 @@
 //   PER_HOUR, PER_DAY  optional: reports one address may send; 5 and 20.
 // Binding: SUPPORT, a KV namespace for the rate limits and the emails.
 //
-// Every answer is JSON, and a failure's "error" says what went wrong in
-// full (GitHub's own message included), so the app can show it; each
-// request is also logged for Workers Logs.
+// Every answer is JSON. A failure the reporter can do something about
+// (too many reports, a summary too long) says so in "error"; any other
+// failure answers with only a reason code in "code" (and "error"), which
+// the app shows, and logs the details for Workers Logs.
 
 const LIMITS = { title: 120, description: 20000, attachment: 30000, email: 254 };
 const EMAIL_DAYS = 365;
@@ -30,8 +31,7 @@ export default {
 		try {
 			resp = await route(request, url, env);
 		} catch (e) {
-			console.error(e && e.stack ? e.stack : String(e));
-			resp = json({ error: `the relay failed: ${e && e.message ? e.message : e}` }, 500);
+			resp = fail("orbit", 500, e && e.stack ? e.stack : String(e));
 		}
 		let error;
 		if (resp.status >= 400) {
@@ -48,7 +48,7 @@ async function route(request, url, env) {
 	switch (url.pathname) {
 		case "/report":
 			if (request.method !== "POST") {
-				return json({ error: "reports are sent with POST to /report" }, 405);
+				return fail("pebble", 405, `${request.method} /report: reports are sent with POST`);
 			}
 			return await report(request, env);
 		case "/contact":
@@ -56,48 +56,40 @@ async function route(request, url, env) {
 		case "/":
 			return json(status(env));
 	}
-	return json({ error: `nothing at ${url.pathname}: reports go to POST /report (support.Options.ReportURL must end in /report)` }, 404);
+	return fail("meadow", 404, `nothing at ${url.pathname}: reports go to POST /report (support.Options.ReportURL must end in /report)`);
 }
 
-// status describes the relay's settings, without their secrets, so a
-// GET of its address shows what's missing.
+// status reports whether the relay has what sending reports takes
+// (the APPS list, GITHUB_TOKEN and the KV namespace), and nothing more.
 function status(env) {
-	let apps = [];
-	let appsError;
+	let apps = {};
 	try {
-		apps = Object.keys(parseApps(env.APPS));
-	} catch (e) {
-		appsError = e.message;
-	}
-	const s = {
-		ok: apps.length > 0 && Boolean(env.GITHUB_TOKEN) && Boolean(env.SUPPORT),
-		apps,
-		github_token: Boolean(env.GITHUB_TOKEN),
-		admin_token: Boolean(env.ADMIN_TOKEN),
-		key_required: Boolean(env.KEY),
-		kv: Boolean(env.SUPPORT),
-	};
-	if (appsError) {
-		s.apps_error = appsError;
-	}
-	return s;
+		apps = parseApps(env.APPS);
+	} catch {}
+	return { ok: Object.keys(apps).length > 0 && Boolean(env.GITHUB_TOKEN) && Boolean(env.SUPPORT) };
 }
 
 // configError returns what's missing from the relay's settings for
-// sending reports, or "".
+// sending reports, as a failure's reason code and details, or null.
 function configError(env) {
 	if (!env.GITHUB_TOKEN) {
-		return "the relay has no GITHUB_TOKEN secret: run npx wrangler secret put GITHUB_TOKEN";
+		return ["ember", "the relay has no GITHUB_TOKEN secret: run npx wrangler secret put GITHUB_TOKEN"];
 	}
 	if (!env.SUPPORT) {
-		return "the relay has no SUPPORT KV namespace: add it to kv_namespaces in wrangler.jsonc and deploy again";
+		return ["willow", "the relay has no SUPPORT KV namespace: add it to kv_namespaces in wrangler.jsonc and deploy again"];
 	}
-	return "";
+	return null;
+}
+
+// fail answers with only a reason code, and logs the details.
+function fail(code, status, detail) {
+	console.log(JSON.stringify({ code, detail }));
+	return json({ error: code, code }, status);
 }
 
 async function report(request, env) {
 	if (env.KEY && request.headers.get("X-Support-Key") !== env.KEY) {
-		return json({ error: "this app isn't allowed to send reports" }, 403);
+		return fail("thistle", 403, "the report's X-Support-Key isn't the relay's KEY");
 	}
 	const length = Number(request.headers.get("Content-Length") || 0);
 	if (length > 200000) {
@@ -107,24 +99,23 @@ async function report(request, env) {
 	try {
 		r = await request.json();
 	} catch {
-		return json({ error: "the report isn't valid JSON" }, 400);
+		return fail("velvet", 400, "the report isn't valid JSON");
 	}
 	const missing = configError(env);
 	if (missing) {
-		return json({ error: missing }, 500);
+		return fail(missing[0], 500, missing[1]);
 	}
 	let apps;
 	try {
 		apps = parseApps(env.APPS);
 	} catch (e) {
-		return json({ error: e.message }, 500);
+		return fail("cobalt", 500, e.message);
 	}
 	const repo = typeof r.app === "string" ? apps[r.app] : undefined;
 	if (!repo) {
 		const known = Object.keys(apps);
-		return json({
-			error: `unknown app ${JSON.stringify(r.app)}: the relay's APPS lists ${known.length ? known.join(", ") : "no apps"}`,
-		}, 400);
+		return fail("saffron", 400,
+			`unknown app ${JSON.stringify(r.app)}: the relay's APPS lists ${known.length ? known.join(", ") : "no apps"}`);
 	}
 	const title = clean(r.title).trim();
 	if (!title || title.length > LIMITS.title) {
@@ -164,7 +155,7 @@ async function report(request, env) {
 		if (!e.status) {
 			throw e;
 		}
-		return json({ error: githubError(e, repo) }, 502);
+		return fail(githubCode(e.status), 502, githubError(e, repo));
 	}
 	if (email) {
 		await env.SUPPORT.put(`email:${repo}#${issue.number}`, email, { expirationTtl: EMAIL_DAYS * 86400 });
@@ -185,7 +176,7 @@ async function contact(request, url, env) {
 		return json({ error: "unauthorized: send Authorization: Bearer <ADMIN_TOKEN>" }, 401);
 	}
 	if (!env.SUPPORT) {
-		return json({ error: configError(env) }, 500);
+		return json({ error: configError(env)[1] }, 500);
 	}
 	const repo = url.searchParams.get("repo");
 	const issue = url.searchParams.get("issue");
@@ -274,6 +265,10 @@ function parseApps(s) {
 		throw new Error(`the relay's APPS must be a JSON object mapping app names to "owner/repo"`);
 	}
 	return apps;
+}
+
+function githubCode(status) {
+	return { 401: "lantern", 403: "juniper", 404: "harbor", 410: "quartz" }[status] || "falcon";
 }
 
 // githubError explains why GitHub refused to open the issue.
