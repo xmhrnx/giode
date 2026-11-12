@@ -32,7 +32,9 @@ var safeArea atomic.Pointer[properties.Inset]
 //
 // On Android the window shrinks to make room for the on-screen
 // keyboard, so content laid out above the bottom edge stays above the
-// keyboard either way.
+// keyboard either way. On iOS, with the giode CLI's Gio patches, the
+// window keeps its full height and the keyboard is the bottom inset:
+// an edge-to-edge app pads its bottom with SafeArea().Bottom.
 func SafeArea() properties.Inset {
 	if p := safeArea.Load(); p != nil {
 		return *p

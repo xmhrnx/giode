@@ -58,7 +58,10 @@ Custom Tabs needs an AndroidX library gogio doesn't bundle.
 `giode.SafeArea()` returns the insets covered by system UI (status bar, navigation bar,
 notch, and on iOS the keyboard) in dp. By default the view is laid out inside them; with
 `Config.EdgeToEdge` it covers the whole window and you pad with `SafeArea()`. On Android
-the window shrinks for the keyboard, so content at the bottom stays above it either way.
+the window shrinks for the keyboard, so content at the bottom stays above it either way. On
+iOS (with the giode CLI's Gio patches) the window keeps its full height and the keyboard is
+the bottom inset: an edge-to-edge app pads its bottom - a composer, a bottom bar - with
+`SafeArea().Bottom` to stay above it.
 `app.HideKeyboard()` hides the keyboard and clears focus.
 
 ## System theme and device
