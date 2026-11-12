@@ -82,6 +82,17 @@ func (t *Toaster) Layout(gtx layout.Context) layout.Dimensions {
 
 // layoutStack lays the visible toasts out in their corner. It runs as
 // a portal covering the window; only the toasts take input.
+// insetPx is the inset in pixels, its left and top in Min, its right
+// and bottom in Max. Not image.Rect: it swaps the coordinates when the
+// top is more than the bottom, and the top inset was taken for the
+// bottom.
+func (t *Toaster) insetPx(gtx layout.Context) image.Rectangle {
+	return image.Rectangle{
+		Min: image.Pt(gtx.Dp(unit.Dp(t.inset.Left)), gtx.Dp(unit.Dp(t.inset.Top))),
+		Max: image.Pt(gtx.Dp(unit.Dp(t.inset.Right)), gtx.Dp(unit.Dp(t.inset.Bottom))),
+	}
+}
+
 func (t *Toaster) layoutStack(gtx layout.Context) layout.Dimensions {
 	win := gtx.Constraints.Max
 	w := gtx.Dp(toastWidth)
@@ -89,7 +100,7 @@ func (t *Toaster) layoutStack(gtx layout.Context) layout.Dimensions {
 		w = gtx.Dp(unit.Dp(t.st.Width))
 	}
 	m := gtx.Dp(margin)
-	in := image.Rect(gtx.Dp(unit.Dp(t.inset.Left)), gtx.Dp(unit.Dp(t.inset.Top)), gtx.Dp(unit.Dp(t.inset.Right)), gtx.Dp(unit.Dp(t.inset.Bottom)))
+	in := t.insetPx(gtx)
 	w = min(w, win.X-2*m-in.Min.X-in.Max.X)
 	if w <= 0 {
 		return layout.Dimensions{}
