@@ -534,9 +534,10 @@ var (
 var TitleBar = ui.TitleBar
 
 type (
-	TitleBarVariant = ui.TitleBarVariant
-	TitleBarButton  = ui.TitleBarButton
-	TitleBarWindow  = ui.TitleBarWindow
+	TitleBarVariant   = ui.TitleBarVariant
+	TitleBarButton    = ui.TitleBarButton
+	TitleBarWindow    = ui.TitleBarWindow
+	TitleBarPlacement = ui.TitleBarPlacement
 )
 
 const (
@@ -545,6 +546,10 @@ const (
 	TitleBarMinimize = ui.TitleBarMinimize
 	TitleBarMaximize = ui.TitleBarMaximize
 	TitleBarClose    = ui.TitleBarClose
+	// Where the title goes; see TitleBar.TitlePlacement.
+	TitleBarTitleAuto   = ui.TitleBarTitleAuto
+	TitleBarTitleStart  = ui.TitleBarTitleStart
+	TitleBarTitleCenter = ui.TitleBarTitleCenter
 )
 
 // TreeView is a virtualized, keyboard-navigable tree. It owns

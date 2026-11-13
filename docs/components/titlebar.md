@@ -20,6 +20,14 @@ app.Run(func() giode.Element {
 })
 ```
 
+For an editor showing the open file's name between the menus and the window buttons:
+
+```go
+bar.Leading(fileTrigger, editTrigger, viewTrigger).
+	TitlePlacement(giode.TitleBarTitleCenter).
+	TitleMaxWidth(320)
+```
+
 Create it once and lay it out every frame at the top of the window. Don't set
 `Config.Draggable`: the bar is the drag handle, so only it moves the window.
 
@@ -45,6 +53,8 @@ Create it once and lay it out every frame at the top of the window. Don't set
 | `Hide(buttons...)` | Removes `TitleBarMinimize`, `TitleBarMaximize` and/or `TitleBarClose`. |
 | `OnClose(fn func() bool)` | Runs on close; return `false` to keep the window open (unsaved changes). Otherwise the button closes as the system's does (`App.RequestClose`), hiding to the tray with `CloseToTray`. |
 | `Title(s)` | Replaces the title. |
+| `TitlePlacement(p)` | `TitleBarTitleAuto` (default: before the menus for the Windows look, centered over the bar for the Mac look), `TitleBarTitleStart` (before the menus) or `TitleBarTitleCenter` (centered in the space after the menus, between them and the trailing elements). The title takes no presses, so that space still drags the window and double-clicks to maximize. |
+| `TitleMaxWidth(dp)` | Caps the title's width; it ends in an ellipsis past it. |
 | `Styles(st)` | Replaces the styles: solid in a window, a transparent fade over fullscreen video. |
 | `Press(button)` | Performs a button's action programmatically. |
 

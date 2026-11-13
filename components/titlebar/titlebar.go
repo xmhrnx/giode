@@ -36,6 +36,9 @@ type TitleBar struct {
 	variant Variant
 	height  unit.Dp
 
+	placement TitlePlacement
+	titleMax  unit.Dp
+
 	leading, trailing []elements.Element
 
 	hidden  [3]bool
@@ -68,6 +71,32 @@ func (t *TitleBar) Styles(st styles.Styles) *TitleBar {
 func (t *TitleBar) Title(title string) *TitleBar {
 	t.title = title
 	return t
+}
+
+// TitlePlacement sets where the title goes; see TitlePlacement. It
+// returns t for chaining.
+func (t *TitleBar) TitlePlacement(p TitlePlacement) *TitleBar {
+	t.placement = p
+	return t
+}
+
+// TitleMaxWidth caps the title's width (it ends in an ellipsis past
+// it); 0, the default, lets it take the room there is. It returns t for
+// chaining.
+func (t *TitleBar) TitleMaxWidth(w unit.Dp) *TitleBar {
+	t.titleMax = w
+	return t
+}
+
+// placementFor returns the placement in effect.
+func (t *TitleBar) placementFor() TitlePlacement {
+	if t.placement != TitleAuto {
+		return t.placement
+	}
+	if t.variant == VariantMac {
+		return TitleAuto
+	}
+	return TitleStart
 }
 
 // Icon sets an element (typically an icon) shown before the title. It

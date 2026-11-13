@@ -29,6 +29,22 @@ const (
 	VariantMac Variant = "mac"
 )
 
+// TitlePlacement selects where the title goes.
+type TitlePlacement uint8
+
+const (
+	// TitleAuto is the variant's own placement: before the leading
+	// elements (menus) for VariantWindows, centered over the bar for
+	// VariantMac.
+	TitleAuto TitlePlacement = iota
+	// TitleStart puts the title before the leading elements.
+	TitleStart
+	// TitleCenter centers the title in the space between the leading
+	// and the trailing elements - after the menus - which stays a drag
+	// area: the title doesn't take presses.
+	TitleCenter
+)
+
 // Button identifies a window button.
 type Button int
 

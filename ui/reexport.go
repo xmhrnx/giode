@@ -613,9 +613,10 @@ var (
 var TitleBar = titlebar.New
 
 type (
-	TitleBarVariant = titlebar.Variant
-	TitleBarButton  = titlebar.Button
-	TitleBarWindow  = titlebar.Window
+	TitleBarVariant   = titlebar.Variant
+	TitleBarButton    = titlebar.Button
+	TitleBarWindow    = titlebar.Window
+	TitleBarPlacement = titlebar.TitlePlacement
 )
 
 const (
@@ -625,6 +626,11 @@ const (
 	TitleBarMinimize = titlebar.ButtonMinimize
 	TitleBarMaximize = titlebar.ButtonMaximize
 	TitleBarClose    = titlebar.ButtonClose
+
+	// Where the title goes; see TitleBar.TitlePlacement.
+	TitleBarTitleAuto   = titlebar.TitleAuto
+	TitleBarTitleStart  = titlebar.TitleStart
+	TitleBarTitleCenter = titlebar.TitleCenter
 )
 
 // --- Tree view ----------------------------------------------------------------------

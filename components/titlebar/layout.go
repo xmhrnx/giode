@@ -126,16 +126,24 @@ func (t *TitleBar) layoutSelf(gtx layout.Context) layout.Dimensions {
 	rightW, rightN := measure(right)
 	padX := gtx.Dp(unit.Dp(pad.Left)) + gtx.Dp(unit.Dp(pad.Right))
 
+	placement := t.placementFor()
 	var titleMax int
-	if t.variant == VariantMac {
+	switch placement {
+	case TitleAuto:
 		// Centered over the bar, clear of both sides.
 		side := max(gtx.Dp(unit.Dp(pad.Left))+leftW+leftN*gap, gtx.Dp(unit.Dp(pad.Right))+rightW+rightN*gap)
 		titleMax = max(0, size.X-2*side)
-	} else {
+	case TitleCenter:
+		// In the spacer, which gets what's left: it sizes the title.
+		titleMax = rowW
+	default:
 		// The title, then the leading elements, a spacer and the
 		// trailing ones: one gap after each element but the last.
 		n := leftN + rightN + 2
 		titleMax = max(0, rowW-padX-leftW-rightW-(n-1)*gap-gtx.Dp(8))
+	}
+	if t.titleMax > 0 {
+		titleMax = min(titleMax, gtx.Dp(t.titleMax))
 	}
 	titleText := elements.Text(t.title, styles.Styles{
 		Color: textColor, FontSize: st.FontSize, FontWeight: st.FontWeight,
@@ -154,12 +162,33 @@ func (t *TitleBar) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if t.icon != nil {
 		row = append(row, noDrag(t.icon))
 	}
-	if t.variant == VariantMac {
+	switch placement {
+	case TitleAuto:
 		// The title is centered over the whole bar below; reserve the
 		// flexible space here.
 		row = append(row, t.wrap(t.leading)...)
 		row = append(row, elements.Box(styles.Styles{FlexGrow: 1}))
-	} else {
+	case TitleCenter:
+		// Centered in the space after the leading elements. The spacer
+		// stays part of the drag area: the title takes no presses.
+		row = append(row, t.wrap(t.leading)...)
+		row = append(row, elements.Box(styles.Styles{FlexGrow: 1, Height: -1}, elements.Raw(func(gtx layout.Context) layout.Dimensions {
+			sz := gtx.Constraints.Max
+			if sz.X >= 1e6 {
+				sz.X = gtx.Constraints.Min.X
+			}
+			tgtx := gtx
+			tgtx.Constraints = layout.Constraints{Max: image.Pt(min(sz.X, titleMax), sz.Y)}
+			td := elements.Measure(tgtx, titleBox)
+			at := image.Pt((sz.X-td.Size.X)/2, (sz.Y-td.Size.Y)/2)
+			off := op.Offset(at).Push(gtx.Ops)
+			pop := elements.PushOffset(at)
+			titleBox.Layout(tgtx)
+			pop()
+			off.Pop()
+			return layout.Dimensions{Size: sz}
+		})))
+	default:
 		row = append(row, elements.Box(styles.Styles{Padding: properties.Inset{End: 8}}, titleBox))
 		row = append(row, t.wrap(t.leading)...)
 		row = append(row, elements.Box(styles.Styles{FlexGrow: 1}))
@@ -173,6 +202,10 @@ func (t *TitleBar) layoutSelf(gtx layout.Context) layout.Dimensions {
 
 	if t.variant == VariantMac {
 		content.Layout(gtx)
+		if placement != TitleAuto {
+			elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticText, Label: t.title}, size)
+			return layout.Dimensions{Size: size}
+		}
 		// Centered title, painted over the empty middle.
 		macro := op.Record(gtx.Ops)
 		tgtx := gtx

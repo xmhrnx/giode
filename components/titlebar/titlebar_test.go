@@ -229,3 +229,55 @@ func TestCloseButtonClosesLikeTheSystem(t *testing.T) {
 		t.Error("closed although OnClose returned false")
 	}
 }
+
+// TitleCenter centers the title in the space after the menus, capped by
+// TitleMaxWidth, and that space - title included - still drags the
+// window.
+func TestTitleCenteredAfterMenus(t *testing.T) {
+	fonts.UseGofont()
+	for _, v := range []Variant{VariantWindows, VariantMac} {
+		var r input.Router
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(1000, 600)}, Source: r.Source()}
+		title := strings.Repeat("report-final-v2.pdf ", 10)
+		bar := New(&fakeWindow{focused: true}, title).Variant(v).
+			Leading(elements.Text("File"), elements.Text("Edit")).
+			Trailing(elements.Text("Share")).
+			TitlePlacement(TitleCenter).TitleMaxWidth(200)
+		elements.BeginSemantics()
+		bar.Layout(gtx)
+		r.Frame(&ops)
+		b := map[string]image.Rectangle{}
+		var ti image.Rectangle
+		for _, n := range elements.EndSemantics() {
+			if n.Kind != elements.SemanticText {
+				continue
+			}
+			if strings.HasPrefix(n.Label, "report-final") {
+				if n.Bounds.Dx() < 1000 {
+					ti = n.Bounds
+				}
+				continue
+			}
+			b[n.Label] = n.Bounds
+		}
+		edit, share := b["Edit"], b["Share"]
+		if ti.Empty() {
+			t.Fatalf("%s: no title in %v", v, b)
+		}
+		if ti.Dx() > 200 {
+			t.Errorf("%s: title %d wide, want at most 200", v, ti.Dx())
+		}
+		if ti.Min.X < edit.Max.X || ti.Max.X > share.Min.X {
+			t.Errorf("%s: title %v not between the menus %v and the trailing %v", v, ti, edit, share)
+		}
+		mid := (edit.Max.X + share.Min.X) / 2
+		if c := (ti.Min.X + ti.Max.X) / 2; c < mid-12 || c > mid+12 {
+			t.Errorf("%s: title centered at %d, want about %d", v, c, mid)
+		}
+		cy := float32(ti.Min.Y+ti.Max.Y) / 2
+		if a, ok := r.ActionAt(f32.Pt(float32(ti.Min.X+ti.Max.X)/2, cy)); !ok || a != system.ActionMove {
+			t.Errorf("%s: the title's middle doesn't drag the window", v)
+		}
+	}
+}
