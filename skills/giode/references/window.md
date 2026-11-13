@@ -234,7 +234,9 @@ close button calls it.
 Tray menu items and `OnClick` run on the UI goroutine even while the window is hidden and
 draws no frames, as does anything queued with `Post`. The default tray click and a second
 launch (with `SingleInstanceLock`) show the window directly, so a hidden window always
-comes back; `HideWindow`, `ShowWindow` and `Quit` may be called from any goroutine.
+comes back; `HideWindow`, `ShowWindow` and `Quit` may be called from any goroutine. So may
+the tray's setters (`SetMenu`, `SetTitle`, `SetIcon`...), from a menu item's callback too:
+they never wait for the tray, which shows the change a moment later.
 
 Platform notes: on Linux, hiding works under X11. Wayland can't hide a window, nor bring a
 minimized one back, so there `HideWindow` and `StartInTray` leave the window on screen, and

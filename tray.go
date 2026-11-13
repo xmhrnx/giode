@@ -27,8 +27,9 @@ import (
 // OnClick when set). Config.MinimizeToTray and Config.CloseToTray hide
 // the window to the tray instead of minimizing or closing it.
 //
-// Methods may be called from any goroutine; menu and click callbacks
-// run on the UI goroutine. On Android, iOS and the web the tray does
+// Methods may be called from any goroutine, menu and click callbacks
+// included, and never wait for the tray: changes reach it a moment
+// later, in order. Menu and click callbacks run on the UI goroutine. On Android, iOS and the web the tray does
 // nothing: TraySupported reports false.
 type Tray struct {
 	app *App
@@ -43,6 +44,10 @@ type Tray struct {
 	started  bool
 	ready    bool
 	removed  bool
+	// dirty is set while a change waits to be applied, and applying
+	// while a goroutine applies them.
+	dirty    bool
+	applying bool
 }
 
 // TrayItem is an entry of the tray's menu. Build them with TrayAction,
@@ -192,7 +197,7 @@ func (t *Tray) update() {
 	ready := t.ready
 	t.mu.Unlock()
 	if ready {
-		t.apply()
+		t.schedule()
 	}
 }
 
@@ -201,7 +206,39 @@ func (t *Tray) onReady() {
 	t.mu.Lock()
 	t.ready = true
 	t.mu.Unlock()
-	t.apply()
+	t.schedule()
+}
+
+// schedule applies the state from a goroutine of the tray's own, so no
+// caller waits for it. The platform tray may wait for the main thread
+// (fyne.io/systray on macOS does, for every change), and the main
+// thread waits for the UI goroutine during a frame: applying there, as
+// a SetMenu in a tray checkbox's callback would, deadlocked. Changes
+// made while one is applied are applied together after it.
+func (t *Tray) schedule() {
+	t.mu.Lock()
+	t.dirty = true
+	start := !t.applying
+	t.applying = true
+	t.mu.Unlock()
+	if start {
+		go t.applyPending()
+	}
+}
+
+// applyPending applies the state until no change is waiting.
+func (t *Tray) applyPending() {
+	for {
+		t.mu.Lock()
+		if !t.dirty || t.removed {
+			t.applying = false
+			t.mu.Unlock()
+			return
+		}
+		t.dirty = false
+		t.mu.Unlock()
+		t.apply()
+	}
 }
 
 // apply pushes the whole state to the platform tray.
@@ -213,7 +250,7 @@ func (t *Tray) apply() {
 	if icon == nil {
 		icon = t.app.cfg.Icon
 	}
-	trayApply(t, trayState{icon: icon, template: template, title: title, tooltip: tooltip, items: items, customClick: custom})
+	trayApplyFunc(t, trayState{icon: icon, template: template, title: title, tooltip: tooltip, items: items, customClick: custom})
 }
 
 // clicked runs OnClick on the UI goroutine, or shows or hides the
@@ -233,6 +270,9 @@ func (t *Tray) clicked() {
 		a.ShowWindow()
 	}
 }
+
+// trayApplyFunc shows a state in the platform tray; tests replace it.
+var trayApplyFunc = trayApply
 
 // trayState is what the platform tray shows.
 type trayState struct {
