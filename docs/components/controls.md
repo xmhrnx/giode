@@ -1,4 +1,4 @@
-# Switch, Segmented, Chip, Badge, Avatar
+# Switch, Segmented, Number, Chip, Badge, Avatar
 
 ## Switch
 
@@ -30,6 +30,28 @@ slides to the picked option. Styles: `Background` the track (default a faint tin
 `theme.text`, mixed opaque so it stays faint in dark mode), `BorderColor` the selected
 segment (default `theme.surface`), `Color`, `FontSize`, and `Width`: -1 fills the row, a
 positive width is shared equally by the segments.
+
+## Number
+
+A numeric field between − and + buttons:
+
+```go
+size := giode.Input.Number(12).
+	Range(6, 96).        // math.Inf(-1) or math.Inf(1) leave a side open
+	Step(1).             // what the buttons and arrow keys change it by
+	Decimals(0).         // decimals kept and shown
+	OnChange(func(v float64) { setFontSize(v) })
+```
+
+- Typing changes the value as soon as the text is a number in range. Enter, or leaving the
+  field, puts anything else back in range, or back to the value when the text isn't a
+  number. A comma works as a decimal point.
+- The buttons step the value and repeat while held. They grey out at the ends of the range.
+- Up and Down step it while the field has focus; with Shift, by ten steps.
+- `Value()`, `SetValue(v)` (no `OnChange`) and `Change(v)` (as the user would) read and set
+  it. `Field()` is the text field, for `Focus` and `Blur`.
+- Styles: `Width` is the whole control's (default 140dp, -1 fills); the rest apply to the
+  field (`FontSize`, `Color`, `BorderColor`, and `TextAlign`, centered by default).
 
 ## Chip
 

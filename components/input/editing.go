@@ -143,6 +143,18 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 	if i.menu.update(gtx, i) {
 		changed = true
 	}
+	for _, n := range i.keys {
+		for {
+			ev, ok := gtx.Event(key.Filter{Focus: &i.editor, Name: n, Optional: key.ModShift | key.ModCtrl | key.ModAlt | key.ModCommand})
+			if !ok {
+				break
+			}
+			if e, ok := ev.(key.Event); ok && e.State == key.Press && i.onKeys != nil {
+				i.onKeys(e)
+				changed = true
+			}
+		}
+	}
 	if i.onPaste != nil {
 		// Ctrl+V is taken before the editor sees it, so OnPaste can
 		// decide what's pasted.

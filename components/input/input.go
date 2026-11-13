@@ -35,6 +35,9 @@ type Input struct {
 	onFocus      func()
 	onBlur       func()
 	onPaste      func(pasteText func())
+	// keys and onKeys are the keys OnKeys takes before the editor.
+	keys   []key.Name
+	onKeys func(e key.Event)
 	// pastePending is set by OnPaste's pasteText: the clipboard's text
 	// is read in the next update.
 	pastePending bool
@@ -179,6 +182,15 @@ func (i *Input) OnBlur(fn func()) *Input {
 // for chaining.
 func (i *Input) OnPaste(fn func(pasteText func())) *Input {
 	i.onPaste = fn
+	return i
+}
+
+// OnKeys has fn take presses of the named keys while the field has
+// focus, before the editor sees them, with any of Shift, Ctrl, Alt and
+// Cmd held: a number field steps its value with Up and Down this way.
+// It returns i for chaining.
+func (i *Input) OnKeys(fn func(e key.Event), names ...key.Name) *Input {
+	i.keys, i.onKeys = names, fn
 	return i
 }
 

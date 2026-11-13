@@ -29,6 +29,7 @@ giode.Stack(giode.Styles{}, name)
 | `Submit(fn func(text string))` | Handler for Enter. |
 | `Focus()` | Gives the field keyboard focus in the next frame, which it requests. Works from anywhere on the UI goroutine, including right after the field first appears. |
 | `Blur()` | Takes keyboard focus away from the field (if it has it) and closes the on-screen keyboard. |
+| `OnKeys(fn func(key.Event), names...)` | `fn` takes presses of the named keys while the field has focus, before the editor (with any modifiers). |
 | `OnFocus(fn func())` / `OnBlur(fn func())` | Called when the field gains or loses focus. |
 | `Multiline(on bool)` | Several lines; Enter inserts a newline. |
 | `Lines(min, max int)` | Multiline, growing with the content from `min` to `max` lines, then scrolling; `max` 0 means no limit. |

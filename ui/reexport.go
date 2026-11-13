@@ -24,6 +24,7 @@ import (
 	"github.com/xmhrnx/giode/components/licenses"
 	"github.com/xmhrnx/giode/components/markdown"
 	"github.com/xmhrnx/giode/components/menu"
+	"github.com/xmhrnx/giode/components/numberinput"
 	"github.com/xmhrnx/giode/components/pagination"
 	"github.com/xmhrnx/giode/components/progress"
 	"github.com/xmhrnx/giode/components/scroll"
@@ -408,6 +409,9 @@ type InputAPI struct {
 	Switch func(label string, st ...Styles) *toggle.Switch
 	// Segmented creates a segmented control choosing among options.
 	Segmented func(options ...string) *segmented.Control
+	// Number creates a numeric field between − and + steppers; set its
+	// Range, Step and Decimals.
+	Number func(value float64, st ...Styles) *numberinput.NumberInput
 }
 
 // Input groups the form-control constructors that collect user
@@ -421,6 +425,7 @@ var Input = InputAPI{
 	AutoComplete: autocomplete.New,
 	Switch:       toggle.New,
 	Segmented:    segmented.New,
+	Number:       numberinput.New,
 }
 
 // SheetMode selects when a Select opens as a bottom sheet; see
