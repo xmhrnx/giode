@@ -46,6 +46,16 @@ func (m *Menu) handleKeys(gtx layout.Context) {
 		}
 		if m.keyTarget().onKey(e.Name, kit.RTL(gtx)) {
 			kit.RequestFrame(gtx)
+		} else if m.bar != nil && (e.Name == key.NameLeftArrow || e.Name == key.NameRightArrow) {
+			// In a menu bar, Left and Right with nothing to enter or leave
+			// move to the neighbouring menu.
+			dir := 1
+			if (e.Name == key.NameLeftArrow) != kit.RTL(gtx) {
+				dir = -1
+			}
+			if m.bar.step(m, dir) {
+				kit.RequestFrame(gtx)
+			}
 		}
 	}
 }

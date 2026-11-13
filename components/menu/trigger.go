@@ -3,8 +3,10 @@ package menu
 import (
 	"image"
 
-	"gioui.org/f32"
+	"gioui.org/gesture"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode/components/kit"
@@ -32,14 +34,23 @@ type menuTrigger struct {
 	// done (see elements.TrackPosition).
 	origin        image.Point
 	height, width int
+	rtl           bool
+	// bar is the menu bar it belongs to (Bar.Add), or nil; hover tracks
+	// the pointer for a bar that opens on hover.
+	bar     *Bar
+	hover   *gesture.Hover
+	hovered bool
 }
 
 func (t *menuTrigger) Layout(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
+	t.hoverOpens(gtx)
 	if t.click.Clicked(gtx) {
 		if t.menu.open {
 			t.menu.Close()
+		} else if t.bar != nil {
+			t.bar.switchTo(t, false)
 		} else {
 			t.menu.open = true
 		}
@@ -50,20 +61,24 @@ func (t *menuTrigger) Layout(gtx layout.Context) layout.Dimensions {
 	dims := t.click.Layout(gtx, kit.Unselectable(func(gtx layout.Context) layout.Dimensions {
 		return t.trigger.Layout(gtx)
 	}))
+	t.rtl = kit.RTL(gtx)
 	if t.menu.open {
 		// Placed from the trigger's position in the last frame, which
 		// is exact even inside a row of several children (this frame's
 		// is only final once the enclosing containers have placed the
 		// trigger), and recomputed every frame so the menu follows it.
-		p := t.origin.Add(image.Pt(0, t.height+4))
-		if kit.RTL(gtx) {
-			// The menu's right edge under the trigger's.
-			p.X += t.width
-		}
-		t.menu.pos = f32.Pt(float32(p.X), float32(p.Y))
+		t.placeMenu()
 	}
 	elements.TrackPosition(&t.origin)
 	t.height, t.width = dims.Size.Y, dims.Size.X
+	if t.hover != nil {
+		// Passes presses through to the clickable beneath.
+		pass := pointer.PassOp{}.Push(gtx.Ops)
+		area := clip.Rect{Max: dims.Size}.Push(gtx.Ops)
+		t.hover.Add(gtx.Ops)
+		area.Pop()
+		pass.Pop()
+	}
 	// Keep the trigger clickable even when an ancestor is a frameless
 	// window's whole-window drag area - see button.Layout's identical
 	// comment.

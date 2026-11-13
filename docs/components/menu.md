@@ -93,6 +93,28 @@ wrapped := menu.Trigger(trigger)
 giode.Stack(giode.Styles{}, wrapped, menu)
 ```
 
+## Menu bar: MenuBar
+
+A row of menus (File, Edit, View) behaves as one with `giode.MenuBar()`. A click on a
+trigger opens its menu; once one is open, moving the pointer onto another trigger switches to
+that menu, as a desktop menu bar does, and so does clicking it or pressing Left or Right.
+`OpenOnHover(true)` opens a menu as soon as the pointer reaches its trigger, without a
+click.
+
+```go
+bar := giode.MenuBar() // .OpenOnHover(true) to open without clicking
+titleBar.Leading(
+	bar.Add(fileMenu, giode.Button("File")),
+	bar.Add(editMenu, giode.Button("Edit")),
+	bar.Add(viewMenu, giode.Button("View")),
+)
+// lay out fileMenu, editMenu and viewMenu somewhere too, as with Trigger
+```
+
+`bar.Add(m, el)` returns the trigger to lay out in el's place. `bar.Open()` returns the open
+menu (nil when none is), for highlighting its button. A menu stays open until an item is
+chosen, a click lands outside it, Escape is pressed or the pointer moves to another trigger.
+
 ## Nested submenus: SubMenu
 
 `SubMenu` appends an item that reveals a nested panel, cascading to the side, when

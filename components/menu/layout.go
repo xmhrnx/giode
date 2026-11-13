@@ -64,12 +64,31 @@ func (m *Menu) LastLaidOut() uint64 {
 // button there closes the menu and goes no further, so a right-click
 // elsewhere only closes it rather than opening another under it.
 func (m *Menu) layoutScrim(gtx layout.Context) layout.Dimensions {
+	kinds := pointer.Press
+	if m.bar != nil {
+		// In a menu bar, the pointer moving onto another trigger switches
+		// to its menu.
+		kinds |= pointer.Move
+	}
 	for {
-		ev, ok := gtx.Source.Event(pointer.Filter{Target: &m.scrim, Kinds: pointer.Press})
+		ev, ok := gtx.Source.Event(pointer.Filter{Target: &m.scrim, Kinds: kinds})
 		if !ok {
 			break
 		}
-		if _, ok := ev.(pointer.Event); ok && m.open {
+		e, ok := ev.(pointer.Event)
+		if !ok || !m.open {
+			continue
+		}
+		// The scrim covers the window from its origin: positions are
+		// window pixels.
+		if m.bar != nil {
+			if t := m.bar.at(e.Position.Round()); t != nil && t.menu != m {
+				m.bar.switchTo(t, false)
+				kit.RequestFrame(gtx)
+				continue
+			}
+		}
+		if e.Kind == pointer.Press {
 			m.Close()
 			kit.RequestFrame(gtx)
 		}

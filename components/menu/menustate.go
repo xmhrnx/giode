@@ -73,6 +73,9 @@ type Menu struct {
 	// that it asked for focus since opening (keys.go).
 	keyTag   bool
 	hasFocus bool
+
+	// bar is the menu bar the menu belongs to (Bar.Add), or nil.
+	bar *Bar
 }
 
 // root returns the menu at the top of a chain of submenus.

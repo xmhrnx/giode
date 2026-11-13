@@ -368,6 +368,10 @@ var (
 	Drawer = drawer.New
 	Dialog = dialog.New
 	Menu   = menu.New
+	// MenuBar groups menus into a menu bar (File, Edit, View): once one
+	// is open, moving onto another's trigger switches to it; see
+	// menu.Bar.
+	MenuBar = menu.NewBar
 
 	Progress   = progress.Progress
 	Spinner    = spinner.Spinner

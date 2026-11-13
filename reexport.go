@@ -325,12 +325,16 @@ var (
 	Sheet = ui.Sheet
 	// Chip is a small rounded label for filters and tags; Badge a
 	// counter or dot; Avatar a picture or initials in a circle.
-	Chip       = ui.Chip
-	Badge      = ui.Badge
-	Avatar     = ui.Avatar
-	Drawer     = ui.Drawer
-	Dialog     = ui.Dialog
-	Menu       = ui.Menu
+	Chip   = ui.Chip
+	Badge  = ui.Badge
+	Avatar = ui.Avatar
+	Drawer = ui.Drawer
+	Dialog = ui.Dialog
+	Menu   = ui.Menu
+	// MenuBar groups menus into a menu bar (File, Edit, View): once one
+	// is open, moving onto another's trigger switches to it; see
+	// menu.Bar.
+	MenuBar    = ui.MenuBar
 	Progress   = ui.Progress
 	Spinner    = ui.Spinner
 	Image      = ui.Image
