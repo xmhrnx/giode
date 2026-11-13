@@ -431,8 +431,13 @@ app := giode.New(giode.Config{
 
 Shortcuts and `OnKey` handlers only get the keys nothing else took. The focused text field, dialogs, menus
 and other portals, and the Escape and Back handlers (`HandleDismiss`, `HandleBack`) all come
-first, whatever order the view lays things out in. So Space typed into a search box stays
-there, and Escape closes an open dialog before it reaches the shortcut. The handler gets
+first, whatever order the view lays things out in. While a text field has focus, the keys
+that type into it (a character or Space, alone or with Shift) never reach a shortcut, so
+typing "h" or a space into a search box doesn't run an `H` or `Space` shortcut. Shortcuts
+with `Mod`, `Ctrl` or `Alt`, function keys and Escape still fire, and Delete, Backspace and
+the arrows go to the field. Escape closes an open dialog before it reaches the shortcut. A
+custom text widget gets the same protection by calling `elements.MarkTyping()` every
+frame it has focus. The handler gets
 presses and releases (check `e.State`) on the UI goroutine. It returns whether it used the
 key. A custom host gets the same behavior from `giode.Frame`.
 

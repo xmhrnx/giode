@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/state"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -26,6 +27,7 @@ type Input struct {
 	onSubmit     func(text string)
 	onChange     func(text string)
 	requestFocus bool
+	requestBlur  bool
 	focused      bool
 	submitOn     SubmitMode
 	minLines     int
@@ -216,9 +218,20 @@ func (i *Input) Label(label string) *Input {
 	return i
 }
 
-// Focus requests keyboard focus.
+// Focus gives the field keyboard focus in the next frame, which it
+// asks for: call it from anywhere on the UI goroutine, also right after
+// showing the field for the first time.
 func (i *Input) Focus() {
-	i.requestFocus = true
+	i.requestFocus, i.requestBlur = true, false
+	state.RequestRedraw()
+}
+
+// Blur takes keyboard focus away from the field, if it has it, in the
+// next frame, and closes the on-screen keyboard: nothing has focus then,
+// so the app's shortcuts get every key.
+func (i *Input) Blur() {
+	i.requestBlur, i.requestFocus = true, false
+	state.RequestRedraw()
 }
 
 // Focused reports whether the field had keyboard focus in the last

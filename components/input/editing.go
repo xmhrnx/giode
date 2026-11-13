@@ -110,6 +110,23 @@ func (i *Input) SubmitText() {
 // update handles taps, editing and focus, reporting whether anything
 // happened that changes how the field looks.
 func (i *Input) update(gtx layout.Context) (changed bool) {
+	// Focus and Blur apply here, in a real pass (a measuring pass's
+	// commands are dropped), and also while a cached ancestor replays.
+	if gtx.Source.Enabled() {
+		if i.requestFocus {
+			i.requestFocus = false
+			gtx.Execute(key.FocusCmd{Tag: &i.editor})
+			changed = true
+		}
+		if i.requestBlur {
+			i.requestBlur = false
+			if gtx.Source.Focused(&i.editor) {
+				gtx.Execute(key.FocusCmd{})
+				gtx.Execute(key.SoftKeyboardCmd{Show: false})
+				changed = true
+			}
+		}
+	}
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &i.tap, Kinds: pointer.Press})
 		if !ok {

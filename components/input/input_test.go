@@ -294,3 +294,26 @@ func TestInput_Caret(t *testing.T) {
 		t.Errorf("SetSelection(-3, 3) selected %d, %d", s, e)
 	}
 }
+
+// Focus works on a field whose first layout is a measuring pass (a
+// Flex or a scroll measures before laying out), where Gio drops
+// commands, and Blur takes the focus away.
+func TestInput_FocusSurvivesMeasuringAndBlur(t *testing.T) {
+	in := New("x")
+	h := &harness{in: in, max: image.Pt(400, 400)}
+	in.Focus()
+	// A measuring pass: the source is disabled.
+	var ops op.Ops
+	in.Layout(layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: h.max}})
+	h.frame()
+	h.frame()
+	if !in.Focused() {
+		t.Fatal("Focus was lost to a measuring pass")
+	}
+	in.Blur()
+	h.frame()
+	h.frame()
+	if in.Focused() {
+		t.Error("Blur left the field focused")
+	}
+}

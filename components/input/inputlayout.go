@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"gioui.org/io/event"
-	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
@@ -24,10 +23,6 @@ func (i *Input) Layout(gtx layout.Context) layout.Dimensions {
 
 // layoutSelf lays it out without its context menu area.
 func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
-	if i.requestFocus {
-		i.requestFocus = false
-		gtx.Execute(key.FocusCmd{Tag: &i.editor})
-	}
 	i.update(gtx)
 	if i.pass == nil {
 		i.pass = i.update
@@ -61,6 +56,10 @@ func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 	i.fieldSize = dims.Size
 	if i.focused && gtx.Source.Enabled() {
 		elements.SetKeyboardOwner(i)
+		if !i.editor.ReadOnly {
+			// Keys that type into it aren't app shortcuts.
+			elements.MarkTyping()
+		}
 	}
 	// A press anywhere on the field focuses it, not only on the text:
 	// an empty or multiline field is mostly padding and blank space,

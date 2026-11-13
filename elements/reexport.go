@@ -146,6 +146,9 @@ var (
 	// menu for a press.
 	ContextClaimed = base.ContextClaimed
 	DispatchKeys   = base.DispatchKeys
+	// MarkTyping records that a focused text field takes typing this
+	// frame, so typed keys don't run OnKey shortcuts; see base.
+	MarkTyping = base.MarkTyping
 )
 
 // Touch input and diagnostics.
