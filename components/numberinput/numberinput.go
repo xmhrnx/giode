@@ -333,6 +333,7 @@ func (n *NumberInput) stepper(gtx layout.Context, c *widget.Clickable, g kit.Gly
 		gs := unit.Dp(16)
 		at := image.Pt((h-gtx.Dp(gs))/2, (h-gtx.Dp(gs))/2)
 		defer op.Offset(at).Push(gtx.Ops).Pop()
+		gtx.Constraints = layout.Constraints{Max: image.Pt(gtx.Dp(gs), gtx.Dp(gs))}
 		kit.DrawGlyph(gtx, g, gs, col)
 		return layout.Dimensions{Size: size}
 	})

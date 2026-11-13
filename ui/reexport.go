@@ -11,6 +11,7 @@ import (
 	"github.com/xmhrnx/giode/components/button"
 	"github.com/xmhrnx/giode/components/checkbox"
 	"github.com/xmhrnx/giode/components/chip"
+	"github.com/xmhrnx/giode/components/colorpicker"
 	"github.com/xmhrnx/giode/components/copybutton"
 	"github.com/xmhrnx/giode/components/dialog"
 	"github.com/xmhrnx/giode/components/drawer"
@@ -412,6 +413,10 @@ type InputAPI struct {
 	// Number creates a numeric field between − and + steppers; set its
 	// Range, Step and Decimals.
 	Number func(value float64, st ...Styles) *numberinput.NumberInput
+	// Color creates a color picker - saturation and brightness square,
+	// hue bar, optional alpha bar, hex field and preset swatches -
+	// showing value ("#3366FF").
+	Color func(value string, st ...Styles) *colorpicker.ColorPicker
 }
 
 // Input groups the form-control constructors that collect user
@@ -426,6 +431,7 @@ var Input = InputAPI{
 	Switch:       toggle.New,
 	Segmented:    segmented.New,
 	Number:       numberinput.New,
+	Color:        colorpicker.New,
 }
 
 // SheetMode selects when a Select opens as a bottom sheet; see

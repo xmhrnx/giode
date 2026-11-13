@@ -1,4 +1,4 @@
-# Switch, Segmented, Number, Chip, Badge, Avatar
+# Switch, Segmented, Number, Color, Chip, Badge, Avatar
 
 ## Switch
 
@@ -52,6 +52,33 @@ size := giode.Input.Number(12).
   it. `Field()` is the text field, for `Focus` and `Blur`.
 - Styles: `Width` is the whole control's (default 140dp, -1 fills); the rest apply to the
   field (`FontSize`, `Color`, `BorderColor`, and `TextAlign`, centered by default).
+
+## Color
+
+A color picker: a saturation and brightness square, a hue bar, an optional alpha bar, a hex
+field with a preview, and preset swatches.
+
+```go
+ink := giode.Input.Color("#1E88E5").
+	Alpha(true). // an alpha bar, and "#RRGGBBAA" values
+	Presets("#000000", "#FFFFFF", "#E53935", "#43A047", "#1E88E5").
+	OnChange(func(c string) { setInk(c) })
+```
+
+- Colors are strings `Styles` take: `"#RRGGBB"`, or `"#RRGGBBAA"` with `Alpha` on and some
+  transparency. `New` and `SetValue` also take names and theme colors (`"theme.primary"`).
+- Dragging in the square sets saturation (across) and brightness (down); the bars set hue
+  and alpha. A grey keeps the hue it had, so the square doesn't jump.
+- The hex field takes `#RGB`, `#RRGGBB` or `#RRGGBBAA`, with or without `#`, applying as soon
+  as it reads as a color; Enter or leaving it shows the color in full again.
+- A click on a swatch picks it; the picked one has a ring.
+- `Value()`, `NRGBA()`, `SetValue(c)` and `SetNRGBA(c)` read and set it (setting doesn't
+  call `OnChange`).
+- Styles: `Width` (default 240dp, -1 fills) and `Height` (the square's, default two thirds
+  of the width).
+
+Put it in a `Menu`-like popup of your own, a `Sheet` or a side panel; it lays out at its own
+size.
 
 ## Chip
 
