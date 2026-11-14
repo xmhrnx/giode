@@ -20,6 +20,14 @@ giode.Stack(giode.Styles{}, tabs)
 | `Selected() int` | Active tab index. |
 | `SetSelected(i int)` | Switches tabs without invoking OnChange. |
 | `OnChange(fn func(index int)) *Tabs` | Change handler. |
+| `Add(tab Tab) *Tabs` | Appends a tab. |
+| `Remove(i int)` | Removes a tab; the selection stays on its tab, or moves to the neighbour. |
+| `SetLabel(i int, label string)` | Renames a tab. |
+| `SetTabs(tabs ...Tab)` | Replaces the tabs. |
+| `Len() int` | Number of tabs. |
+
+For open documents, with close buttons, unsaved dots and tabs that shrink and scroll, use
+[DocTabs](doctabs.md).
 
 ## Styles
 

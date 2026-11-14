@@ -14,6 +14,7 @@ import (
 	"github.com/xmhrnx/giode/components/colorpicker"
 	"github.com/xmhrnx/giode/components/copybutton"
 	"github.com/xmhrnx/giode/components/dialog"
+	"github.com/xmhrnx/giode/components/doctabs"
 	"github.com/xmhrnx/giode/components/drawer"
 	"github.com/xmhrnx/giode/components/dropdown"
 	"github.com/xmhrnx/giode/components/icon"
@@ -155,6 +156,14 @@ type (
 )
 
 type Tab = tabs.Tab
+
+// DocTab is one document's tab in DocTabs; DocTabsElement the strip.
+type DocTab = doctabs.Tab
+type DocTabsElement = doctabs.DocTabs
+
+// MenuElement is a Menu: a context menu, a menu bar's menu, or a
+// DocTabs tab menu to add items to.
+type MenuElement = menu.Menu
 type Side = drawer.Side
 
 type Mode = properties.Mode
@@ -356,7 +365,10 @@ var (
 	CopyButton = copybutton.New
 	IconButton = iconbutton.New
 	Tabs       = tabs.New
-	Scroll     = scroll.New
+	// DocTabs is a strip of document tabs the app adds, removes and
+	// renames, with close buttons and unsaved dots; see doctabs.New.
+	DocTabs = doctabs.New
+	Scroll  = scroll.New
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = swipeable.New

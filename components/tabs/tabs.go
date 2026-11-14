@@ -43,6 +43,52 @@ func New(st styles.Styles, tabs ...Tab) *Tabs {
 	return t
 }
 
+// Add appends a tab. It returns t for chaining.
+func (t *Tabs) Add(tab Tab) *Tabs {
+	t.tabs = append(t.tabs, tab)
+	t.clicks = append(t.clicks, new(widget.Clickable))
+	return t
+}
+
+// Remove takes away the tab at index i; the selection stays on the same
+// tab, or moves to its neighbour when it was the one removed (without
+// invoking OnChange).
+func (t *Tabs) Remove(i int) {
+	if i < 0 || i >= len(t.tabs) {
+		return
+	}
+	t.tabs = append(t.tabs[:i], t.tabs[i+1:]...)
+	t.clicks = append(t.clicks[:i], t.clicks[i+1:]...)
+	if t.selected > i || t.selected >= len(t.tabs) {
+		t.selected = max(t.selected-1, 0)
+	}
+}
+
+// SetLabel renames the tab at index i.
+func (t *Tabs) SetLabel(i int, label string) {
+	if i >= 0 && i < len(t.tabs) {
+		t.tabs[i].Label = label
+	}
+}
+
+// SetTabs replaces the tabs, keeping the selected index when it's still
+// there.
+func (t *Tabs) SetTabs(tabs ...Tab) {
+	t.tabs = tabs
+	for len(t.clicks) < len(tabs) {
+		t.clicks = append(t.clicks, new(widget.Clickable))
+	}
+	t.clicks = t.clicks[:len(tabs)]
+	if t.selected >= len(tabs) {
+		t.selected = max(len(tabs)-1, 0)
+	}
+}
+
+// Len returns the number of tabs.
+func (t *Tabs) Len() int {
+	return len(t.tabs)
+}
+
 // Selected returns the index of the active tab.
 func (t *Tabs) Selected() int {
 	return t.selected

@@ -130,6 +130,15 @@ type (
 
 type Tab = ui.Tab
 
+// DocTab is one document's tab in DocTabs; DocTabsElement the strip.
+type DocTab = ui.DocTab
+
+type DocTabsElement = ui.DocTabsElement
+
+// MenuElement is a Menu: a context menu, a menu bar's menu, or a
+// DocTabs tab menu to add items to.
+type MenuElement = ui.MenuElement
+
 type Side = ui.Side
 
 type Mode = ui.Mode
@@ -317,7 +326,10 @@ var (
 	CopyButton = ui.CopyButton
 	IconButton = ui.IconButton
 	Tabs       = ui.Tabs
-	Scroll     = ui.Scroll
+	// DocTabs is a strip of document tabs the app adds, removes and
+	// renames, with close buttons and unsaved dots; see doctabs.New.
+	DocTabs = ui.DocTabs
+	Scroll  = ui.Scroll
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = ui.Swipeable

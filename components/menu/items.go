@@ -32,6 +32,14 @@ const (
 	checkRadio
 )
 
+// Clear removes every item, to fill the menu anew - a context menu
+// built for what it opens on. It returns m for chaining.
+func (m *Menu) Clear() *Menu {
+	m.items = nil
+	m.openSubmenu, m.active = -1, -1
+	return m
+}
+
 // Item appends a clickable item. It returns m for chaining.
 func (m *Menu) Item(label string, action func()) *Menu {
 	m.items = append(m.items, Item{
