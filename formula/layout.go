@@ -12,6 +12,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // box is a laid out piece: its width, height above the baseline and
@@ -348,6 +349,47 @@ func (l *layouter) node(n node, st mstyle) (box, class, bool) {
 		return l.accent(n, st), clsOrd, true
 	case delimits:
 		return l.delimits(n, st), clsOrd, true
+	case env:
+		return l.env(n, st), clsOrd, true
+	case stack:
+		base := l.list(n.base, st, false)
+		return l.limits(base, n.over, n.under, st), n.cls, true
+	case colored:
+		body := l.list(n.body, st, false)
+		col := properties.CalcColor(n.color)
+		inner := body.draw
+		body.draw = func(d *drawer, x, y float32) {
+			saved := d.col
+			if col.A > 0 {
+				d.col = col
+			}
+			inner(d, x, y)
+			d.col = saved
+		}
+		return body, clsOrd, true
+	case boxed:
+		body := l.list(n.body, st, false)
+		pad := 0.25 * em
+		t := max(ruleThick*em, 1)
+		w := body.w + 2*pad
+		asc, desc := body.asc+pad, body.desc+pad
+		return box{w: w, asc: asc, desc: desc, draw: func(d *drawer, x, y float32) {
+			body.draw(d, x+pad, y)
+			fillRect(d, x, y-asc, w, t)
+			fillRect(d, x, y+desc-t, w, t)
+			fillRect(d, x, y-asc, t, asc+desc)
+			fillRect(d, x+w-t, y-asc, t, asc+desc)
+		}}, clsOrd, true
+	case phantom:
+		body := l.list(n.body, st, false)
+		b := box{}
+		if n.keepWidth {
+			b.w = body.w
+		}
+		if n.keepHeight {
+			b.asc, b.desc = body.asc, body.desc
+		}
+		return b, clsOrd, true
 	case sizedDelim:
 		if n.s == "." {
 			return hspace(em * 0.12), n.cls, true
@@ -725,6 +767,23 @@ func (l *layouter) delim(s string, size float32, st mstyle) box {
 	if s == "." || s == "" {
 		return hspace(0.12 * em)
 	}
+	if (s == "|" || s == "‖") && size > 1.2*em {
+		// Bars stay thin at any height: rules, not a magnified glyph.
+		t := max(ruleThick*em, 1)
+		n := 1
+		if s == "‖" {
+			n = 2
+		}
+		gap := 0.12 * em
+		w := float32(n)*t + float32(n-1)*gap + 0.2*em
+		axis := axisHeight * em
+		top := size/2 + axis
+		return box{w: w, asc: top, desc: size - top, draw: func(d *drawer, x, y float32) {
+			for i := range n {
+				fillRect(d, x+0.1*em+float32(i)*(t+gap), y-top, t, size)
+			}
+		}}
+	}
 	g := l.glyphs(s, l.math, em)
 	if h := g.asc + g.desc; h > 0 && size > h*1.05 {
 		// Larger: the glyph at a larger size, which keeps its shape.
@@ -818,4 +877,99 @@ func (l *layouter) layoutFormula(ns []node, st mstyle) box {
 			}
 		}
 	}}
+}
+
+// envDelims are the delimiters around each kind of matrix.
+var envDelims = map[string][2]string{
+	"matrix": {".", "."}, "smallmatrix": {".", "."}, "array": {".", "."},
+	"pmatrix": {"(", ")"}, "bmatrix": {"[", "]"}, "Bmatrix": {"{", "}"},
+	"vmatrix": {"|", "|"}, "Vmatrix": {"‖", "‖"}, "cases": {"{", "."}, "rcases": {".", "}"},
+	"dcases": {"{", "."},
+}
+
+// env sets a matrix or cases: cells in rows and columns, centered on
+// the math axis, between the environment's delimiters. A matrix's
+// columns are centered, those of cases start-aligned.
+func (l *layouter) env(n env, st mstyle) box {
+	em := st.em()
+	inner := st
+	if inner.level == 0 && n.name != "dcases" {
+		inner.level = 1
+	}
+	if n.name == "smallmatrix" {
+		inner = inner.script()
+	}
+	rs := rows(n.body)
+	// A trailing \\ leaves an empty last row.
+	if last := rs[len(rs)-1]; len(rs) > 1 && len(last) == 1 && len(last[0]) == 0 {
+		rs = rs[:len(rs)-1]
+	}
+	cells := make([][]box, len(rs))
+	var cols []float32
+	for i, r := range rs {
+		for j, c := range r {
+			b := l.list(c, inner, false)
+			cells[i] = append(cells[i], b)
+			if j >= len(cols) {
+				cols = append(cols, 0)
+			}
+			cols[j] = max(cols[j], b.w)
+		}
+	}
+	cases := n.name == "cases" || n.name == "dcases" || n.name == "rcases"
+	colGap := em
+	if n.name == "smallmatrix" {
+		colGap = 0.5 * em
+	}
+	colX := make([]float32, len(cols))
+	var w float32
+	for j := range cols {
+		if j > 0 {
+			w += colGap
+		}
+		colX[j] = w
+		w += cols[j]
+	}
+	rowGap := 0.25 * em
+	type line struct{ y, asc, desc float32 }
+	lines := make([]line, len(cells))
+	var y float32
+	for i, r := range cells {
+		asc, desc := 0.7*inner.em(), 0.3*inner.em()
+		for _, b := range r {
+			asc = max(asc, b.asc)
+			desc = max(desc, b.desc)
+		}
+		if i > 0 {
+			y += rowGap
+		}
+		y += asc
+		lines[i] = line{y, asc, desc}
+		y += desc
+	}
+	total := y
+	// Centered on the axis.
+	axis := axisHeight * em
+	top := total/2 + axis
+	grid := box{w: w, asc: top, desc: total - top, draw: func(d *drawer, x, y0 float32) {
+		for i, r := range cells {
+			for j, b := range r {
+				bx := x + colX[j]
+				if !cases {
+					bx += (cols[j] - b.w) / 2
+				}
+				b.draw(d, bx, y0-top+lines[i].y)
+			}
+		}
+	}}
+	delims, ok := envDelims[n.name]
+	if !ok {
+		delims = [2]string{".", "."}
+	}
+	if delims == [2]string{".", "."} {
+		return grid
+	}
+	pad := hspace(0.15 * em)
+	size := max(total+0.2*em, em)
+	return hbox(l.delim(delims[0], size, st), pad, grid, pad, l.delim(delims[1], size, st))
 }

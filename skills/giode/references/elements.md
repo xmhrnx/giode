@@ -284,6 +284,17 @@ with `[`, `\{`, `|`, `\|`, `\langle`, and `.` for none) or by hand (`\big`, `\Bi
 `\partial`, `\hbar`, `\propto`, `\Rightarrow`, `\approx`, `\leq`, `\pm`, `\times`,
 `\cdot`, `\infty`, `\in`, `\to` …), spaced as TeX spaces them.
 
+Also: letter styles `\mathcal` and `\mathscr` (ℰ, ℒ), `\mathbb` (ℝ, ℤ), `\mathfrak` (𝔤),
+`\mathsf`, `\mathtt`, `\mathbf` and `\boldsymbol` (bold italic, Greek too); matrices
+(`\begin{pmatrix}`, `bmatrix`, `Bmatrix`, `vmatrix`, `Vmatrix`, `matrix`, `smallmatrix`) and
+`cases`, with `&` between cells and `\\` between rows; `aligned` inside other math;
+`\overset`, `\underset` and `\stackrel` (`\stackrel{\text{def}}{=}`); `\boxed`; `\textcolor{c}{…}`
+and `\color{c}` with any color `Styles` take, theme tokens included; `\phantom`, `\hphantom` and
+`\vphantom`; and a long list of symbols past the usual - `\odot` (so `M_\odot` is M☉),
+`\astrosun` ☉, `\therefore`, `\leqslant`, `\prec`, `\hookrightarrow`, `\Longrightarrow`,
+`\nexists`, `\wp`, `\aleph`, the negated relations (`\nleq`, `\nsim`), harpoons and more.
+Any symbol can also be typed as itself: `ℰ`, `☉` and `∯` set like their commands.
+
 - Letters are variables, set in italic; write `\mathrm{d}x` for an upright d and `\text{km/s}`
   for units.
 - `New` sets a formula in display style, as on a line of its own; `Inline` in text style.

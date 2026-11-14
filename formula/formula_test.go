@@ -68,6 +68,9 @@ func TestMalformed(t *testing.T) {
 		`\left(`, `\right)`, `\left( x`, `\left\{ x \right`, `\begin{aligned}`, `&&&`, `\\\\\\`,
 		`\text{`, `\vec`, `\big`, `x''''`, `\not`, `\unknown{x}`, `\mathrm{`, strings.Repeat("{", 50),
 		strings.Repeat(`\frac{1}{`, 20),
+		`\begin{pmatrix}`, `\begin{pmatrix} a & b \\`, `\end{pmatrix}`, `\begin{cases} x & \text{if`,
+		`\begin{unknownenv} x \end{unknownenv}`, `\color{red}`, `{\color{red} x} y`, `\textcolor{nope}{x}`,
+		`\overset{a}`, `\stackrel`, `\boxed`, `\phantom`, `\mathcal`, `\mathbb{}`, `\begin{matrix}\end{matrix}`,
 	} {
 		func() {
 			defer func() {
@@ -153,5 +156,79 @@ func TestBaselineInRow(t *testing.T) {
 	}
 	if mid := (fracB.Min.Y + fracB.Max.Y) / 2; mid > textBase || mid < textB.Min.Y {
 		t.Errorf("fraction centered at %d, text %v (baseline ~%d)", mid, textB, textBase)
+	}
+}
+
+func TestAlphabetsAndEnvironments(t *testing.T) {
+	text := func(ns []node) string {
+		var b strings.Builder
+		var walk func([]node)
+		walk = func(ns []node) {
+			for _, n := range ns {
+				switch n := n.(type) {
+				case atom:
+					b.WriteString(n.s)
+				case group:
+					walk(n.body)
+				case scripts:
+					walk([]node{n.base})
+					walk(n.sup)
+					walk(n.sub)
+				}
+			}
+		}
+		walk(ns)
+		return b.String()
+	}
+	for src, want := range map[string]string{
+		`\mathcal{E}`:            "ℰ",
+		`\mathcal{A}`:            "𝒜",
+		`\mathscr{L}`:            "ℒ",
+		`\mathbb{R}`:             "ℝ",
+		`\mathbb{Z}^3`:           "ℤ3",
+		`\mathfrak{g}`:           "𝔤",
+		`\mathsf{A}`:             "𝖠",
+		`\mathtt{x}`:             "𝚡",
+		`\boldsymbol{\omega}`:    "𝝎",
+		`\boldsymbol{r}`:         "𝒓",
+		`M_\odot`:                "𝑀⊙",
+		`M_{\astrosun}`:          "𝑀☉",
+		`☉ ℰ`:                    "☉ℰ",
+		`\therefore \Longrightarrow`: "∴⟹",
+	} {
+		if got := text(parse(src)); got != want {
+			t.Errorf("%s: %q, want %q", src, got, want)
+		}
+	}
+	ns := parse(`\begin{pmatrix} a & b \\ c & d \end{pmatrix} x`)
+	if len(ns) != 2 {
+		t.Fatalf("pmatrix and x: %d nodes %#v", len(ns), ns)
+	}
+	e, ok := ns[0].(env)
+	if !ok || e.name != "pmatrix" || len(rows(e.body)) != 2 || len(rows(e.body)[0]) != 2 {
+		t.Errorf("pmatrix parsed as %#v", ns[0])
+	}
+	if st, ok := parse(`\stackrel{\text{def}}{=}`)[0].(stack); !ok || st.cls != clsRel || st.over == nil {
+		t.Errorf("stackrel: %#v", parse(`\stackrel{\text{def}}{=}`)[0])
+	}
+	// \color colors the rest of its group only.
+	ns = parse(`{a \color{red} b c} d`)
+	g := ns[0].(group)
+	if c, ok := g.body[1].(colored); !ok || len(c.body) != 2 {
+		t.Errorf("color in a group: %#v", g.body)
+	}
+	if a, ok := ns[1].(atom); !ok || a.s != "𝑑" {
+		t.Errorf("after the group: %#v", ns[1:])
+	}
+	// The environments lay out.
+	for _, src := range []string{
+		`R = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}`,
+		`|x| = \begin{cases} x & x \geq 0 \\ -x & x < 0 \end{cases}`,
+		`\det\begin{vmatrix} a & b \\ c & d \end{vmatrix}`,
+		`\begin{aligned} a &= b \\ &= c \end{aligned}`,
+	} {
+		if d := size(t, src, false); d.Size.Y < 40 {
+			t.Errorf("%s: %v, want two rows tall", src, d.Size)
+		}
 	}
 }

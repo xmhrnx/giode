@@ -49,6 +49,29 @@ type (
 	}
 	lineBreak struct{}
 	alignMark struct{}
+	// env is a \begin{...} environment: a matrix, cases.
+	env struct {
+		name string
+		body []node
+	}
+	// stack sets over above base and under below it (\overset,
+	// \underset, \stackrel).
+	stack struct {
+		base        []node
+		over, under []node
+		cls         class
+	}
+	// colored sets body in another color.
+	colored struct {
+		color string
+		body  []node
+	}
+	boxed   struct{ body []node }
+	phantom struct {
+		body       []node
+		keepWidth  bool
+		keepHeight bool
+	}
 )
 
 // font is how letters are set.
@@ -58,18 +81,49 @@ const (
 	fontItalic font = iota
 	fontUpright
 	fontBold
+	fontBoldItalic
+	fontScript
+	fontDoubleStruck
+	fontFraktur
+	fontSans
+	fontMono
 )
+
+// alphabets are the fonts set from Unicode's mathematical alphabets.
+var alphabets = map[font]alphabet{
+	fontBoldItalic: boldItalicAlphabet, fontScript: scriptAlphabet, fontDoubleStruck: doubleStruckAlphabet,
+	fontFraktur: frakturAlphabet, fontSans: sansAlphabet, fontMono: monoAlphabet,
+}
 
 type parser struct {
 	src  []rune
 	i    int
 	font font
+	// envs counts the environments open, whose \end ends a list.
+	envs int
 }
 
-// parse reads a formula: the subset of LaTeX math the package sets.
+// parse reads a formula: the subset of LaTeX math the package sets. A
+// stray \right or \end is skipped.
 func parse(src string) []node {
 	p := &parser{src: []rune(src)}
-	return p.list(false)
+	var out []node
+	for {
+		out = append(out, p.list(false)...)
+		if p.i >= len(p.src) {
+			return out
+		}
+		switch {
+		case p.at(`\right`):
+			p.i += len(`\right`)
+			p.delimiter()
+		case p.at(`\end`):
+			p.i += len(`\end`)
+			p.rawGroup()
+		default:
+			p.i++
+		}
+	}
 }
 
 func (p *parser) peek() rune {
@@ -123,7 +177,7 @@ func (p *parser) list(inGroup bool) []node {
 			p.i++
 			out = append(out, alignMark{})
 		case '\\':
-			if p.at(`\right`) {
+			if p.at(`\right`) || p.envs > 0 && p.at(`\end`) {
 				return out
 			}
 			if n, ok := p.command(); ok {
@@ -232,6 +286,8 @@ func (p *parser) char() node {
 		s := string(p.src[start:p.i])
 		if p.font == fontBold {
 			s = strings.Map(bold, s)
+		} else if a, ok := alphabets[p.font]; ok {
+			s = strings.Map(a.of, s)
 		}
 		return atom{s, clsOrd}
 	}
@@ -251,6 +307,9 @@ func (p *parser) letter(c rune) string {
 		return string(c)
 	case fontBold:
 		return string(bold(c))
+	}
+	if a, ok := alphabets[p.font]; ok {
+		return string(a.of(c))
 	}
 	if isLetter(c) || c >= 'α' && c <= 'ω' || strings.ContainsRune("ϵϑϕϱϖ∂", c) {
 		return string(italic(c))
@@ -306,8 +365,48 @@ func (p *parser) command() ([]node, bool) {
 		return []node{textRun{s: p.rawGroup()}}, true
 	case "mathrm", "operatorname", "mathup", "rm":
 		return p.inFont(fontUpright, name == "operatorname"), true
-	case "mathbf", "boldsymbol", "bm", "textbf":
+	case "mathbf", "textbf":
 		return p.inFont(fontBold, false), true
+	case "boldsymbol", "bm", "pmb":
+		return p.inFont(fontBoldItalic, false), true
+	case "mathcal", "mathscr", "cal", "scr":
+		return p.inFont(fontScript, false), true
+	case "mathbb", "Bbb", "mathds":
+		return p.inFont(fontDoubleStruck, false), true
+	case "mathfrak", "frak":
+		return p.inFont(fontFraktur, false), true
+	case "mathsf", "textsf":
+		return p.inFont(fontSans, false), true
+	case "mathtt", "texttt":
+		return p.inFont(fontMono, false), true
+	case "overset", "underset", "stackrel":
+		mark := p.arg()
+		base := p.arg()
+		st := stack{base: base, cls: clsOrd}
+		if name == "underset" {
+			st.under = mark
+		} else {
+			st.over = mark
+		}
+		if name == "stackrel" || isRelation(base) {
+			st.cls = clsRel
+		}
+		return []node{st}, true
+	case "textcolor", "color", "colorbox":
+		c := p.rawGroup()
+		if name == "color" {
+			// The rest of the group.
+			return []node{colored{color: c, body: p.restOfGroup()}}, true
+		}
+		return []node{colored{color: c, body: p.arg()}}, true
+	case "boxed", "fbox":
+		return []node{boxed{body: p.arg()}}, true
+	case "phantom":
+		return []node{phantom{body: p.arg(), keepWidth: true, keepHeight: true}}, true
+	case "hphantom":
+		return []node{phantom{body: p.arg(), keepWidth: true}}, true
+	case "vphantom":
+		return []node{phantom{body: p.arg(), keepHeight: true}}, true
 	case "mathit", "textit":
 		return p.inFont(fontItalic, false), true
 	case "left":
@@ -341,7 +440,24 @@ func (p *parser) command() ([]node, bool) {
 		return []node{sizedDelim{s: d, scale: scale, cls: cls}}, true
 	case "vec", "hat", "widehat", "bar", "overline", "dot", "ddot", "tilde", "widetilde", "overrightarrow", "underline", "check", "breve", "acute", "grave":
 		return []node{accent{kind: name, body: p.arg()}}, true
-	case "begin", "end":
+	case "begin":
+		name := strings.TrimSuffix(strings.TrimSpace(p.rawGroup()), "*")
+		if name == "array" {
+			p.rawGroup() // the column spec
+		}
+		p.envs++
+		body := p.list(false)
+		p.envs--
+		if p.at(`\end`) {
+			p.i += len(`\end`)
+			p.rawGroup()
+		}
+		switch name {
+		case "aligned", "align", "gathered", "gather", "split", "equation", "eqnarray", "alignat", "flalign", "multline":
+			return body, true
+		}
+		return []node{env{name: name, body: body}}, true
+	case "end":
 		p.rawGroup()
 		return nil, false
 	case "displaystyle", "textstyle", "nonumber", "notag", "label":
@@ -375,6 +491,8 @@ func (p *parser) command() ([]node, bool) {
 		}
 		if p.font == fontBold {
 			str = strings.Map(bold, str)
+		} else if a, ok := alphabets[p.font]; ok {
+			str = strings.Map(a.of, str)
 		}
 		return []node{atom{str, s.cls}}, true
 	}
@@ -470,4 +588,37 @@ func (p *parser) delimiter() string {
 func parseIn(src string, f font) []node {
 	p := &parser{src: []rune(src), font: f}
 	return p.list(false)
+}
+
+// isRelation reports whether ns is a single relation, such as the = of
+// \stackrel{def}{=}.
+func isRelation(ns []node) bool {
+	if len(ns) != 1 {
+		return false
+	}
+	a, ok := ns[0].(atom)
+	return ok && a.cls == clsRel
+}
+
+// restOfGroup parses up to the end of the current group, leaving its
+// closing brace for the group.
+func (p *parser) restOfGroup() []node {
+	depth, end := 0, p.i
+	for ; end < len(p.src); end++ {
+		switch p.src[end] {
+		case '\\':
+			end++
+		case '{':
+			depth++
+		case '}':
+			depth--
+		}
+		if depth < 0 {
+			break
+		}
+	}
+	sub := &parser{src: p.src[p.i:end], font: p.font}
+	body := sub.list(false)
+	p.i = end
+	return body
 }

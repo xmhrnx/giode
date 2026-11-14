@@ -45,9 +45,13 @@ type Formula struct {
 // \hat \bar \overline \dot \ddot \tilde \underline), \text, \mathrm,
 // \mathbf, \operatorname, Greek letters, the usual relations, arrows
 // and operators (\nabla \partial \hbar \propto \Rightarrow \approx
-// \leq \pm \times \cdot \infty ...), spaces (\, \; \quad), and \\ and &
-// for aligned lines. Letters are set in italic, as variables; write
-// \mathrm{d}x for an upright d.
+// \leq \pm \times \cdot \infty \odot ...), spaces (\, \; \quad), and \\
+// and & for aligned lines. Also the letter styles \mathcal \mathscr
+// \mathbb \mathfrak \mathsf \mathtt \boldsymbol, matrices (pmatrix,
+// bmatrix, vmatrix and the rest) and cases, \overset \underset
+// \stackrel, \boxed, \textcolor and \color, and \phantom. Letters are
+// set in italic, as variables; write \mathrm{d}x for an upright d. Any
+// symbol may also be typed as itself (ℰ, ☉).
 func New(src string, st ...styles.Styles) *Formula {
 	f := &Formula{src: src}
 	if len(st) > 0 {
