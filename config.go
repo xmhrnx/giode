@@ -65,6 +65,11 @@ type Config struct {
 	// safe area. Pad content with SafeArea where it must stay clear of
 	// them. Desktop windows have no insets, so it changes nothing there.
 	EdgeToEdge bool
+	// Font is the font family of text that doesn't set a FontFamily,
+	// Giode's own components included (title bar, buttons, text
+	// fields, menus, toasts): register its files with RegisterFont
+	// before New. Empty keeps the Go fonts. See SetDefaultFont.
+	Font string
 	// Icon is the window icon, PNG or JPEG bytes. It is applied at
 	// runtime where the platform supports it (Windows). The icon
 	// shown by file managers comes from the executable and is set at

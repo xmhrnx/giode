@@ -144,7 +144,7 @@ Escape) closes every open submenu with it.
 | --- | --- |
 | `Menu(st ...Styles) *Menu` | Creates an empty menu. |
 | `Item(label string, action func()) *Menu` | Clickable item. |
-| `IconItem(iconName, label string, action func()) *Menu` | Item with a material icon. |
+| `IconItem(icon IconSource, label string, action func()) *Menu` | Item with a leading icon: any `IconSource` (a bundled icon, an `Icon` element, an image), see [Icons](icons.md). |
 | `CheckItem(label string, checked func() bool, action func()) *Menu` | Item with a check mark while `checked` reports true (read every frame). |
 | `RadioItem(label string, selected func() bool, action func()) *Menu` | One of a group of choices, with a dot on the selected one. |
 | `Shortcut(spec string) *Menu` | Shows a shortcut right-aligned on the last item added, written the platform's way: `Item("Open File…", open).Shortcut("Mod+O")` shows `⌘O` on macOS and `Ctrl+O` elsewhere. Display only; register the key with `giode.Shortcuts` (see [window.md](../window.md#keyboard-shortcuts)). |

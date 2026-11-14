@@ -101,7 +101,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `FontSize` | sp | — | Default 14sp. |
 | `FontWeight` | string | `FontWeightThin`, `FontWeightExtraLight`, `FontWeightLight`, `FontWeightNormal`, `FontWeightMedium`, `FontWeightSemiBold`, `FontWeightBold`, `FontWeightExtraBold`, `FontWeightBlack`, or the CSS numbers `"100"`…`"900"` | Default normal. Register each weight's file with `RegisterFont` (below). |
 | `FontStyle` | string | `FontStyleNormal`, `FontStyleItalic` | |
-| `FontFamily` | string | — | Typeface must exist in the registered fonts. |
+| `FontFamily` | string | — | Typeface must exist in the registered fonts. Unset: the default font (`Config.Font`, `SetDefaultFont`), else the Go fonts. |
 | `TextAlign` | string | `TextAlignStart` (default), `TextAlignCenter`, `TextAlignEnd` | |
 | `LineHeight` | sp | — | Distance between baselines. |
 | `MaxLines` | int | — | Limits the number of lines. |
@@ -131,6 +131,21 @@ err := giode.RegisterFont(
 Text styled `FontFamily: "Inter"` then uses them, picking the closest registered weight and
 style. The family and weight given replace what the file itself says, so they always match
 what you style with. `RegisterFonts` still takes Gio font faces, for code that has them.
+
+To make a registered family the font of everything, set it as the default: text without a
+`FontFamily` then uses it, Giode's own components included (title bar, buttons, text fields,
+menus, toasts, dialogs). Either set `Config.Font`, or call `SetDefaultFont` before the window
+opens:
+
+```go
+giode.RegisterFont(interFiles...) // first, so the family exists
+app := giode.New(giode.Config{Title: "Studio", Font: "Inter"})
+// or: giode.SetDefaultFont("Inter")
+```
+
+`FontWeight` still picks among the family's registered weights, and an explicit
+`FontFamily` (a monospaced code font, say) still wins. `SetDefaultFont("")` goes back to the
+Go fonts.
 
 ## Interaction
 

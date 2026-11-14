@@ -105,3 +105,41 @@ func TestDefaultFonts(t *testing.T) {
 		t.Errorf("%d faces after RegisterFont, want the Go fonts and Brand", n)
 	}
 }
+
+// SetDefaultFont gives text without a family the default family's
+// faces, by weight; "" goes back to the Go fonts.
+func TestSetDefaultFont(t *testing.T) {
+	defer Register(nil)
+	defer SetDefaultFont("")
+	UseGofont()
+	before := len(Collection())
+	if err := RegisterFont(
+		File{Family: "Inter", Data: goregular.TTF},
+		File{Family: "Inter", Weight: "bold", Data: gobold.TTF},
+	); err != nil {
+		t.Fatal(err)
+	}
+	faces := Collection()
+	old := Shaper()
+	SetDefaultFont("Inter")
+	if DefaultFont() != "Inter" {
+		t.Errorf("DefaultFont %q", DefaultFont())
+	}
+	if Shaper() == old {
+		t.Error("the shaper wasn't replaced, so text laid out in the old default stays")
+	}
+	if got := Resolve(font.Font{}); got != faces[before].Font {
+		t.Errorf("no family resolves to %+v, want Inter regular %+v", got, faces[before].Font)
+	}
+	if got := Resolve(font.Font{Weight: font.Bold}); got != faces[before+1].Font {
+		t.Errorf("no family, bold, resolves to %+v, want Inter bold %+v", got, faces[before+1].Font)
+	}
+	// A family set on the text still wins.
+	if got := Resolve(font.Font{Typeface: "Go Mono"}); got.Typeface != "Go Mono" {
+		t.Errorf("an explicit family resolves to %+v", got)
+	}
+	SetDefaultFont("")
+	if got := Resolve(font.Font{}); got.Typeface != "" {
+		t.Errorf("after SetDefaultFont(\"\"), no family resolves to %+v, want the Go fonts' default", got)
+	}
+}

@@ -1,6 +1,7 @@
 package giode
 
 import (
+	"github.com/xmhrnx/giode/fonts"
 	"image"
 	"image/color"
 	"os"
@@ -91,6 +92,9 @@ type App struct {
 // New creates an App from cfg. The window is created and shown the
 // first time the app runs.
 func New(cfg Config) *App {
+	if cfg.Font != "" {
+		fonts.SetDefaultFont(cfg.Font)
+	}
 	if cfg.Size == (image.Point{}) {
 		cfg.Size = image.Pt(800, 600)
 	}

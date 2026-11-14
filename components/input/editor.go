@@ -66,7 +66,7 @@ func (e *editorEl) Layout(gtx layout.Context) layout.Dimensions {
 	if e.input.editor.Text() == "" && e.input.placeholder != "" {
 		hintColor := properties.ResolveColor(st.Color)
 		hintColor.A = uint8(float32(hintColor.A) * 0.5)
-		hint := styles.Styles{Color: properties.CalcColorReverse(hintColor), FontSize: st.FontSize}
+		hint := styles.Styles{Color: properties.CalcColorReverse(hintColor), FontSize: st.FontSize, FontFamily: st.FontFamily, FontWeight: st.FontWeight, FontStyle: st.FontStyle}
 		// The placeholder gets the field's line limit, cut off with an
 		// ellipsis, so a long one can't wrap out of a single-line field.
 		switch {
@@ -81,7 +81,12 @@ func (e *editorEl) Layout(gtx layout.Context) layout.Dimensions {
 	}
 
 	e.input.editor.Alignment = st.TextAlign.LayoutAlignment()
-	dims := e.input.editor.Layout(gtx, fonts.Shaper(), font.Font{}, size, textColor, selColor)
+	face := fonts.Resolve(font.Font{
+		Typeface: font.Typeface(st.FontFamily),
+		Weight:   st.FontWeight.Weight(),
+		Style:    st.FontStyle.Style(),
+	})
+	dims := e.input.editor.Layout(gtx, fonts.Shaper(), face, size, textColor, selColor)
 	// Long-press (or right-click) for Cut, Copy, Paste and Select all.
 	e.input.menu.layout(gtx, e.input, dims.Size)
 	return dims

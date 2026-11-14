@@ -559,6 +559,10 @@ var (
 	// RegisterFont adds TTF, OTF or TTC font files by family, weight
 	// and style; see fonts.RegisterFont.
 	RegisterFont = fonts.RegisterFont
+	// SetDefaultFont makes a registered family the font of all text
+	// without a FontFamily, Giode's components included; see
+	// fonts.SetDefaultFont and Config.Font.
+	SetDefaultFont = fonts.SetDefaultFont
 )
 
 // FontFile is a font file for RegisterFont.

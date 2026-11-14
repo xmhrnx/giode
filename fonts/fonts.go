@@ -180,13 +180,44 @@ type alias struct {
 
 var aliases []alias
 
+// defaultFamily is the family text without a FontFamily uses; empty
+// for the first registered face (the Go fonts' by default).
+var defaultFamily font.Typeface
+
+// SetDefaultFont makes family the font of all text that doesn't set a
+// FontFamily - Giode's own components included (title bars, buttons,
+// text fields, menus, toasts) - in place of the Go fonts. Register the
+// family's files first (RegisterFont); "" goes back to the Go fonts.
+// Call it before the window opens: text laid out from then on uses it.
+func SetDefaultFont(family string) {
+	mu.Lock()
+	defaultFamily = font.Typeface(family)
+	faces, as := collection, aliases
+	mu.Unlock()
+	if faces != nil {
+		// A fresh shaper drops text laid out in the old default.
+		register(faces, as)
+	}
+}
+
+// DefaultFont returns the family SetDefaultFont set.
+func DefaultFont() string {
+	mu.Lock()
+	defer mu.Unlock()
+	return string(defaultFamily)
+}
+
 // Resolve maps f, as text styles ask for it, to a face registered with
 // RegisterFont under that family: the one with the same style and the
-// closest weight (the heavier on a tie). A family registered no other
-// way is returned as is, for the shaper to match.
+// closest weight (the heavier on a tie). No family means the default
+// (SetDefaultFont). A family registered no other way is returned as
+// is, for the shaper to match.
 func Resolve(f font.Font) font.Font {
 	mu.Lock()
 	defer mu.Unlock()
+	if f.Typeface == "" {
+		f.Typeface = defaultFamily
+	}
 	best, found := alias{}, false
 	score := func(a alias) int {
 		d := int(a.weight) - int(f.Weight)
