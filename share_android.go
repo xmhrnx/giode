@@ -112,3 +112,14 @@ func (a *App) listenShares() {
 // Android reports going to the background through the activity
 // lifecycle, not the window state.
 const lifecycleFromWindowState = false
+
+func (a *App) openWith(ctx context.Context, path, mime string) error {
+	// Resolving the URI may copy the file: off the main thread.
+	uri, err := mobile.FileURI(app.JavaVM(), app.AppContext(), path, mime)
+	if err != nil {
+		return err
+	}
+	return a.onAndroidMain(ctx, func(view uintptr) error {
+		return mobile.ViewURI(app.JavaVM(), app.AppContext(), view, uri, mime)
+	})
+}

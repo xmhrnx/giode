@@ -19,6 +19,7 @@ int giodePickPhoto(CFTypeRef vc, int id, int maxSide);
 int giodeHasInfoKey(const char *key);
 int giodePickPhotos(CFTypeRef vc, int id, int maxSide, int limit);
 void giodeShareFiles(CFTypeRef vc, const char *paths);
+void giodeOpenIn(CFTypeRef vc, const char *path);
 */
 import "C"
 
@@ -331,5 +332,16 @@ func requireInfoKeys(keys ...string) error {
 	if len(missing) > 0 {
 		return fmt.Errorf("%w: Info.plist lacks %s (see docs/platform.md)", ErrNotSupported, strings.Join(missing, ", "))
 	}
+	return nil
+}
+
+func (a *App) openWith(ctx context.Context, path, mime string) error {
+	vc, err := a.viewController()
+	if err != nil {
+		return err
+	}
+	cp, free := cstr(path)
+	defer free()
+	C.giodeOpenIn(vc, cp)
 	return nil
 }

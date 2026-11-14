@@ -31,3 +31,5 @@ func (a *App) saveToDownloads(ctx context.Context, path, mime, folder string) (s
 func (a *App) openDownloads(ctx context.Context, folder string) error { return ErrNotSupported }
 
 func (a *App) openFolder(ctx context.Context, path string) error { return ErrNotSupported }
+
+func (a *App) openWith(ctx context.Context, path, mime string) error { return ErrNotSupported }

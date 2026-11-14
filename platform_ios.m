@@ -298,6 +298,52 @@ void giodeShareFiles(CFTypeRef vcRef, const char *paths) {
 	});
 }
 
+// GiodeOpenIn keeps a document interaction controller alive while it
+// shows, and gives its Quick Look preview a view controller.
+@interface GiodeOpenIn : NSObject <UIDocumentInteractionControllerDelegate>
+@property(nonatomic, strong) UIDocumentInteractionController *doc;
+@property(nonatomic, weak) UIViewController *vc;
+@end
+
+static GiodeOpenIn *openIn;
+
+@implementation GiodeOpenIn
+- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)c {
+	return self.vc;
+}
+- (void)documentInteractionControllerDidDismissOpenInMenu:(UIDocumentInteractionController *)c {
+	if (openIn == self) {
+		openIn = nil;
+	}
+}
+- (void)documentInteractionControllerDidEndPreview:(UIDocumentInteractionController *)c {
+	if (openIn == self) {
+		openIn = nil;
+	}
+}
+@end
+
+// giodeOpenIn shows the "Open in…" menu of the apps that open the file
+// at path or, when none does, its Quick Look preview.
+void giodeOpenIn(CFTypeRef vcRef, const char *path) {
+	UIViewController *vc = (__bridge UIViewController *)vcRef;
+	NSURL *u = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path]];
+	onMain(^{
+		GiodeOpenIn *o = [[GiodeOpenIn alloc] init];
+		o.vc = vc;
+		o.doc = [UIDocumentInteractionController interactionControllerWithURL:u];
+		o.doc.delegate = o;
+		openIn = o;
+		CGRect b = vc.view.bounds;
+		CGRect anchor = CGRectMake(CGRectGetMidX(b), CGRectGetMidY(b), 1, 1);
+		if (![o.doc presentOpenInMenuFromRect:anchor inView:vc.view animated:YES]) {
+			if (![o.doc presentPreviewAnimated:YES]) {
+				openIn = nil;
+			}
+		}
+	});
+}
+
 int giodeHasInfoKey(const char *key) {
 	NSString *k = [NSString stringWithUTF8String:key];
 	return [[NSBundle mainBundle] objectForInfoDictionaryKey:k] != nil;

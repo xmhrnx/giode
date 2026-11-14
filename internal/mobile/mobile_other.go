@@ -9,6 +9,10 @@ func WatchLifecycle(vm, ctx uintptr) error { return ErrUnsupported }
 func Publish(vm, ctx uintptr, path, mime string) (string, error) { return "", ErrUnsupported }
 
 // ShareText reports ErrUnsupported outside Android.
+func FileURI(vm, ctx uintptr, path, mime string) (string, error) { return "", ErrUnsupported }
+
+func ViewURI(vm, ctx, view uintptr, uri, mime string) error { return ErrUnsupported }
+
 func ShareText(vm, ctx, view uintptr, text, subject, title string) error { return ErrUnsupported }
 
 // ShareURI reports ErrUnsupported outside Android.

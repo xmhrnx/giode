@@ -152,6 +152,41 @@ public final class mobile_android {
 		return copyInto(ctx, "content://media/external/downloads", dir, path, mime);
 	}
 
+	// fileURI returns a content URI other apps can read the file at path
+	// through: FileProvider's when the app declares it, else a copy in
+	// Downloads (Android 10 or later). Off the main thread.
+	public static String fileURI(Context ctx, String path, String mime) throws IOException {
+		File f = new File(path);
+		if (!f.isFile()) {
+			throw new IOException("no file " + path);
+		}
+		Uri u = FileProvider.uriFor(ctx, f);
+		if (u != null) {
+			return u.toString();
+		}
+		return publish(ctx, path, mime);
+	}
+
+	// viewURI opens uri in the app that views mime (ACTION_VIEW): the
+	// user's default, or the system's choice of apps. Call on the main
+	// thread.
+	public static void viewURI(View view, String uri, String mime) throws IOException {
+		Uri u = Uri.parse(uri);
+		Intent i = new Intent(Intent.ACTION_VIEW);
+		i.setDataAndType(u, mime);
+		i.setClipData(ClipData.newRawUri("", u));
+		i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		Context ctx = view.getContext();
+		if (!(ctx instanceof Activity)) {
+			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		}
+		try {
+			ctx.startActivity(i);
+		} catch (android.content.ActivityNotFoundException e) {
+			throw new IOException("no app opens " + mime + " files");
+		}
+	}
+
 	// openDownloads shows the Downloads app. Call on the main thread.
 	public static void openDownloads(View view) {
 		Intent i = new Intent("android.intent.action.VIEW_DOWNLOADS");

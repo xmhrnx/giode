@@ -37,6 +37,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `OnShareReceived` (share target) | `app.share_target` | share extension, `app.share_target` | – | – | – | – |
 | `SaveToDownloads` | Download (Android 10+) | Documents, in Files | Downloads | Downloads | XDG Downloads | – |
 | `OpenDownloads` / `OpenFolder` | ✓ / – | Files app | Finder | Explorer | `xdg-open` | – |
+| `OpenWith` | `ACTION_VIEW` | "Open in…" menu | default app | default app | `xdg-open` | – |
 | `multicast` package | Wi-Fi multicast lock | not needed | not needed | not needed | not needed | – |
 
 "–" means the call returns `ErrNotSupported` (or, for `Haptic`, does nothing). The iOS
@@ -317,6 +318,29 @@ giode.toml, both `true`). Desktops use the user's Downloads folder.
 on iOS, Finder, Explorer or the file manager on desktops. `OpenFolder(ctx, path)` opens any
 folder on desktops and iOS (inside the app's sandbox); Android has no way to open a folder
 and returns `ErrNotSupported`.
+
+## Opening a file in another app
+
+`OpenWith(ctx, path)` opens a file in the app the system picks for its type, as tapping it
+in a file manager would, rather than through the share sheet:
+
+```go
+go func() {
+	if err := app.OpenWith(ctx, received.Path); err != nil {
+		toast.Show(err.Error())
+	}
+}()
+```
+
+Android sends an `ACTION_VIEW` intent with the type guessed from the extension: the user's
+default app opens it, or Android asks which app to use. The file is handed over read-only as
+a `content://` URI from Giode's own content provider, which `giode build` declares; apps
+built some other way hand over a copy in Downloads instead (Android 10 or later). With no
+app for the type it returns an error, so offer `Share` then. iOS shows the "Open in…" menu
+of the apps that open the file, or a Quick Look preview, with its share button, when none
+does. Desktops open the file's default app: NSWorkspace on macOS (the sandbox allows it),
+ShellExecute on Windows (which asks with "Open with" when the type has no app), and
+`xdg-open` on Linux. The web returns `ErrNotSupported`.
 
 ## Receiving shares
 
@@ -600,7 +624,7 @@ Mac App Store builds (`giode build mas`) run in the App Sandbox, with the entitl
 - A folder from `PickFolder` keeps a security-scoped bookmark in the app's container, and
   giode reopens it at every start, so a download folder chosen once keeps working. This
   needs `files.user-selected.read-write`, which adds the bookmark entitlement.
-- `OpenURL`, `OpenFolder` and `Share` (which shows the file in Finder on desktops) go
+- `OpenURL`, `OpenFolder`, `OpenWith` and `Share` (which shows the file in Finder on desktops) go
   through NSWorkspace rather than running `open`.
   `SaveToDownloads` writes through the container's link to the user's Downloads, which
   needs `files.downloads.read-write`.

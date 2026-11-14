@@ -27,7 +27,7 @@ import (
 	"git.wow.st/gmp/jni"
 )
 
-//go:generate javac --release 8 -classpath $ANDROID_HOME/platforms/android-34/android.jar -d $TEMP/giode_mobile/classes mobile_android.java services_android.java picker_android.java KeepAliveService.java ShareActivity.java
+//go:generate javac --release 8 -classpath $ANDROID_HOME/platforms/android-34/android.jar -d $TEMP/giode_mobile/classes mobile_android.java services_android.java picker_android.java KeepAliveService.java ShareActivity.java FileProvider.java
 //go:generate jar cf mobile_android.jar -C $TEMP/giode_mobile/classes .
 
 const (
@@ -84,6 +84,40 @@ func Publish(vm, ctx uintptr, path, mime string) (string, error) {
 		return nil
 	})
 	return uri, err
+}
+
+// FileURI returns a content URI another app can read the file at path
+// through: the app's FileProvider when its manifest declares it, else
+// a copy in Downloads (Android 10 or later). Off the main thread.
+func FileURI(vm, ctx uintptr, path, mime string) (string, error) {
+	var uri string
+	err := call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "fileURI", "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
+		obj, err := jni.CallStaticObjectMethod(env, cls, m,
+			jni.Value(ctx),
+			jni.Value(jni.JavaString(env, path)),
+			jni.Value(jni.JavaString(env, mime)),
+		)
+		if err != nil {
+			return err
+		}
+		uri = jni.GoString(env, jni.String(obj))
+		return nil
+	})
+	return uri, err
+}
+
+// ViewURI opens uri, of type mime, in the app that views it
+// (ACTION_VIEW) from view, the GioView. Call it on the main thread.
+func ViewURI(vm, ctx, view uintptr, uri, mime string) error {
+	return call(vm, ctx, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "viewURI", "(Landroid/view/View;Ljava/lang/String;Ljava/lang/String;)V")
+		return jni.CallStaticVoidMethod(env, cls, m,
+			jni.Value(view),
+			jni.Value(jni.JavaString(env, uri)),
+			jni.Value(jni.JavaString(env, mime)),
+		)
+	})
 }
 
 // ShareText opens the share sheet for text from view, the GioView.
