@@ -1,6 +1,7 @@
 package text
 
 import (
+	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -11,6 +12,8 @@ type Span struct {
 	text string
 	st   spanStyle
 	url  string
+	// el is an inline element's (SpanElement).
+	el base.Element
 }
 
 // spanStyle is what a span honors of Styles: a tenth of their size, as
@@ -75,6 +78,17 @@ func SpanText(text string, st ...styles.Styles) Span {
 		s.st = spanStyleOf(st[0])
 	}
 	return s
+}
+
+// SpanElement returns an element set in the paragraph's line, such as
+// an inline formula: it sits on the text's baseline (its Dimensions'
+// Baseline, from its bottom) and wraps to the next line as a word does,
+// making its line taller when it reaches past the text. text is what it
+// stands for when the paragraph is selected and copied, and in its
+// accessible label. The element is laid out at its own size, no wider
+// than the paragraph.
+func SpanElement(el base.Element, text string) Span {
+	return Span{el: el, text: text}
 }
 
 // Link returns a tappable run of text that opens url: through the

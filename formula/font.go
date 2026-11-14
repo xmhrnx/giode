@@ -6,6 +6,8 @@ import (
 	"github.com/go-fonts/stix/stix2mathregular"
 
 	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/internal/mathhook"
+	"github.com/xmhrnx/giode/styles"
 )
 
 // Family is the font formulas are set in, STIX Two Math (SIL Open Font
@@ -14,7 +16,19 @@ const Family = "STIX Two Math"
 
 var registerOnce sync.Once
 
-func init() { Register() }
+func init() {
+	Register()
+	// Markdown sets $...$ and $$...$$ with MarkdownOptions.Math.
+	mathhook.Set(func(src string, display bool, st styles.Styles) (mathhook.Element, error) {
+		if err := Check(src); err != nil {
+			return nil, err
+		}
+		if display {
+			return New(src, st), nil
+		}
+		return Inline(src, st), nil
+	})
+}
 
 // Register adds STIX Two Math to the fonts text is shaped with. Importing
 // the package does it; call it again after replacing the fonts with

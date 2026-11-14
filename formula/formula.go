@@ -13,9 +13,11 @@
 package formula
 
 import (
+	"errors"
 	"image"
 	"math"
 	"reflect"
+	"strings"
 	"sync"
 
 	"gioui.org/layout"
@@ -67,6 +69,17 @@ func Inline(src string, st ...styles.Styles) *Formula {
 	f := New(src, st...)
 	f.inline = true
 	return f
+}
+
+// Check reports the mistakes in src that New and Inline set as best
+// they can: an unknown command, a missing } or argument, \left without
+// \right, \begin without \end. Use it to show a formula that doesn't
+// read as its source instead.
+func Check(src string) error {
+	if _, errs := parseChecked(src); len(errs) > 0 {
+		return errors.New("formula: " + strings.Join(errs, "; "))
+	}
+	return nil
 }
 
 // Source returns the formula as written.

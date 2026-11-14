@@ -23,12 +23,20 @@ import (
 	"github.com/xmhrnx/giode/fonts"
 )
 
-// Span is a run of text with its own style.
+// Span is a run of text with its own style, or, with Box set, an
+// inline box: something drawn in the line (a formula), Box wide and
+// tall, its baseline Ascent from its top. A box stands for Content,
+// its text when selected, and wraps as a word does.
 type Span struct {
 	Font    font.Font
 	Size    unit.Sp
 	Content string
+	Box     image.Point
+	Ascent  int
 }
+
+// IsBox reports whether the span is an inline box.
+func (s Span) IsBox() bool { return s.Box != (image.Point{}) }
 
 // RichParams are the paragraph-wide settings of rich text.
 type RichParams struct {
@@ -50,6 +58,8 @@ type Segment struct {
 	Glyphs []text.Glyph
 	// Runes are the span's runes the segment covers, from its start.
 	RuneStart, RuneEnd int
+	// Box marks an inline box's segment, which has no glyphs.
+	Box bool
 }
 
 // RichLaid is laid out rich text.
@@ -111,6 +121,8 @@ func richKey(gtx layout.Context, p RichParams, spans []Span) uint64 {
 		w(uint64(math.Float32bits(float32(s.Size))))
 		w(uint64(len(s.Content)))
 		h.WriteString(s.Content)
+		w(uint64(s.Box.X)<<32 | uint64(uint32(s.Box.Y)))
+		w(uint64(s.Ascent))
 	}
 	return h.Sum64()
 }
@@ -137,6 +149,9 @@ func (l *RichLaid) Draw(ops *op.Ops, sh *text.Shaper, colorOf func(span int) col
 		}
 	}
 	for i, s := range l.Segments {
+		if s.Box {
+			continue
+		}
 		st := op.Offset(s.Offset).Push(ops)
 		drawRunKeyed(ops, sh, s.Glyphs, colorOf(s.Span), l.keys[i])
 		st.Pop()
@@ -245,9 +260,90 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 		line     []Segment
 		out      = &RichLaid{}
 	)
+	// endLine places the line's segments, the line as tall as its text,
+	// or as its boxes where they reach past the text and its leading.
+	endLine := func() {
+		textAsc, textDesc, asc, desc, hasText := 0, 0, 0, 0, false
+		for _, s := range line {
+			asc, desc = max(asc, s.Ascent), max(desc, s.Size.Y-s.Ascent)
+			if !s.Box {
+				hasText = true
+				textAsc, textDesc = max(textAsc, s.Ascent), max(textDesc, s.Size.Y-s.Ascent)
+			}
+		}
+		h := lineDims.Y
+		if p.LineHeight != 0 {
+			h = lineHeightPx
+		}
+		adv := int(float32(h) * scale)
+		extraTop, extraBottom := 0, 0
+		if hasText {
+			// Boxes may use half the leading on each side before the
+			// line grows.
+			half := max(adv-textAsc-textDesc, 0) / 2
+			extraTop = max(asc-textAsc-half, 0)
+			extraBottom = max(desc-textDesc-half, 0)
+		} else {
+			adv = asc + desc
+		}
+		if len(line) > 0 {
+			last := line[len(line)-1]
+			lineWidth := last.Offset.X + last.Size.X
+			pad := 0
+			if lineWidth < gtx.Constraints.Max.X {
+				switch p.Alignment {
+				case text.Middle:
+					pad = (gtx.Constraints.Max.X - lineWidth) / 2
+				case text.End:
+					pad = gtx.Constraints.Max.X - lineWidth
+				}
+			}
+			// Text keeps the line's top, as it always has; boxes sit on
+			// the baseline of its tallest face.
+			base := overall.Y + extraTop + textAsc
+			if !hasText {
+				base = overall.Y + asc
+			}
+			for _, s := range line {
+				s.Offset.X += pad
+				if s.Box {
+					s.Offset.Y = base - s.Ascent
+				} else {
+					s.Offset.Y = overall.Y + extraTop
+				}
+				out.Segments = append(out.Segments, s)
+			}
+		}
+		line = line[:0]
+		overall.Y += adv + extraTop + extraBottom
+		lineDims = image.Point{}
+	}
 	for i := 0; i < len(spans); i++ {
 		span := spans[i]
 		maxWidth := gtx.Constraints.Max.X - lineDims.X
+		if span.IsBox() {
+			force := lineDims.X > 0 && span.Box.X > maxWidth
+			if !force {
+				line = append(line, Segment{
+					Span:      span.idx,
+					Offset:    image.Point{X: lineDims.X},
+					Size:      span.Box,
+					Ascent:    span.Ascent,
+					RuneStart: span.runeStart,
+					RuneEnd:   span.runeStart + utf8.RuneCountInString(span.Content),
+					Box:       true,
+				})
+				lineDims.X += span.Box.X
+				overall.X = max(overall.X, lineDims.X)
+			}
+			if force || i == len(spans)-1 {
+				endLine()
+			}
+			if force {
+				i--
+			}
+			continue
+		}
 		if lineDims.X == 0 && span.lines == nil && len(span.Content) > spanLinesMin {
 			// At the start of a line, the span's lines are all full
 			// width: shape it once and take them in turn, rather than
@@ -282,31 +378,7 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 			overall.X = max(overall.X, lineDims.X)
 		}
 		if res.multiLine || res.endedWithNewline || i == len(spans)-1 || forceToNextLine {
-			if len(line) > 0 {
-				last := line[len(line)-1]
-				lineWidth := last.Offset.X + last.Size.X
-				pad := 0
-				if lineWidth < gtx.Constraints.Max.X {
-					switch p.Alignment {
-					case text.Middle:
-						pad = (gtx.Constraints.Max.X - lineWidth) / 2
-					case text.End:
-						pad = gtx.Constraints.Max.X - lineWidth
-					}
-				}
-				for _, s := range line {
-					s.Offset.X += pad
-					s.Offset.Y = overall.Y
-					out.Segments = append(out.Segments, s)
-				}
-			}
-			line = line[:0]
-			h := lineDims.Y
-			if p.LineHeight != 0 {
-				h = lineHeightPx
-			}
-			overall.Y += int(float32(h) * scale)
-			lineDims = image.Point{}
+			endLine()
 		}
 		if res.multiLine && !forceToNextLine {
 			spans = append(spans, spanState{})

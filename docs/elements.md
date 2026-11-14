@@ -153,6 +153,21 @@ handler is set.
 copied at once. To select part of a paragraph, or across paragraphs, put it in a
 `SelectionArea` instead.
 
+`SpanElement(el, text)` sets an element in the paragraph's line, such as an inline formula:
+
+```go
+giode.RichText(giode.Styles{FontSize: 15},
+	giode.Span("The series "),
+	giode.SpanElement(formula.Inline(src), "$"+src+"$"),
+	giode.Span(" converges."),
+)
+```
+
+The element sits on the text's baseline (from its `Dimensions.Baseline`) and wraps to the
+next line as a word does. A line grows when the element reaches past the text and its line
+spacing. `text` is what the element stands for when the paragraph is selected and copied,
+and in its accessible label.
+
 ## Markdown
 
 ```go
@@ -191,6 +206,29 @@ cells and links show at their pixel size in dp, narrowed to the width there is, 
 text before and after them; images next to each other sit side by side and wrap. Loading the
 images of a document the app doesn't control (a model's reply, someone's message) tells
 their servers it was opened: allow only hosts you trust there.
+
+With `Math: true`, formulas are set, as in GitHub's Markdown, once package `formula` is
+imported (which adds its 0.8 MB math font):
+
+```go
+import _ "github.com/xmhrnx/giode/formula"
+
+giode.Markdown(reply, giode.MarkdownOptions{Math: true})
+```
+
+- **Display formulas.** `$$…$$` and `\[…\]` starting a line, on one line or several, are
+  display formulas (`formula.New`). They are centered, and scroll sideways when wider than
+  the text.
+- **Inline formulas.** `$…$` and `\(…\)` in a paragraph, heading or table cell are inline
+  formulas (`formula.Inline`). They sit on the text's baseline and wrap with the words.
+  `$$…$$` with text around it is set in display style within the line.
+- **Dollar signs.** A `$` opens a formula only when no space follows it. It closes one only
+  when no space comes before it and no digit after it. "$5 and $10" stays text, and `\$` is
+  always a dollar sign. Code spans and blocks keep their dollars.
+- **Copying.** A selection copies a formula as its source, with its dollars.
+- **Errors.** A formula that doesn't read (see `formula.Check`) shows its source as code.
+  So does every formula when package `formula` isn't imported, and a `$$` block still
+  waiting for its closing `$$` (while a reply streams in).
 
 `Selectable` puts the document in its own `SelectionArea`, keyed by its value: a drag
 selects across paragraphs, headings, lists, tables and code, and copies their text joined
@@ -326,6 +364,10 @@ Any symbol can also be typed as itself: `ℰ`, `☉` and `∯` set like their co
   (`Padding`, `Margin`, `Background`). Without box styles a formula keeps its baseline, so
   `AlignBaseline` lines it up with text.
 - A command it doesn't know is shown as written, so a typo is visible rather than lost.
+  `formula.Check(src)` reports such mistakes (an unknown command, a missing `}` or
+  argument, `\left` without `\right`, `\begin` without `\end`), for showing the source
+  instead.
+- `MarkdownOptions.Math` sets the formulas in Markdown; see [Markdown](#markdown).
 - Formulas are set in STIX Two Math (SIL Open Font License), which importing the package
   adds to the app's fonts: about 0.8 MB, only in apps that import it. Its symbols then also
   show in ordinary text, so `giode.Text("∇ ℏ ⇒ ∝")` works with any font.

@@ -75,6 +75,8 @@ func (r *renderer) block(n gast.Node) elements.Element {
 		return elements.Divider(styles.Styles{Color: "theme.border"})
 	case *east.Table:
 		return r.table(n)
+	case *mathBlock:
+		return r.mathBlockElement(n)
 	}
 	return nil
 }

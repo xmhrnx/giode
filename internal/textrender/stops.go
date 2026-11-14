@@ -69,13 +69,26 @@ func (l *RichLaid) StopLines(spanStart []int) []StopLine {
 	var lines []StopLine
 	baseline := 0
 	for i, s := range l.Segments {
-		if len(s.Glyphs) == 0 || s.Span >= len(spanStart) {
+		if (len(s.Glyphs) == 0 && !s.Box) || s.Span >= len(spanStart) {
 			continue
 		}
 		b := s.Offset.Y + s.Ascent
 		if i == 0 || len(lines) == 0 || b != baseline {
 			lines = append(lines, StopLine{})
 			baseline = b
+		}
+		if s.Box {
+			// A box is selected whole: stops at its two ends.
+			ln := &lines[len(lines)-1]
+			r := spanStart[s.Span] + s.RuneStart
+			top, bottom := s.Offset.Y, s.Offset.Y+s.Size.Y
+			if len(ln.Stops) == 0 {
+				ln.Top, ln.Bottom = top, bottom
+			} else {
+				ln.Top, ln.Bottom = min(ln.Top, top), max(ln.Bottom, bottom)
+			}
+			ln.Stops = append(ln.Stops, Stop{Rune: r, X: s.Offset.X}, Stop{Rune: spanStart[s.Span] + s.RuneEnd, X: s.Offset.X + s.Size.X})
+			continue
 		}
 		lineStops(&lines[len(lines)-1], s.Glyphs, s.Offset, spanStart[s.Span]+s.RuneStart)
 	}

@@ -19,6 +19,7 @@ var (
 	Text          = text.Text
 	RichText      = text.RichText
 	SpanText      = text.SpanText
+	SpanElement   = text.SpanElement
 	Link          = text.Link
 	SetLinkOpener = text.SetLinkOpener
 	SelectionArea = text.SelectionArea

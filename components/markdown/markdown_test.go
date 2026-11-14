@@ -60,7 +60,7 @@ func TestMarkdown_RendersBlocks(t *testing.T) {
 }
 
 func TestMarkdown_ParseCached(t *testing.T) {
-	a, b := parse("hello *world*"), parse("hello *world*")
+	a, b := parse("hello *world*", false), parse("hello *world*", false)
 	if a != b {
 		t.Error("same source parsed twice")
 	}

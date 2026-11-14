@@ -292,6 +292,9 @@ var (
 	// Span is a run of text in a RichText; Link a tappable one.
 	Span = elements.SpanText
 	Link = elements.Link
+	// SpanElement sets an element, such as an inline formula, in a
+	// RichText's line; see elements.SpanElement.
+	SpanElement = elements.SpanElement
 	// Markdown renders Markdown as giode elements; see markdown.New.
 	Markdown = markdown.New
 	// MarkdownFetchImage loads images for MarkdownOptions.LoadImage:

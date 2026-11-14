@@ -1,6 +1,7 @@
 package formula
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 )
@@ -101,23 +102,39 @@ type parser struct {
 	font font
 	// envs counts the environments open, whose \end ends a list.
 	envs int
+	// errs are the mistakes met, for Check: the formula is set anyway.
+	errs []string
+}
+
+func (p *parser) fail(format string, args ...any) {
+	if len(p.errs) < 8 {
+		p.errs = append(p.errs, fmt.Sprintf(format, args...))
+	}
 }
 
 // parse reads a formula: the subset of LaTeX math the package sets. A
 // stray \right or \end is skipped.
 func parse(src string) []node {
+	out, _ := parseChecked(src)
+	return out
+}
+
+// parseChecked is parse, also returning the mistakes it met.
+func parseChecked(src string) ([]node, []string) {
 	p := &parser{src: []rune(src)}
 	var out []node
 	for {
 		out = append(out, p.list(false)...)
 		if p.i >= len(p.src) {
-			return out
+			return out, p.errs
 		}
 		switch {
 		case p.at(`\right`):
+			p.fail(`\right without \left`)
 			p.i += len(`\right`)
 			p.delimiter()
 		case p.at(`\end`):
+			p.fail(`\end without \begin`)
 			p.i += len(`\end`)
 			p.rawGroup()
 		default:
@@ -146,6 +163,9 @@ func (p *parser) list(inGroup bool) []node {
 	for {
 		p.skipSpace()
 		if p.i >= len(p.src) {
+			if inGroup {
+				p.fail("missing }")
+			}
 			return out
 		}
 		c := p.src[p.i]
@@ -155,6 +175,7 @@ func (p *parser) list(inGroup bool) []node {
 				p.i++
 				return out
 			}
+			p.fail("unmatched }")
 			p.i++ // a stray brace
 			continue
 		case '{':
@@ -229,6 +250,7 @@ func attach(out []node, sup bool, arg []node) []node {
 func (p *parser) arg() []node {
 	p.skipSpace()
 	if p.i >= len(p.src) {
+		p.fail("missing argument")
 		return nil
 	}
 	switch c := p.src[p.i]; c {
@@ -416,11 +438,17 @@ func (p *parser) command() ([]node, bool) {
 		if p.at(`\right`) {
 			p.i += len(`\right`)
 			right = p.delimiter()
+		} else {
+			p.fail(`\left without \right`)
 		}
 		return []node{delimits{left: left, right: right, body: body}}, true
 	case "right":
 		p.delimiter()
 		return nil, false
+	case "middle":
+		// A bar or slash between \left and \right, a little taller than
+		// the text.
+		return []node{sizedDelim{s: p.delimiter(), scale: 1.2, cls: clsRel}}, true
 	case "big", "Big", "bigg", "Bigg", "bigl", "Bigl", "biggl", "Biggl", "bigr", "Bigr", "biggr", "Biggr", "bigm", "Bigm":
 		// \big to \Bigg: 1.2, 1.8, 2.4 and 3 em tall, as TeX's.
 		scale := map[byte]float32{'b': 1.2, 'B': 1.8}[name[0]]
@@ -451,7 +479,11 @@ func (p *parser) command() ([]node, bool) {
 		p.envs--
 		if p.at(`\end`) {
 			p.i += len(`\end`)
-			p.rawGroup()
+			if end := strings.TrimSuffix(strings.TrimSpace(p.rawGroup()), "*"); end != name {
+				p.fail(`\begin{%s} ended by \end{%s}`, name, end)
+			}
+		} else {
+			p.fail(`\begin{%s} without \end`, name)
 		}
 		switch name {
 		case "aligned", "align", "gathered", "gather", "split", "equation", "eqnarray", "alignat", "flalign", "multline":
@@ -498,6 +530,7 @@ func (p *parser) command() ([]node, bool) {
 		return []node{atom{str, s.cls}}, true
 	}
 	// Unknown: shown as written, so the mistake is visible.
+	p.fail(`unknown command \%s`, name)
 	return []node{textRun{s: `\` + name}}, true
 }
 

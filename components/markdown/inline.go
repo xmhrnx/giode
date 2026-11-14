@@ -100,6 +100,8 @@ func (r *renderer) inlines(n gast.Node, st styles.Styles, out *inlineOut) {
 				continue
 			}
 			out.spans = append(out.spans, elements.SpanText(r.plain(c), styles.Merge(st, styles.Styles{Color: "theme.muted"})))
+		case *mathInline:
+			out.spans = append(out.spans, r.mathSpan(c, st))
 		case *east.TaskCheckBox, *gast.RawHTML:
 			// Task boxes are drawn by the list item; raw HTML is dropped.
 		default:

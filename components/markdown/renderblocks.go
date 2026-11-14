@@ -27,7 +27,12 @@ func (r *renderer) codeBlock(n gast.Node, lang string) elements.Element {
 		seg := lines.At(i)
 		b.Write(seg.Value(r.src))
 	}
-	code := strings.TrimRight(b.String(), "\n")
+	return r.codeBox(strings.TrimRight(b.String(), "\n"), lang)
+}
+
+// codeBox shows code in a tinted box, with the language and a copy
+// button above it.
+func (r *renderer) codeBox(code, lang string) elements.Element {
 	fontSize := properties.FontSize(float32(properties.ResolveFontSize(r.base.FontSize)) * 0.92)
 	copyBtn := elements.Keyed("giode.markdown.copy", code, func() *copybutton.CopyButton {
 		return copybutton.New(func() string { return code }, styles.Styles{FontSize: 12, Color: "theme.muted"})

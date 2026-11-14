@@ -29,6 +29,10 @@ type resolvedSpan struct {
 	text  string
 	url   string
 	click *gesture.Click
+	// An inline element, its size and baseline from its top.
+	el     base.Element
+	box    image.Point
+	ascent int
 }
 
 // Layout shapes and paints the paragraph.
@@ -57,6 +61,16 @@ func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 		inherited.Color = base.CurrentColor()
 	}
 	for _, s := range r.spans {
+		if s.el != nil {
+			mg := gtx
+			mg.Constraints.Min = image.Point{}
+			d := base.Measure(mg, s.el)
+			if d.Size.X <= 0 || d.Size.Y <= 0 {
+				continue
+			}
+			spans = append(spans, resolvedSpan{st: inherited, text: s.text, el: s.el, box: d.Size, ascent: d.Size.Y - d.Baseline})
+			continue
+		}
 		if s.text == "" {
 			continue
 		}
@@ -100,6 +114,8 @@ func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 			}),
 			Size:    properties.ResolveFontSize(s.st.FontSize),
 			Content: s.text,
+			Box:     s.box,
+			Ascent:  s.ascent,
 		}
 		colors[i] = base.ResolveColor(s.st.Color)
 		if s.st.Background != "" {
@@ -154,6 +170,17 @@ func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	laid.Draw(gtx.Ops, shaper, func(i int) color.NRGBA { return colors[i] })
 	for _, seg := range laid.Segments {
 		s := spans[seg.Span]
+		if seg.Box {
+			// The inline element, at the size it was measured at.
+			st := op.Offset(seg.Offset).Push(gtx.Ops)
+			pop := base.PushOffset(seg.Offset)
+			egtx := gtx
+			egtx.Constraints = layout.Exact(seg.Size)
+			s.el.Layout(egtx)
+			pop()
+			st.Pop()
+			continue
+		}
 		st := op.Offset(seg.Offset).Push(gtx.Ops)
 		paintSegmentDecoration(gtx, seg.Size, seg.Ascent, s.st.TextDecoration, colors[seg.Span])
 		if s.click != nil {

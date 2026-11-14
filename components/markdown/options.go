@@ -56,6 +56,16 @@ type Options struct {
 	// next to it); its alt text shows while it loads and if it fails.
 	// Without LoadImage, images show as their alt text.
 	LoadImage func(src string) (image.Image, error)
+	// Math sets formulas, with package formula imported (which adds its
+	// math font): $$...$$ and \[...\] starting a line as display
+	// formulas, centered; $...$ and \(...\) in a paragraph inline, on
+	// the text's baseline and wrapping with the words. A $ opens a
+	// formula when no space follows it and closes one when no space
+	// comes before it and no digit after it, as on GitHub, so "$5 and
+	// $10" stays text; \$ is a dollar sign. A selection copies a
+	// formula as its source. One that doesn't read (formula.Check), or
+	// without package formula, shows its source as code.
+	Math bool
 }
 
 var parser = goldmark.New(goldmark.WithExtensions(extension.GFM))
@@ -70,15 +80,20 @@ var (
 
 const maxCachedDocs = 64
 
-func parse(src string) gast.Node {
+func parse(src string, math bool) gast.Node {
+	key := src
+	p := parser
+	if math {
+		key, p = "\x00math\x00"+src, mathParser
+	}
 	docMu.Lock()
 	defer docMu.Unlock()
-	if doc, ok := docCache[src]; ok {
+	if doc, ok := docCache[key]; ok {
 		return doc
 	}
-	doc := parser.Parser().Parse(text.NewReader([]byte(src)))
-	docCache[src] = doc
-	docOrder = append(docOrder, src)
+	doc := p.Parser().Parse(text.NewReader([]byte(src)))
+	docCache[key] = doc
+	docOrder = append(docOrder, key)
 	if len(docOrder) > maxCachedDocs {
 		delete(docCache, docOrder[0])
 		docOrder = docOrder[1:]
@@ -98,7 +113,7 @@ func New(src string, opts ...Options) elements.Element {
 	}
 	r := &renderer{src: []byte(src), o: o}
 	r.defaults()
-	doc := r.blocks(parse(src))
+	doc := r.blocks(parse(src, o.Math))
 	if o.Selectable == nil {
 		return doc
 	}
