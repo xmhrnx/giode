@@ -1,6 +1,7 @@
 package fonts
 
 import (
+	"strings"
 	"sync"
 	"testing"
 
@@ -27,10 +28,10 @@ func TestRegisterFont(t *testing.T) {
 	}
 	// Text asks for "Brand" by weight and style; each face keeps its
 	// file's own name.
-	if got := Resolve(font.Font{Typeface: "Brand"}); got != faces[before].Font {
+	if got := Resolve(font.Font{Typeface: "Brand"}); !sameFace(got, faces[before].Font) {
 		t.Errorf("Brand regular resolves to %+v, want the first file's face %+v", got, faces[before].Font)
 	}
-	if got := Resolve(font.Font{Typeface: "Brand", Weight: font.Bold, Style: font.Italic}); got != faces[before+1].Font {
+	if got := Resolve(font.Font{Typeface: "Brand", Weight: font.Bold, Style: font.Italic}); !sameFace(got, faces[before+1].Font) {
 		t.Errorf("Brand bold italic resolves to %+v, want the second file's face %+v", got, faces[before+1].Font)
 	}
 	if Shaper() == nil {
@@ -70,13 +71,13 @@ func TestResolve(t *testing.T) {
 		{font.Font{Typeface: "Other", Weight: font.Bold}, font.Font{Typeface: "Other", Weight: font.Bold}},
 	}
 	for _, c := range cases {
-		if got := Resolve(c.ask); got != c.want {
+		if got := Resolve(c.ask); !sameFace(got, c.want) {
 			t.Errorf("Resolve(%+v) = %+v, want %+v", c.ask, got, c.want)
 		}
 	}
 	// Register forgets them, with the collection.
 	UseGofont()
-	if got := Resolve(font.Font{Typeface: "Inter"}); got.Typeface != "Inter" {
+	if got := Resolve(font.Font{Typeface: "Inter"}); Primary(got) != "Inter" {
 		t.Errorf("after Register, Resolve still maps Inter to %+v", got)
 	}
 }
@@ -128,18 +129,43 @@ func TestSetDefaultFont(t *testing.T) {
 	if Shaper() == old {
 		t.Error("the shaper wasn't replaced, so text laid out in the old default stays")
 	}
-	if got := Resolve(font.Font{}); got != faces[before].Font {
+	if got := Resolve(font.Font{}); !sameFace(got, faces[before].Font) {
 		t.Errorf("no family resolves to %+v, want Inter regular %+v", got, faces[before].Font)
 	}
-	if got := Resolve(font.Font{Weight: font.Bold}); got != faces[before+1].Font {
+	if got := Resolve(font.Font{Weight: font.Bold}); !sameFace(got, faces[before+1].Font) {
 		t.Errorf("no family, bold, resolves to %+v, want Inter bold %+v", got, faces[before+1].Font)
 	}
 	// A family set on the text still wins.
-	if got := Resolve(font.Font{Typeface: "Go Mono"}); got.Typeface != "Go Mono" {
+	if got := Resolve(font.Font{Typeface: "Go Mono"}); Primary(got) != "Go Mono" {
 		t.Errorf("an explicit family resolves to %+v", got)
 	}
 	SetDefaultFont("")
 	if got := Resolve(font.Font{}); got.Typeface != "" {
 		t.Errorf("after SetDefaultFont(\"\"), no family resolves to %+v, want the Go fonts' default", got)
+	}
+}
+
+// sameFace compares the face Resolve picked: its primary family, weight
+// and style (the family list goes on with the fallbacks).
+func sameFace(a, b font.Font) bool {
+	return Primary(a) == Primary(b) && a.Weight == b.Weight && a.Style == b.Style
+}
+
+// A family's missing characters come from the app's other registered
+// fonts, the default first, before the system's.
+func TestFallbackFamilies(t *testing.T) {
+	defer Register(nil)
+	defer SetDefaultFont("")
+	UseGofont()
+	if err := RegisterFont(File{Family: "Book", Data: goregular.TTF}); err != nil {
+		t.Fatal(err)
+	}
+	SetDefaultFont("Book")
+	f := Resolve(font.Font{Typeface: "Go Mono"})
+	if got := string(f.Typeface); !strings.HasPrefix(got, `"Go Mono", "Go"`) || strings.Count(got, `"Go Mono"`) != 1 {
+		t.Errorf("Go Mono's family list %s: want Go Mono, then the default (Book's file, Go), once each", got)
+	}
+	if got := Resolve(font.Font{}); Primary(got) != "Go" {
+		t.Errorf("no family: %s", got.Typeface)
 	}
 }

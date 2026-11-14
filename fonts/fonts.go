@@ -7,6 +7,7 @@ package fonts
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -37,6 +38,7 @@ func Register(faces []font.FontFace) {
 func register(faces []font.FontFace, as []alias) {
 	mu.Lock()
 	collection, aliases = faces, as
+	fallbacks = nil
 	mu.Unlock()
 	shaper.Store(text.NewShaper(text.WithCollection(faces)))
 	shaped.Store(0)
@@ -193,6 +195,7 @@ func SetDefaultFont(family string) {
 	mu.Lock()
 	defaultFamily = font.Typeface(family)
 	faces, as := collection, aliases
+	fallbacks = nil
 	mu.Unlock()
 	if faces != nil {
 		// A fresh shaper drops text laid out in the old default.
@@ -239,8 +242,75 @@ func Resolve(f font.Font) font.Font {
 			best, found = a, true
 		}
 	}
-	if !found {
+	if found {
+		f = best.font
+	}
+	return withFallbacks(f)
+}
+
+// fallbacks is the app's registered families after its default, quoted
+// for Gio's family lists; built when first needed after the fonts
+// change.
+var fallbacks []string
+
+// withFallbacks follows f's family with the app's other registered
+// families, so a character f lacks comes from the app's own fonts - the
+// default first, at the weight and style asked for - before the
+// system's: Gio tries the families of a list in order before its system
+// substitutes, which can be a heavier face of another font. With no
+// family, Gio uses the registered ones already. The caller holds mu.
+func withFallbacks(f font.Font) font.Font {
+	if f.Typeface == "" {
 		return f
 	}
-	return best.font
+	if fallbacks == nil {
+		fallbacks = []string{}
+		seen := map[font.Typeface]bool{}
+		add := func(t font.Typeface) {
+			if t != "" && !seen[t] {
+				seen[t] = true
+				fallbacks = append(fallbacks, quoteFamily(string(t)))
+			}
+		}
+		// The default family's own name (an alias resolves to its
+		// file's).
+		def := defaultFamily
+		for _, a := range aliases {
+			if a.family == def {
+				def = a.font.Typeface
+				break
+			}
+		}
+		add(def)
+		for _, c := range collection {
+			add(c.Font.Typeface)
+		}
+	}
+	primary := quoteFamily(string(f.Typeface))
+	list := primary
+	for _, fb := range fallbacks {
+		if fb != primary {
+			list += ", " + fb
+		}
+	}
+	f.Typeface = font.Typeface(list)
+	return f
+}
+
+// quoteFamily quotes a family name for a Gio family list.
+func quoteFamily(s string) string {
+	if strings.HasPrefix(s, `"`) || strings.Contains(s, ",") {
+		return s
+	}
+	return `"` + s + `"`
+}
+
+// Primary returns the first family of f's family list: the one Resolve
+// was asked for.
+func Primary(f font.Font) string {
+	s := string(f.Typeface)
+	if i := strings.Index(s, ","); i >= 0 {
+		s = s[:i]
+	}
+	return strings.Trim(strings.TrimSpace(s), `"`)
 }
