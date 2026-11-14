@@ -851,6 +851,8 @@ const (
 	AlignCenter  = properties.AlignCenter
 	AlignEnd     = properties.AlignEnd
 	AlignStretch = properties.AlignStretch
+	// AlignBaseline lines a row's children up on their baselines.
+	AlignBaseline = properties.AlignBaseline
 
 	JustifyStart        = properties.JustifyStart
 	JustifyCenter       = properties.JustifyCenter

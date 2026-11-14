@@ -50,7 +50,7 @@ func (b *BoxElement) layoutFlex(gtx layout.Context, st styles.Styles, children [
 	// stretching it. That matches CSS's default (align-items: stretch)
 	// for start alignment, but centered or end-aligned children must
 	// keep their own size or there is nothing to align.
-	unstretch := st.Align == properties.AlignCenter || st.Align == properties.AlignEnd
+	unstretch := st.Align == properties.AlignCenter || st.Align == properties.AlignEnd || st.Align == properties.AlignBaseline
 	if st.Align == properties.AlignStretch {
 		gtx.Constraints = stretchCross(gtx, children, axis, mainMax)
 	}

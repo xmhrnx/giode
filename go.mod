@@ -19,6 +19,7 @@ require (
 	gioui.org/shader v1.0.9 // indirect
 	git.sr.ht/~jackmordaunt/go-toast v1.0.0 // indirect
 	github.com/esiqveland/notify v0.11.0 // indirect
+	github.com/go-fonts/stix v0.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0 // indirect

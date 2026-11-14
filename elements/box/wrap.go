@@ -16,6 +16,9 @@ type wrapItem struct {
 	// is known.
 	track base.ChildTracker
 	z     int
+	// above is the distance from the item's top to its baseline, for
+	// AlignBaseline.
+	above int
 }
 
 // wrapLine is one run of items that fit within the main axis.
@@ -24,4 +27,7 @@ type wrapLine struct {
 	items     []wrapItem
 	used      int // sum of item main sizes plus internal gaps
 	thickness int // the line's extent on the cross axis
+	// above is the largest distance from an item's top to its baseline,
+	// where AlignBaseline puts the line's baseline.
+	above int
 }

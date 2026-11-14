@@ -250,6 +250,51 @@ giode.Canvas(giode.Styles{Width: 240, Height: 160}, func(p *giode.Painter) {
 | `Width()`, `Height()` | the canvas size in dp |
 | `Context()` | the Gio context, for raw drawing in pixels |
 
+## Formulas
+
+Package `formula` typesets mathematics written in LaTeX notation, for apps built on
+equations and derivations:
+
+```go
+import "github.com/xmhrnx/giode/formula"
+
+formula.New(`v = \sqrt{\frac{2GM}{r}}`, giode.Styles{FontSize: 20})
+formula.New(`\oint \vec{E}\cdot d\vec{A} = \frac{Q}{\varepsilon_0}`)
+formula.New(`i\hbar\frac{\partial}{\partial t}\Psi = -\frac{\hbar^2}{2m}\nabla^2\Psi + V\Psi`)
+
+// A derivation: lines broken with \\, aligned at &.
+formula.New(`E &= \tfrac{1}{2}mv^2 \\ &= \frac{p^2}{2m}`)
+
+// Within a line of text: smaller fractions, limits beside the sum.
+giode.Row(giode.Styles{Align: giode.AlignBaseline},
+	giode.Text("The series "),
+	formula.Inline(`\sum_{n=1}^\infty \frac{1}{n^2} = \frac{\pi^2}{6}`),
+	giode.Text(" converges."),
+)
+```
+
+It sets fractions (`\frac`, `\dfrac`, `\tfrac`, `\binom`), roots (`\sqrt`, `\sqrt[3]`),
+superscripts and subscripts, large operators with limits (`\sum`, `\prod`, `\int`, `\iint`,
+`\oint`, with `\limits`/`\nolimits`), `\lim`, `\max` and the named functions (`\sin`,
+`\ln`, `\operatorname{…}`), delimiters sized to what they enclose (`\left( … \right)`,
+with `[`, `\{`, `|`, `\|`, `\langle`, and `.` for none) or by hand (`\big`, `\Big`,
+`\bigg`, `\Bigg`), accents (`\vec`, `\hat`, `\bar`, `\overline`, `\dot`, `\ddot`,
+`\tilde`, `\underline`), `\text`, `\mathrm`, `\mathbf`, Greek letters, primes, spaces
+(`\,`, `\;`, `\quad`), and the usual operators, relations and arrows (`\nabla`,
+`\partial`, `\hbar`, `\propto`, `\Rightarrow`, `\approx`, `\leq`, `\pm`, `\times`,
+`\cdot`, `\infty`, `\in`, `\to` …), spaced as TeX spaces them.
+
+- Letters are variables, set in italic; write `\mathrm{d}x` for an upright d and `\text{km/s}`
+  for units.
+- `New` sets a formula in display style, as on a line of its own; `Inline` in text style.
+- Styles: `FontSize` and `Color` (theme tokens follow the theme), and the box styles
+  (`Padding`, `Margin`, `Background`). Without box styles a formula keeps its baseline, so
+  `AlignBaseline` lines it up with text.
+- A command it doesn't know is shown as written, so a typo is visible rather than lost.
+- Formulas are set in STIX Two Math (SIL Open Font License), which importing the package
+  adds to the app's fonts: about 0.8 MB, only in apps that import it. Its symbols then also
+  show in ordinary text, so `giode.Text("∇ ℏ ⇒ ∝")` works with any font.
+
 ## Responsive
 
 Simplified media queries: renders different views depending on the available width.

@@ -727,14 +727,16 @@ var (
 const OverlayMargin = ui.OverlayMargin
 
 const (
-	FlexDirectionRow     = ui.FlexDirectionRow
-	FlexDirectionColumn  = ui.FlexDirectionColumn
-	WrapNoWrap           = ui.WrapNoWrap
-	WrapWrap             = ui.WrapWrap
-	AlignStart           = ui.AlignStart
-	AlignCenter          = ui.AlignCenter
-	AlignEnd             = ui.AlignEnd
-	AlignStretch         = ui.AlignStretch
+	FlexDirectionRow    = ui.FlexDirectionRow
+	FlexDirectionColumn = ui.FlexDirectionColumn
+	WrapNoWrap          = ui.WrapNoWrap
+	WrapWrap            = ui.WrapWrap
+	AlignStart          = ui.AlignStart
+	AlignCenter         = ui.AlignCenter
+	AlignEnd            = ui.AlignEnd
+	AlignStretch        = ui.AlignStretch
+	// AlignBaseline lines a row's children up on their baselines.
+	AlignBaseline        = ui.AlignBaseline
 	JustifyStart         = ui.JustifyStart
 	JustifyCenter        = ui.JustifyCenter
 	JustifyEnd           = ui.JustifyEnd

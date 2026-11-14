@@ -82,7 +82,7 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 			}
 			el = stretchedElement{child: el, box: child, axis: axis}
 		}
-		if st.Align == properties.AlignCenter || st.Align == properties.AlignEnd {
+		if st.Align == properties.AlignCenter || st.Align == properties.AlignEnd || st.Align == properties.AlignBaseline {
 			// See layoutFlex: aligned items keep their own cross size.
 			if axis == layout.Horizontal {
 				cgtx.Constraints.Min.Y = 0
@@ -95,7 +95,7 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		dims := el.Layout(cgtx)
 		ops := macro.Stop()
 		track.End()
-		it := wrapItem{ops: ops, main: axisMain(dims.Size, axis), cross: axisCross(dims.Size, axis), track: track, z: base.ZIndexOf(child)}
+		it := wrapItem{ops: ops, main: axisMain(dims.Size, axis), cross: axisCross(dims.Size, axis), track: track, z: base.ZIndexOf(child), above: dims.Size.Y - dims.Baseline}
 		items = append(items, it)
 	}
 	*itemsBuf = items
@@ -120,12 +120,24 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		if it.cross > cur.thickness {
 			cur.thickness = it.cross
 		}
+		cur.above = max(cur.above, it.above)
 	}
 	if start < len(items) {
 		cur.items = items[start:]
 		lines = append(lines, cur)
 	}
 	*linesBuf = lines
+	if st.Align == properties.AlignBaseline && axis == layout.Horizontal {
+		// Items on one baseline: a line is as thick as the tallest part
+		// above it plus the deepest below.
+		for i := range lines {
+			below := 0
+			for _, it := range lines[i].items {
+				below = max(below, it.cross-it.above)
+			}
+			lines[i].thickness = max(lines[i].thickness, lines[i].above+below)
+		}
+	}
 
 	// Lines share any spare cross-axis space of a container with a
 	// minimum cross size (a fixed Height on a Row, say), like CSS's
@@ -157,6 +169,9 @@ func (b *BoxElement) layoutFlexWrap(gtx layout.Context, st styles.Styles, childr
 		mainOffset := lead
 		for i, it := range ln.items {
 			crossPos := alignOffset(st.Align, ln.thickness, it.cross)
+			if st.Align == properties.AlignBaseline && axis == layout.Horizontal {
+				crossPos = ln.above - it.above
+			}
 			pos := axisPoint(axis, mainOffset, crossOffset+crossPos)
 			it.track.Place(pos)
 			if zs != nil {

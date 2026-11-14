@@ -59,7 +59,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | Property | Type | Values | Notes |
 | --- | --- | --- | --- |
 | `FlexDirection` | string | `FlexDirectionRow` (default), `FlexDirectionColumn` | Main axis (CSS flex-direction). |
-| `Align` | string | `AlignStart`, `AlignCenter`, `AlignEnd`, `AlignStretch` | Cross-axis alignment (align-items). `AlignStretch` makes every child as tall as the tallest in its row (as wide as the widest in a column), so cards side by side share a bottom edge. |
+| `Align` | string | `AlignStart`, `AlignCenter`, `AlignEnd`, `AlignStretch`, `AlignBaseline` | Cross-axis alignment (align-items). `AlignStretch` makes every child as tall as the tallest in its row (as wide as the widest in a column), so cards side by side share a bottom edge. `AlignBaseline` lines a row's children up on their baselines: text in different sizes, or a formula beside text. |
 | `Justify` | string | `JustifyStart` (default), `JustifyCenter`, `JustifyEnd`, `JustifySpaceBetween`, `JustifySpaceAround`, `JustifySpaceEvenly` | Main-axis distribution. |
 | `Wrap` | string | `WrapWrap`, `WrapNoWrap` | Whether children continue onto new lines. Unset: Row wraps, Stack does not. |
 | `Gap` | int | dp | Space between children and between wrapped lines. |
