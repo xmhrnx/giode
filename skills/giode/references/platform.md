@@ -17,6 +17,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `KeepScreenOn` | ✓ | ✓ | ✓ | ✓ | ✓ | – |
 | `KeepAlive` | manifest entry (see below) | ~30 s | ✓ | ✓ | ✓ (logind) | – |
 | `SecureStore` | Keystore | Keychain | Keychain | DPAPI | Secret Service | – |
+| `settings` package | ✓ | ✓ | ✓ | ✓ | ✓ | local storage |
 | `PickFiles` | ✓ | ✓ | ✓ | ✓ | ✓ (portal) | ✓ |
 | `PickedFile.Path` | – | – | ✓ | ✓ | ✓ | – |
 | `PickFolder` | – | – | ✓ | ✓ | ✓ (portal, zenity, kdialog) | – |
@@ -152,6 +153,38 @@ The [giode CLI](https://github.com/xmhrnx/giode-cli) adds them when `giode.toml`
 `KeepAlive` returns an error wrapping `ErrNotSupported`; keep the app open with
 `KeepScreenOn` and save progress in `OnBackground` as a fallback. Android 15
 limits `dataSync` services to six hours a day, after which the service stops.
+
+## Saved settings and progress
+
+Package `settings` keeps small values across restarts: preferences, progress, the last
+opened file. They're JSON in `settings.json` in the app's data directory (a folder of its
+own under the user's config directory on desktops, the app's private files on Android and
+iOS) and in local storage on the web.
+
+```go
+import "github.com/xmhrnx/giode/settings"
+
+settings.Save("theme", "dark")
+theme := settings.Value("theme", "light") // the default when nothing is saved
+
+// A State that loads its saved value on start and saves itself on every change:
+var progress = settings.Bind("progress", map[string]bool{})
+
+progress.Update(func(done map[string]bool) map[string]bool {
+	next := maps.Clone(done)
+	next["kepler"] = true
+	return next
+})
+```
+
+- Values are anything `encoding/json` encodes: strings, numbers, structs, maps, slices.
+  `Value` returns the default when the saved value doesn't decode as the type asked for.
+- Every change writes the whole document at once, atomically (a new file renamed into
+  place), so a crash never leaves it half written. It's meant for kilobytes, not a database.
+- `settings.Default` is the app's store, with `Get`, `Set`, `Delete`, `Has` and `Keys`;
+  `settings.Open(path)` makes another at a path of your own, and `BindTo` binds to it.
+- The methods may be called from any goroutine. They don't encrypt: keep tokens and keys in
+  `SecureStore` (below).
 
 ## Secure storage
 
