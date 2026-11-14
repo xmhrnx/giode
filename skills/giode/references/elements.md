@@ -224,6 +224,18 @@ Coordinates and lengths are in dp from the top-left corner; angles are degrees c
 from 12 o'clock. Colors are any `Color`, theme tokens included (`""` is the inherited text
 color), so a canvas follows light/dark switches.
 
+Labels go on the drawing itself:
+
+```go
+giode.Canvas(giode.Styles{Width: 240, Height: 160}, func(p *giode.Painter) {
+	p.Line(20, 140, 220, 140, 1, "theme.border") // x axis
+	p.Circle(120, 60, 4, "theme.primary")
+	p.Text(128, 60, "M", giode.TextAnchorLeft, giode.Styles{FontWeight: giode.FontWeightBold})
+	p.Text(120, 150, "r (km)", giode.TextAnchorTop, giode.Styles{FontSize: 12, Color: "theme.muted"})
+	p.TextRotated(8, 80, "v (km/s)", giode.TextAnchorCenter, -90, giode.Styles{FontSize: 12})
+})
+```
+
 | Painter method | Draws |
 | --- | --- |
 | `Rect(x, y, w, h, radius, fill)` | a rectangle, rounded |
@@ -231,6 +243,9 @@ color), so a canvas follows light/dark switches.
 | `Line(x1, y1, x2, y2, width, color)` | a straight line |
 | `Arc(cx, cy, r, width, start, sweep, color)` | a stroked arc with round ends; a sweep of 360 is a ring |
 | `Sector(cx, cy, inner, outer, start, sweep, fill)` | a pie slice (inner 0) or donut segment |
+| `Text(x, y, s, anchor, styles)` | text with its anchor point at (x, y): `TextAnchorCenter`, `TextAnchorLeft`, `TextAnchorBottom`, … Styled like a `Text` element (`Color`, `FontSize`, `FontWeight`, `FontFamily`, `Background`, `Padding`; `MaxWidth` wraps it). Returns its size in dp. |
+| `TextRotated(x, y, s, anchor, deg, styles)` | the same, turned `deg` degrees clockwise around the anchor: `-90` for a y axis label |
+| `MeasureText(s, styles)` | the size `Text` would draw `s` at, in dp |
 | `Path()` | a `*giode.CanvasPath`: `MoveTo`, `LineTo`, `QuadTo`, `CubeTo`, `ArcAround`, `Close`, then `Fill(color)` or `Stroke(width, color)` |
 | `Width()`, `Height()` | the canvas size in dp |
 | `Context()` | the Gio context, for raw drawing in pixels |

@@ -20,6 +20,8 @@ type (
 	Painter = canvas.Painter
 	// Path is a shape built from lines and curves, in dp.
 	Path = canvas.Path
+	// TextAnchor is the point of a text Painter.Text puts at (x, y).
+	TextAnchor = canvas.TextAnchor
 	// Breakpoint is a simplified media query.
 	Breakpoint = responsive.Breakpoint
 )
@@ -36,4 +38,17 @@ var (
 	TableRow    = table.TableRow
 	TableHeader = table.TableHeader
 	TableCell   = table.TableCell
+)
+
+// The points of a text Painter.Text can put at (x, y).
+const (
+	TextAnchorTopLeft     = canvas.TextAnchorTopLeft
+	TextAnchorTop         = canvas.TextAnchorTop
+	TextAnchorTopRight    = canvas.TextAnchorTopRight
+	TextAnchorLeft        = canvas.TextAnchorLeft
+	TextAnchorCenter      = canvas.TextAnchorCenter
+	TextAnchorRight       = canvas.TextAnchorRight
+	TextAnchorBottomLeft  = canvas.TextAnchorBottomLeft
+	TextAnchorBottom      = canvas.TextAnchorBottom
+	TextAnchorBottomRight = canvas.TextAnchorBottomRight
 )

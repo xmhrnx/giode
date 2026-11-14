@@ -10,6 +10,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/xmhrnx/giode/elements/internal/base"
+	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -68,4 +70,41 @@ func cubic(p0, p1, p2, p3 f32.Point, t float32) f32.Point {
 func dist(a, b f32.Point) float32 {
 	d := a.Sub(b)
 	return float32(math.Hypot(float64(d.X), float64(d.Y)))
+}
+
+// Text puts its anchor point at (x, y).
+func TestTextAnchors(t *testing.T) {
+	fonts.UseGofont()
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 2, PxPerSp: 2}, Constraints: layout.Constraints{Max: image.Pt(400, 400)}}
+	var tw, th float32
+	base.BeginSemantics()
+	Canvas(styles.Styles{Width: 200, Height: 200}, func(p *Painter) {
+		tw, th = p.MeasureText("Label")
+		p.Text(100, 100, "Label", TextAnchorCenter)
+		p.Text(10, 20, "TopLeft", TextAnchorTopLeft)
+		p.Text(190, 190, "BottomRight", TextAnchorBottomRight)
+	}).Layout(gtx)
+	nodes := base.EndSemantics()
+	got := map[string]image.Rectangle{}
+	for _, n := range nodes {
+		got[n.Label] = n.Bounds
+	}
+	if tw <= 0 || th <= 0 {
+		t.Fatalf("MeasureText %vx%v", tw, th)
+	}
+	near := func(a, b int) bool { return a-b <= 1 && b-a <= 1 }
+	c := got["Label"]
+	if !near((c.Min.X+c.Max.X)/2, 200) || !near((c.Min.Y+c.Max.Y)/2, 200) {
+		t.Errorf("centered label at %v, want centered on (200,200) px", c)
+	}
+	if c.Dx() != int(tw*2) {
+		t.Errorf("label %d px wide, MeasureText said %v dp", c.Dx(), tw)
+	}
+	if tl := got["TopLeft"]; tl.Min != image.Pt(20, 40) {
+		t.Errorf("top-left label at %v, want from (20,40) px", tl)
+	}
+	if br := got["BottomRight"]; br.Max != image.Pt(380, 380) {
+		t.Errorf("bottom-right label at %v, want to (380,380) px", br)
+	}
 }

@@ -145,6 +145,7 @@ type (
 	RawFunc         = elements.RawFunc
 	Painter         = elements.Painter
 	CanvasPath      = elements.Path
+	TextAnchor      = elements.TextAnchor
 	OutOfFlow       = elements.OutOfFlow
 	// ContextMenu is what an element's Context takes: a Menu, or a
 	// menu of your own.
@@ -933,4 +934,17 @@ const (
 	EaseOutBack   = properties.EaseOutBack
 	EaseInBack    = properties.EaseInBack
 	EaseOutBounce = properties.EaseOutBounce
+)
+
+// The points of a text Painter.Text can put at (x, y).
+const (
+	TextAnchorTopLeft     = elements.TextAnchorTopLeft
+	TextAnchorTop         = elements.TextAnchorTop
+	TextAnchorTopRight    = elements.TextAnchorTopRight
+	TextAnchorLeft        = elements.TextAnchorLeft
+	TextAnchorCenter      = elements.TextAnchorCenter
+	TextAnchorRight       = elements.TextAnchorRight
+	TextAnchorBottomLeft  = elements.TextAnchorBottomLeft
+	TextAnchorBottom      = elements.TextAnchorBottom
+	TextAnchorBottomRight = elements.TextAnchorBottomRight
 )
