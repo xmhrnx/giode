@@ -21,6 +21,11 @@ const (
 	KeyboardPhone
 )
 
+// hintPlain is giode's flag on Gio's keyboard hints for text taken as
+// typed (Input.Autocorrect(false)), which the giode CLI's Gio patches
+// read.
+const hintPlain key.InputHint = 0x80
+
 // hint maps k to Gio's keyboard hint.
 func (k Keyboard) hint() key.InputHint {
 	switch k {

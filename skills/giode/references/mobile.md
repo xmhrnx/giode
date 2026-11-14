@@ -139,6 +139,10 @@ Phone-friendly layout helpers:
 - `Responsive` with `MaxWidth` in dp, and `giode.Compact()` inside the chosen view - see
   [elements.md](elements.md#responsive).
 - `Input.Text(...).Keyboard(giode.KeyboardEmail)` picks the on-screen keyboard.
+- `Input.Text(...).Autocorrect(false)` has the keyboard take text as typed: no corrections,
+  suggestions, automatic capitals or smart quotes and dashes, for a terminal, code or user
+  names, keeping the `Keyboard` layout. With the giode CLI's Gio patches (CLI builds) on
+  Android and iOS; other Android builds get the plain text keyboard.
 - A tap outside the focused field (on the page, a card, a button) takes its focus and
   closes the keyboard, as native apps do; a scroll doesn't. On single-line fields the
   keyboard's return key reads Done (with the giode CLI's Gio patches) and closes the

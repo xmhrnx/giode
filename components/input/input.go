@@ -23,6 +23,7 @@ type Input struct {
 	placeholder  string
 	label        string
 	keyboard     Keyboard
+	plain        bool
 	st           styles.Styles
 	onSubmit     func(text string)
 	onChange     func(text string)
@@ -113,10 +114,29 @@ func (i *Input) Keyboard(k Keyboard) *Input {
 	return i
 }
 
+// Autocorrect(false) has the on-screen keyboard take text as typed:
+// no corrections or word suggestions, no automatic capitals, and no
+// smart quotes or dashes - for a terminal, code, commands or user
+// names. It keeps the Keyboard's layout. Autocorrect(true), the
+// default, leaves them to the keyboard. It returns i for chaining.
+//
+// Builds by the giode CLI (Gio patch revision 18 on) honor it on
+// Android and iOS; other Android builds get the plain text keyboard.
+// The web turns correction, capitals and spell checking off; desktops
+// ignore it.
+func (i *Input) Autocorrect(on bool) *Input {
+	i.plain = !on
+	i.updateHint()
+	return i
+}
+
 func (i *Input) updateHint() {
-	if i.editor.Mask != 0 {
+	switch {
+	case i.editor.Mask != 0:
 		i.editor.InputHint = key.HintPassword
-	} else {
+	case i.plain:
+		i.editor.InputHint = i.keyboard.hint() | hintPlain
+	default:
 		i.editor.InputHint = i.keyboard.hint()
 	}
 }
