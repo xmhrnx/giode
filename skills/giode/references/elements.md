@@ -288,7 +288,9 @@ Also: letter styles `\mathcal` and `\mathscr` (ℰ, ℒ), `\mathbb` (ℝ, ℤ), 
 `\mathsf`, `\mathtt`, `\mathbf` and `\boldsymbol` (bold italic, Greek too); matrices
 (`\begin{pmatrix}`, `bmatrix`, `Bmatrix`, `vmatrix`, `Vmatrix`, `matrix`, `smallmatrix`) and
 `cases`, with `&` between cells and `\\` between rows; `aligned` inside other math;
-`\overset`, `\underset` and `\stackrel` (`\stackrel{\text{def}}{=}`); `\boxed`; `\textcolor{c}{…}`
+`\overset`, `\underset` and `\stackrel` (`\stackrel{\text{def}}{=}`); `\underbrace{…}_{label}`
+and `\overbrace{…}^{label}` (and `\underbracket`, `\overbracket`), arrows over or under
+(`\overleftrightarrow`, `\underrightarrow`); `\boxed`; `\textcolor{c}{…}`
 and `\color{c}` with any color `Styles` take, theme tokens included; `\phantom`, `\hphantom` and
 `\vphantom`; and a long list of symbols past the usual - `\odot` (so `M_\odot` is M☉),
 `\astrosun` ☉, `\therefore`, `\leqslant`, `\prec`, `\hookrightarrow`, `\Longrightarrow`,

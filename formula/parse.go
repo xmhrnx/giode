@@ -438,7 +438,8 @@ func (p *parser) command() ([]node, bool) {
 			cls = clsRel
 		}
 		return []node{sizedDelim{s: d, scale: scale, cls: cls}}, true
-	case "vec", "hat", "widehat", "bar", "overline", "dot", "ddot", "tilde", "widetilde", "overrightarrow", "underline", "check", "breve", "acute", "grave":
+	case "vec", "hat", "widehat", "bar", "overline", "dot", "ddot", "tilde", "widetilde", "overrightarrow", "underline", "check", "breve", "acute", "grave",
+		"underbrace", "overbrace", "underbracket", "overbracket", "overleftarrow", "overleftrightarrow", "underrightarrow", "underleftarrow":
 		return []node{accent{kind: name, body: p.arg()}}, true
 	case "begin":
 		name := strings.TrimSuffix(strings.TrimSpace(p.rawGroup()), "*")

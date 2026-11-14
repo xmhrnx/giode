@@ -2,6 +2,7 @@ package formula
 
 import (
 	"image/color"
+	"strings"
 
 	"gioui.org/f32"
 	giofont "gioui.org/font"
@@ -501,6 +502,10 @@ func (l *layouter) scripts(n scripts, st mstyle) (box, class, bool) {
 		base := l.glyphs(fn.name, l.math, st.em())
 		return l.limits(base, n.sup, n.sub, st), clsOp, true
 	}
+	if acc, ok := n.base.(accent); ok && isBrace(acc.kind) {
+		// A brace's label goes under (or over) it, centered.
+		return l.limits(l.accent(acc, st), n.sup, n.sub, st), clsOrd, true
+	}
 	base, cls, _ := l.node(n.base, st)
 	em := st.em()
 	sst := st.script()
@@ -661,6 +666,9 @@ func (l *layouter) limits(base box, sup, sub []node, st mstyle) box {
 func (l *layouter) accent(n accent, st mstyle) box {
 	em := st.em()
 	body := l.list(n.body, st, false)
+	if isBrace(n.kind) || strings.HasPrefix(n.kind, "under") && strings.HasSuffix(n.kind, "arrow") || n.kind == "overleftarrow" || n.kind == "overleftrightarrow" {
+		return l.spanning(n.kind, body, st)
+	}
 	if n.kind == "underline" {
 		t := max(ruleThick*em, 1)
 		gap := 0.1 * em
@@ -972,4 +980,82 @@ func (l *layouter) env(n env, st mstyle) box {
 	pad := hspace(0.15 * em)
 	size := max(total+0.2*em, em)
 	return hbox(l.delim(delims[0], size, st), pad, grid, pad, l.delim(delims[1], size, st))
+}
+
+// isBrace reports whether an accent is a brace or bracket over or under
+// its body, which takes a label.
+func isBrace(kind string) bool {
+	switch kind {
+	case "underbrace", "overbrace", "underbracket", "overbracket":
+		return true
+	}
+	return false
+}
+
+// spanning sets a mark as wide as the body over or under it: a brace, a
+// bracket or an arrow.
+func (l *layouter) spanning(kind string, body box, st mstyle) box {
+	em := st.em()
+	t := max(ruleThick*em, 1)
+	under := strings.HasPrefix(kind, "under")
+	gap := 0.12 * em
+	h := min(0.32*em, max(body.w/4, 0.15*em))
+	if strings.HasSuffix(kind, "arrow") {
+		h = 0.24 * em
+	}
+	w := body.w
+	draw := func(d *drawer, x, y0 float32) {
+		// y0 is the mark's edge nearest the body; dir points away from it.
+		dir := float32(1)
+		if !under {
+			dir = -1
+		}
+		var p clip.Path
+		p.Begin(d.ops)
+		switch {
+		case strings.HasSuffix(kind, "brace"):
+			// Two curls rising from the ends to the middle's point.
+			mid := x + w/2
+			r := h / 2
+			p.MoveTo(f32.Pt(x, y0))
+			p.QuadTo(f32.Pt(x, y0+dir*r), f32.Pt(x+r, y0+dir*r))
+			p.LineTo(f32.Pt(mid-r, y0+dir*r))
+			p.QuadTo(f32.Pt(mid, y0+dir*r), f32.Pt(mid, y0+dir*h))
+			p.QuadTo(f32.Pt(mid, y0+dir*r), f32.Pt(mid+r, y0+dir*r))
+			p.LineTo(f32.Pt(x+w-r, y0+dir*r))
+			p.QuadTo(f32.Pt(x+w, y0+dir*r), f32.Pt(x+w, y0))
+		case strings.HasSuffix(kind, "bracket"):
+			p.MoveTo(f32.Pt(x, y0))
+			p.LineTo(f32.Pt(x, y0+dir*h))
+			p.LineTo(f32.Pt(x+w, y0+dir*h))
+			p.LineTo(f32.Pt(x+w, y0))
+		default: // arrows
+			mid := y0 + dir*h/2
+			p.MoveTo(f32.Pt(x, mid))
+			p.LineTo(f32.Pt(x+w, mid))
+			head := 0.16 * em
+			if strings.Contains(kind, "right") {
+				p.MoveTo(f32.Pt(x+w-head, mid-h/2))
+				p.LineTo(f32.Pt(x+w, mid))
+				p.LineTo(f32.Pt(x+w-head, mid+h/2))
+			}
+			if strings.Contains(kind, "left") {
+				p.MoveTo(f32.Pt(x+head, mid-h/2))
+				p.LineTo(f32.Pt(x, mid))
+				p.LineTo(f32.Pt(x+head, mid+h/2))
+			}
+		}
+		paint.FillShape(d.ops, d.col, clip.Stroke{Path: p.End(), Width: t * 1.1}.Op())
+	}
+	if under {
+		return box{w: w, asc: body.asc, desc: body.desc + gap + h + t, draw: func(d *drawer, x, y float32) {
+			body.draw(d, x, y)
+			draw(d, x, y+body.desc+gap)
+		}}
+	}
+	top := max(body.asc, xHeight*em) + gap
+	return box{w: w, asc: top + h + t, desc: body.desc, draw: func(d *drawer, x, y float32) {
+		body.draw(d, x, y)
+		draw(d, x, y-top)
+	}}
 }

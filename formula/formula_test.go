@@ -232,3 +232,20 @@ func TestAlphabetsAndEnvironments(t *testing.T) {
 		}
 	}
 }
+
+// \underbrace puts its label under a brace below the body; \overbrace
+// over it.
+func TestBraces(t *testing.T) {
+	plain := size(t, `a+b`, false)
+	under := size(t, `\underbrace{a+b}_{\text{sum}}`, false)
+	over := size(t, `\overbrace{a+b}^{n}`, false)
+	if under.Baseline < plain.Baseline+10 || under.Size.Y-under.Baseline > plain.Size.Y-plain.Baseline+2 {
+		t.Errorf("underbrace %v baseline %d; plain %v baseline %d: want the brace and label below only", under.Size, under.Baseline, plain.Size, plain.Baseline)
+	}
+	if over.Size.Y-over.Baseline < plain.Size.Y-plain.Baseline+10 || over.Baseline > plain.Baseline+2 {
+		t.Errorf("overbrace %v baseline %d; plain %v baseline %d: want the brace and label above only", over.Size, over.Baseline, plain.Size, plain.Baseline)
+	}
+	for _, src := range []string{`\underbrace{x}`, `\overbrace{}`, `\underbracket{a}_b`, `\overleftrightarrow{AB}`, `\underrightarrow{xyz}`} {
+		size(t, src, false)
+	}
+}

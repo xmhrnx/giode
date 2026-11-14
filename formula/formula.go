@@ -49,7 +49,8 @@ type Formula struct {
 // and & for aligned lines. Also the letter styles \mathcal \mathscr
 // \mathbb \mathfrak \mathsf \mathtt \boldsymbol, matrices (pmatrix,
 // bmatrix, vmatrix and the rest) and cases, \overset \underset
-// \stackrel, \boxed, \textcolor and \color, and \phantom. Letters are
+// \stackrel, \underbrace and \overbrace with their labels, \boxed,
+// \textcolor and \color, and \phantom. Letters are
 // set in italic, as variables; write \mathrm{d}x for an upright d. Any
 // symbol may also be typed as itself (ℰ, ☉).
 func New(src string, st ...styles.Styles) *Formula {
