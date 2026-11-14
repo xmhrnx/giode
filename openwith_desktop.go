@@ -1,4 +1,4 @@
-//go:build !android && !ios && !js && !windows
+//go:build !android && !ios && !js && !windows && !linux
 
 package giode
 

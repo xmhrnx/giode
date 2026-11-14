@@ -37,7 +37,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `OnShareReceived` (share target) | `app.share_target` | share extension, `app.share_target` | – | – | – | – |
 | `SaveToDownloads` | Download (Android 10+) | Documents, in Files | Downloads | Downloads | XDG Downloads | – |
 | `OpenDownloads` / `OpenFolder` | ✓ / – | Files app | Finder | Explorer | `xdg-open` | – |
-| `OpenWith` | `ACTION_VIEW` | "Open in…" menu | default app | default app | `xdg-open` | – |
+| `OpenWith` | `ACTION_VIEW` | "Open in…" menu | default app | default app | OpenURI portal or `xdg-open` | – |
 | `multicast` package | Wi-Fi multicast lock | not needed | not needed | not needed | not needed | – |
 
 "–" means the call returns `ErrNotSupported` (or, for `Haptic`, does nothing). The iOS
@@ -339,8 +339,14 @@ built some other way hand over a copy in Downloads instead (Android 10 or later)
 app for the type it returns an error, so offer `Share` then. iOS shows the "Open in…" menu
 of the apps that open the file, or a Quick Look preview, with its share button, when none
 does. Desktops open the file's default app: NSWorkspace on macOS (the sandbox allows it),
-ShellExecute on Windows (which asks with "Open with" when the type has no app), and
-`xdg-open` on Linux. The web returns `ErrNotSupported`.
+ShellExecute on Windows (which asks with "Open with" when the type has no app), and on
+Linux the desktop portal's OpenURI, which Flatpak and Snap apps need: the file is handed
+over as an open descriptor, so a sandboxed app's files open too, and `OpenWith` waits for
+the portal's answer, returning `ErrCanceled` when the user dismisses its app chooser.
+Without a portal it runs `xdg-open`. The web returns `ErrNotSupported`.
+
+`OpenURL` refuses `file:` URLs on purpose, so links in untrusted content can't open local
+files; `OpenWith` is the way to open a file the app chose.
 
 ## Receiving shares
 

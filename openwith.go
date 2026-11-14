@@ -20,7 +20,9 @@ import (
 //     none does, a Quick Look preview with the share button.
 //   - Desktops: the file's default app (ShellExecute on Windows, which
 //     asks with "Open with" when the type has none; NSWorkspace on
-//     macOS; xdg-open on Linux).
+//     macOS; on Linux the desktop portal's OpenURI, which Flatpak and
+//     Snap apps need, else xdg-open). OpenWith waits for the portal's
+//     answer: ErrCanceled when the user dismisses its app chooser.
 //   - The web returns ErrNotSupported.
 //
 // Call it from a goroutine: on Android it may copy the file.
