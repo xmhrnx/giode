@@ -252,8 +252,11 @@ var (
 	Span = ui.Span
 	Link = ui.Link
 	// Markdown renders Markdown as giode elements; see markdown.New.
-	Markdown   = ui.Markdown
-	Responsive = ui.Responsive
+	Markdown = ui.Markdown
+	// MarkdownFetchImage loads images for MarkdownOptions.LoadImage:
+	// URLs, data: URIs and files; see markdown.FetchImage.
+	MarkdownFetchImage = ui.MarkdownFetchImage
+	Responsive         = ui.Responsive
 	// ActiveBreakpoint returns the name of the breakpoint the innermost
 	// enclosing Responsive matched.
 	ActiveBreakpoint = ui.ActiveBreakpoint

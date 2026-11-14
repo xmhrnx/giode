@@ -6,6 +6,8 @@
 package markdown
 
 import (
+	"strings"
+
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
@@ -77,13 +79,83 @@ func (r *renderer) block(n gast.Node) elements.Element {
 	return nil
 }
 
-// paragraph renders n's inline content as one RichText.
+// paragraph renders n's inline content as one RichText, or with
+// loaded images, as its runs of text and its images.
 func (r *renderer) paragraph(st styles.Styles, n gast.Node) elements.Element {
-	var spans []elements.Span
-	r.inlines(n, styles.Styles{}, &spans)
+	var out inlineOut
+	r.inlines(n, styles.Styles{}, &out)
+	if len(out.parts) == 0 {
+		return r.richText(st, out.spans)
+	}
+	out.flush()
+	var kids []elements.Element
+	var pics []elements.Element
+	endPics := func() {
+		switch len(pics) {
+		case 0:
+		case 1:
+			kids = append(kids, pics[0])
+		default:
+			kids = append(kids, elements.Row(styles.Styles{Gap: 6, Wrap: properties.WrapWrap}, pics...))
+		}
+		pics = nil
+	}
+	for _, p := range out.parts {
+		if p.src != "" {
+			pics = append(pics, mdImage{src: p.src, alt: p.alt, load: r.o.LoadImage, altStyle: styles.Merge(st, styles.Styles{Color: "theme.muted"})})
+			continue
+		}
+		if blank(p.spans) {
+			continue
+		}
+		endPics()
+		kids = append(kids, r.richText(st, trimRun(p.spans)))
+	}
+	endPics()
+	if len(kids) == 1 {
+		return kids[0]
+	}
+	return elements.Stack(styles.Styles{Gap: 6, Width: -1}, kids...)
+}
+
+func (r *renderer) richText(st styles.Styles, spans []elements.Span) elements.Element {
 	rt := elements.RichText(st, spans...)
 	if r.o.OnLink != nil {
 		rt.OnLink(r.o.OnLink)
 	}
 	return rt
+}
+
+// trimRun drops the white space at the ends of a run of text, which
+// stood between it and an image.
+func trimRun(spans []elements.Span) []elements.Span {
+	spans = append([]elements.Span(nil), spans...)
+	for len(spans) > 0 {
+		t := strings.TrimLeft(spans[0].Text(), " \t\n")
+		if t != "" {
+			spans[0] = spans[0].WithText(t)
+			break
+		}
+		spans = spans[1:]
+	}
+	for len(spans) > 0 {
+		last := len(spans) - 1
+		t := strings.TrimRight(spans[last].Text(), " \t\n")
+		if t != "" {
+			spans[last] = spans[last].WithText(t)
+			break
+		}
+		spans = spans[:last]
+	}
+	return spans
+}
+
+// blank reports whether spans hold only white space.
+func blank(spans []elements.Span) bool {
+	for _, s := range spans {
+		if strings.TrimSpace(s.Text()) != "" {
+			return false
+		}
+	}
+	return true
 }

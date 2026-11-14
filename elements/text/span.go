@@ -91,3 +91,13 @@ func Link(text, url string, st ...styles.Styles) Span {
 	}
 	return s
 }
+
+// Text returns the span's text.
+func (s Span) Text() string { return s.text }
+
+// WithText returns the span with its text replaced, keeping its style
+// and link.
+func (s Span) WithText(text string) Span {
+	s.text = text
+	return s
+}

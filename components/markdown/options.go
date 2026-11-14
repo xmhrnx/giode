@@ -6,6 +6,7 @@
 package markdown
 
 import (
+	"image"
 	"sync"
 
 	"gioui.org/layout"
@@ -45,6 +46,16 @@ type Options struct {
 	Selectable any
 	// Gap is the space between blocks in dp, default 10.
 	Gap int
+	// LoadImage, when set, loads the pictures of ![alt](src), in
+	// paragraphs, headings and table cells, given src: FetchImage
+	// reads URLs, data: URIs and files, or wrap it to resolve relative
+	// paths or allow only some hosts. It's called once per src, off the
+	// UI goroutine, and the image is kept for the next documents that
+	// show it. An image shows at its pixel size in dp, narrowed to the
+	// width there is, on a line of its own (side by side with images
+	// next to it); its alt text shows while it loads and if it fails.
+	// Without LoadImage, images show as their alt text.
+	LoadImage func(src string) (image.Image, error)
 }
 
 var parser = goldmark.New(goldmark.WithExtensions(extension.GFM))

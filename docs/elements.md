@@ -168,7 +168,29 @@ Renders CommonMark with the GitHub extensions: headings, paragraphs with bold, i
 strikethrough, inline code and links, bulleted, numbered and task lists, block quotes,
 fenced code blocks (with the language and a copy button), tables and rules. Parsing is
 cached per source, so a document laid out every frame is parsed once, and a streaming
-reply only when it changes. Raw HTML is dropped and images show their alt text.
+reply only when it changes. Raw HTML is dropped.
+
+Images show their alt text unless `LoadImage` loads them. `giode.MarkdownFetchImage` reads
+http and https URLs, base64 `data:` URIs and local files (PNG, JPEG, GIF, WebP); wrap it to
+resolve relative paths or allow only some hosts:
+
+```go
+giode.Markdown(lesson, giode.MarkdownOptions{
+	LoadImage: func(src string) (image.Image, error) {
+		if !strings.Contains(src, "://") {
+			src = filepath.Join(lessonDir, src)
+		}
+		return giode.MarkdownFetchImage(src)
+	},
+})
+```
+
+Each image is loaded once, off the UI goroutine, and kept for the next documents that show
+it; its alt text shows while it loads and if it fails. Images in paragraphs, headings, table
+cells and links show at their pixel size in dp, narrowed to the width there is, between the
+text before and after them; images next to each other sit side by side and wrap. Loading the
+images of a document the app doesn't control (a model's reply, someone's message) tells
+their servers it was opened: allow only hosts you trust there.
 
 `Selectable` puts the document in its own `SelectionArea`, keyed by its value: a drag
 selects across paragraphs, headings, lists, tables and code, and copies their text joined

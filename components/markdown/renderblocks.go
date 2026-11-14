@@ -106,13 +106,7 @@ func (r *renderer) table(t *east.Table) elements.Element {
 					st.TextAlign = properties.TextAlignEnd
 				}
 			}
-			var spans []elements.Span
-			r.inlines(cell, styles.Styles{}, &spans)
-			rt := elements.RichText(st, spans...)
-			if r.o.OnLink != nil {
-				rt.OnLink(r.o.OnLink)
-			}
-			cells = append(cells, elements.TableCell(styles.Styles{}, rt))
+			cells = append(cells, elements.TableCell(styles.Styles{}, r.paragraph(st, cell)))
 		}
 		if _, ok := c.(*east.TableHeader); ok {
 			rows = append(rows, elements.TableHeader(styles.Styles{Background: r.o.CodeBackground}, cells...))
