@@ -39,7 +39,14 @@ var probes []*image.Point
 //
 //	prev := t.origin // exact, from the last frame
 //	elements.TrackPosition(&t.origin)
+//
+// A measuring pass (Measure) leaves *p alone: its offset isn't where the
+// element goes, and nothing corrects it afterwards, so a measure after
+// the real layout would leave *p wrong.
 func TrackPosition(p *image.Point) {
+	if measuring > 0 {
+		return
+	}
 	*p = currentOffset
 	probes = append(probes, p)
 }
