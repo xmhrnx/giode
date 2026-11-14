@@ -3,6 +3,7 @@ package settings
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -26,8 +27,13 @@ func TestStore(t *testing.T) {
 	if err := s.Set("progress", progress{Lesson: 3, Done: map[string]bool{"orbits": true}}); err != nil {
 		t.Fatal(err)
 	}
-	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
-		t.Errorf("file %v, %v; want it written, 0600", info, err)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("not written: %v", err)
+	}
+	// Windows has no Unix permissions to check.
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
+		t.Errorf("file mode %v, want 0600", info.Mode().Perm())
 	}
 
 	// Another store over the same file - the app started again.
