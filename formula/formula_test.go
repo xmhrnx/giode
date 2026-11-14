@@ -181,19 +181,19 @@ func TestAlphabetsAndEnvironments(t *testing.T) {
 		return b.String()
 	}
 	for src, want := range map[string]string{
-		`\mathcal{E}`:            "ℰ",
-		`\mathcal{A}`:            "𝒜",
-		`\mathscr{L}`:            "ℒ",
-		`\mathbb{R}`:             "ℝ",
-		`\mathbb{Z}^3`:           "ℤ3",
-		`\mathfrak{g}`:           "𝔤",
-		`\mathsf{A}`:             "𝖠",
-		`\mathtt{x}`:             "𝚡",
-		`\boldsymbol{\omega}`:    "𝝎",
-		`\boldsymbol{r}`:         "𝒓",
-		`M_\odot`:                "𝑀⊙",
-		`M_{\astrosun}`:          "𝑀☉",
-		`☉ ℰ`:                    "☉ℰ",
+		`\mathcal{E}`:                "ℰ",
+		`\mathcal{A}`:                "𝒜",
+		`\mathscr{L}`:                "ℒ",
+		`\mathbb{R}`:                 "ℝ",
+		`\mathbb{Z}^3`:               "ℤ3",
+		`\mathfrak{g}`:               "𝔤",
+		`\mathsf{A}`:                 "𝖠",
+		`\mathtt{x}`:                 "𝚡",
+		`\boldsymbol{\omega}`:        "𝝎",
+		`\boldsymbol{r}`:             "𝒓",
+		`M_\odot`:                    "𝑀⊙",
+		`M_{\astrosun}`:              "𝑀☉",
+		`☉ ℰ`:                        "☉ℰ",
 		`\therefore \Longrightarrow`: "∴⟹",
 	} {
 		if got := text(parse(src)); got != want {
