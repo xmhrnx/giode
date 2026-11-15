@@ -15,6 +15,8 @@ import (
 	"gioui.org/op/paint"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/xmhrnx/giode/internal/linear"
 )
 
 // Segment is a path command: 'M', 'L', 'Q', 'C' or 'Z', with its points.
@@ -132,6 +134,8 @@ func Image(key any, render func() *image.RGBA) paint.ImageOp {
 	}
 	cache.Unlock()
 	img := render()
+	// Drawn premultiplied in sRGB; the GPU blends in linear light.
+	linear.FixRGBA(img)
 	op := paint.NewImageOp(img)
 	op.Filter = paint.FilterNearest
 	cache.Lock()

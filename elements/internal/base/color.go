@@ -3,6 +3,7 @@ package base
 import (
 	"image/color"
 
+	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -43,4 +44,9 @@ func ResolveColor(c string) color.NRGBA {
 		c = CurrentColor()
 	}
 	return properties.ResolveColor(c)
+}
+
+func init() {
+	// Text without a box's background is drawn for the theme's.
+	textrender.DefaultBackground = func() color.NRGBA { return properties.ResolveColor("theme.background") }
 }

@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"gioui.org/op/paint"
+
+	"github.com/xmhrnx/giode/internal/linear"
 )
 
 // imageOps caches the paint.ImageOp of each image. A fresh ImageOp per
@@ -29,7 +31,8 @@ func ImageOp(img image.Image) paint.ImageOp {
 	if len(imageOps) >= maxCachedImages {
 		imageOps = map[image.Image]paint.ImageOp{}
 	}
-	op := paint.NewImageOp(img)
+	// Partly transparent pixels premultiplied as the GPU blends.
+	op := paint.NewImageOp(linear.Image(img))
 	imageOps[img] = op
 	return op
 }

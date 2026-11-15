@@ -17,6 +17,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/internal/linear"
 )
 
 // frame counts frames, to tell which cached entries are in use.
@@ -179,6 +180,7 @@ type runKey struct {
 	hash uint64
 	n    int
 	col  color.NRGBA
+	bg   color.NRGBA
 }
 
 // runImage is a line of glyphs drawn into an image, placed off from the
@@ -271,7 +273,8 @@ func runHash(glyphs []text.Glyph) uint64 {
 }
 
 func runImageFor(sh *text.Shaper, glyphs []text.Glyph, col color.NRGBA, ox, oy int, hash uint64) *runImage {
-	key := runKey{hash: hash, n: len(glyphs), col: col}
+	bg := Background()
+	key := runKey{hash: hash, n: len(glyphs), col: col, bg: bg}
 	now := frame.Load()
 	runCache.Lock()
 	if img, ok := runCache.m[key]; ok {
@@ -281,7 +284,7 @@ func runImageFor(sh *text.Shaper, glyphs []text.Glyph, col color.NRGBA, ox, oy i
 	}
 	runCache.Unlock()
 
-	img := composeRun(sh, glyphs, col, ox, oy)
+	img := composeRun(sh, glyphs, col, bg, ox, oy)
 	img.used = now
 
 	runCache.Lock()
@@ -337,7 +340,7 @@ func evictRuns() {
 }
 
 // composeRun rasterizes a run's glyphs into one image.
-func composeRun(sh *text.Shaper, glyphs []text.Glyph, col color.NRGBA, ox, oy int) *runImage {
+func composeRun(sh *text.Shaper, glyphs []text.Glyph, col, bg color.NRGBA, ox, oy int) *runImage {
 	if vectorOnly.Load() {
 		return &runImage{vector: true}
 	}
@@ -383,9 +386,14 @@ func composeRun(sh *text.Shaper, glyphs []text.Glyph, col color.NRGBA, ox, oy in
 			}
 		}
 	}
-	out := image.NewNRGBA(image.Rect(0, 0, w, bounds.Dy()))
+	// The image is premultiplied as the GPU blends: in linear light,
+	// then encoded in sRGB as Gio's textures are. A straight-alpha
+	// image would be premultiplied in sRGB by Gio's upload, darkening
+	// every partly covered pixel - a dark fringe that thinned light
+	// text and smudged gray.
+	out := image.NewRGBA(image.Rect(0, 0, w, bounds.Dy()))
 	ca := uint32(col.A)
-	lut := coverageLUT(col)
+	lut := coverageLUT(col, bg)
 	for i, c := range cov {
 		if c == 0 {
 			continue
@@ -393,9 +401,9 @@ func composeRun(sh *text.Shaper, glyphs []text.Glyph, col color.NRGBA, ox, oy in
 		if c > 255 {
 			c = 255
 		}
+		a := uint8((uint32(lut[c])*ca + 127) / 255)
 		px := out.Pix[i*4 : i*4+4 : i*4+4]
-		px[0], px[1], px[2] = col.R, col.G, col.B
-		px[3] = uint8((uint32(lut[c])*ca + 127) / 255)
+		px[0], px[1], px[2], px[3] = linear.Premul(col.R, a), linear.Premul(col.G, a), linear.Premul(col.B, a), a
 	}
 	imgOp := paint.NewImageOp(out)
 	imgOp.Filter = paint.FilterNearest

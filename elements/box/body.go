@@ -11,6 +11,7 @@ import (
 	"gioui.org/op/paint"
 
 	"github.com/xmhrnx/giode/elements/internal/base"
+	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -65,6 +66,13 @@ func (b *BoxElement) layoutBody(gtx layout.Context) layout.Dimensions {
 	contentOff := image.Pt(margin.Left+padding.Left, margin.Top+padding.Top)
 	popAbs := base.PushOffset(contentOff)
 	popColor := base.PushColor(st.Color)
+	// Text inside is drawn for the box's background (see
+	// textrender's coverage correction).
+	bg := properties.CalcColor(st.Background)
+	if g := st.BackgroundGradient; g != nil && len(g.Stops) > 0 {
+		bg = properties.CalcColor(string(g.Stops[len(g.Stops)/2].Color))
+	}
+	popBg := textrender.PushBackground(bg)
 	var zs *[]zPaint
 	if ordered || rtl {
 		// A child sets a z-index, or the locale reads right to left:
@@ -86,6 +94,7 @@ func (b *BoxElement) layoutBody(gtx layout.Context) layout.Dimensions {
 		paintZ(gtx.Ops, *zs)
 	}
 	popColor()
+	popBg()
 	popAbs()
 	content := macro.Stop()
 

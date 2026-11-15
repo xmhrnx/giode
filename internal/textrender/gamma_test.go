@@ -11,9 +11,14 @@ import (
 )
 
 func TestCoverageLUT(t *testing.T) {
-	dark := coverageLUT(color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xff})
-	light := coverageLUT(color.NRGBA{R: 0xf0, G: 0xf0, B: 0xf0, A: 0xff})
-	for _, l := range []*[256]uint8{dark, light} {
+	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+	dark := coverageLUT(color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xff}, white)
+	light := coverageLUT(color.NRGBA{R: 0xf0, G: 0xf0, B: 0xf0, A: 0xff}, color.NRGBA{R: 0x10, G: 0x10, B: 0x10, A: 0xff})
+	// Gray text on white is dark text there; white text on green is
+	// light text, though less than over black.
+	gray := coverageLUT(color.NRGBA{R: 0xc2, G: 0xc5, B: 0xcc, A: 0xff}, white)
+	onGreen := coverageLUT(white, color.NRGBA{R: 0x10, G: 0xb9, B: 0x81, A: 0xff})
+	for _, l := range []*[256]uint8{dark, light, gray, onGreen} {
 		if l[0] != 0 || l[255] != 255 {
 			t.Errorf("ends %d, %d; want 0, 255", l[0], l[255])
 		}
@@ -23,9 +28,27 @@ func TestCoverageLUT(t *testing.T) {
 			}
 		}
 	}
-	// Dark text gets more coverage, light text less, than linear.
-	if dark[128] <= 128 || light[128] >= 128 {
-		t.Errorf("half coverage: dark %d, light %d", dark[128], light[128])
+	if dark[128] <= 128 || gray[128] <= 128 || light[128] >= 128 || onGreen[128] >= 128 || onGreen[128] <= light[128] {
+		t.Errorf("half coverage: dark %d, gray %d, light %d, on green %d", dark[128], gray[128], light[128], onGreen[128])
+	}
+	// The same colors: no correction.
+	if same := coverageLUT(white, white); same[128] != 128 {
+		t.Errorf("no contrast: %d", same[128])
+	}
+}
+
+// Boxes push their backgrounds; translucent ones over what's below.
+func TestBackgroundStack(t *testing.T) {
+	DefaultBackground = func() color.NRGBA { return color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff} }
+	pop := PushBackground(color.NRGBA{R: 0, G: 0, B: 0, A: 0xff})
+	pop2 := PushBackground(color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80})
+	if b := Background(); b.R != 0x80 {
+		t.Errorf("half white over black: %v", b)
+	}
+	pop2()
+	pop()
+	if b := Background(); b.R != 0xff {
+		t.Errorf("default: %v", b)
 	}
 }
 

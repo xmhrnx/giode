@@ -10,6 +10,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+
+	"github.com/xmhrnx/giode/internal/linear"
 )
 
 // BoxShadow is a drop shadow painted behind an element (CSS
@@ -177,7 +179,7 @@ func cachedShadow(key shadowKey, w, h, m, rl, rr, rt, rb int) *shadowImage {
 		// One slice: the whole shadow.
 		img.cols = [3]int{0, full.Bounds().Dx(), 0}
 		img.rows = [3]int{0, full.Bounds().Dy(), 0}
-		op := paint.NewImageOp(full)
+		op := paint.NewImageOp(linear.Image(full))
 		img.slices[4] = &op
 	} else {
 		img.cols = [3]int{2*m + rl, 1, 2*m + rr}
@@ -193,7 +195,7 @@ func cachedShadow(key shadowKey, w, h, m, rl, rr, rt, rb int) *shadowImage {
 				for yy := 0; yy < cp.Rect.Dy(); yy++ {
 					copy(cp.Pix[yy*cp.Stride:yy*cp.Stride+cp.Rect.Dx()*4], sub.Pix[yy*sub.Stride:yy*sub.Stride+cp.Rect.Dx()*4])
 				}
-				op := paint.NewImageOp(cp)
+				op := paint.NewImageOp(linear.Image(cp))
 				op.Filter = paint.FilterNearest
 				img.slices[row*3+col] = &op
 				x += img.cols[col]
