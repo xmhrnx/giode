@@ -131,7 +131,7 @@ func TestSortByHeader(t *testing.T) {
 	var sorts [][]SortKey
 	g.OnSort(func(k []SortKey) { sorts = append(sorts, k) })
 	h := newHarness(g)
-	g.Select(0) // deal 1
+	g.Select(0)         // deal 1
 	h.click(300, 18, 0) // Value header
 	if src.Len() != 30 || fmt.Sprint(g.SortKeys()) != "[{value false}]" {
 		t.Fatalf("sorted %v", g.SortKeys())
