@@ -563,7 +563,16 @@ ul.checks li::before {
 .app-icon { border-radius: 16px; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.6); }
 .app-icon.big { border-radius: 26px; width: 112px; height: 112px; }
 .category { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--border-2); padding: 3px 10px; border-radius: 999px; }
+.example-card:focus-within { border-color: var(--accent, var(--brand)); }
 .example-card h2 { font-size: 1.4rem; margin-bottom: 6px; }
+.card-link { color: inherit; text-decoration: none !important; outline: none; }
+/* The whole card opens the app's page; the Website link sits above it. */
+.card-link::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.card-link:focus-visible::before { outline: 2px solid var(--accent, var(--brand)); outline-offset: -2px; border-radius: 20px; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.card-foot .more { margin-top: 0; }
+.site-link { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-2); background: color-mix(in srgb, var(--surface-2) 80%, transparent); text-decoration: none !important; transition: border-color 0.2s, color 0.2s; }
+.site-link:hover, .site-link:focus-visible { border-color: var(--accent, var(--brand)); color: var(--accent, var(--brand)); }
 .example-card p { color: var(--muted); margin: 0 0 18px; flex: 1; }
 .more { color: var(--accent, var(--brand)); font-weight: 600; font-size: 14px; margin-top: 18px; }
 .example-card.add { border-style: dashed; background: transparent; justify-content: center; }
@@ -588,6 +597,8 @@ ul.checks li::before {
 .project-head h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 800; margin-bottom: 8px; }
 .project-head .eyebrow { color: var(--accent); margin-bottom: 4px; }
 .project-head .lead { margin: 0 0 16px; }
+.project-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.project-links .btn:hover { border-color: var(--accent); }
 
 .download-box {
 	margin-top: 34px;

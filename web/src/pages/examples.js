@@ -1,7 +1,7 @@
 import { PROJECTS, PLATFORM_NAMES } from "../projects.js";
 import { escapeHtml } from "../markdown.js";
 import { detectOS, latestRelease, pick, formatSize, fileKind } from "../download.js";
-import { platformIcon } from "./icons.js";
+import { platformIcon, icon } from "./icons.js";
 
 function asset(p, file) {
 	return `examples/${p.slug}/${file}`;
@@ -22,16 +22,19 @@ export function renderExamples(view) {
 	</section>
 	<section class="container examples-grid">
 		${PROJECTS.map((p, i) => `
-		<a class="example-card reveal" href="#/examples/${p.slug}" style="--accent:${p.accent}; --i:${i}">
+		<article class="example-card reveal" style="--accent:${p.accent}; --i:${i}">
 			<div class="example-top">
 				<img class="app-icon" src="${asset(p, "icon.png")}" alt="" width="64" height="64" loading="lazy">
 				<span class="category">${escapeHtml(p.category)}</span>
 			</div>
-			<h2>${escapeHtml(p.name)}</h2>
+			<h2><a class="card-link" href="#/examples/${p.slug}">${escapeHtml(p.name)}</a></h2>
 			<p>${escapeHtml(p.tagline)}</p>
 			${platformChips(p.platforms)}
-			<span class="more">Details and download <span aria-hidden="true">→</span></span>
-		</a>`).join("")}
+			<div class="card-foot">
+				<span class="more">Details and download <span aria-hidden="true">→</span></span>
+				${p.website ? `<a class="site-link" href="${p.website}" target="_blank" rel="noopener" aria-label="${escapeHtml(p.name)} website">${icon("globe", 15)}Website</a>` : ""}
+			</div>
+		</article>`).join("")}
 		<a class="example-card add" href="#/docs/contributing">
 			<div class="plus" aria-hidden="true">+</div>
 			<h2>Your app here</h2>
@@ -45,6 +48,12 @@ export function renderExamples(view) {
 export function renderProject(view, slug) {
 	const p = PROJECTS.find((x) => x.slug === slug);
 	if (!p) {
+		// An app that was renamed keeps its old links working.
+		const renamed = PROJECTS.find((x) => (x.aliases || []).includes(slug));
+		if (renamed) {
+			location.replace(`#/examples/${renamed.slug}`);
+			return;
+		}
 		view.innerHTML = `<section class="notfound"><h1>Not found</h1><p>No example called <code>${escapeHtml(slug)}</code>.</p><a class="btn btn-primary" href="#/examples">All examples</a></section>`;
 		return;
 	}
@@ -62,6 +71,10 @@ export function renderProject(view, slug) {
 					<h1>${escapeHtml(p.name)}</h1>
 					<p class="lead">${escapeHtml(p.tagline)}</p>
 					${platformChips(p.platforms)}
+					<div class="project-links">
+						${p.website ? `<a class="btn btn-ghost" href="${p.website}" target="_blank" rel="noopener">${icon("globe", 18)}Website${icon("external", 14)}</a>` : ""}
+						<a class="btn btn-ghost" href="${repoURL}" target="_blank" rel="noopener">${icon("github", 18)}GitHub</a>
+					</div>
 				</div>
 			</div>
 			<div class="download-box" id="download" aria-live="polite">
@@ -81,6 +94,11 @@ export function renderProject(view, slug) {
 				<h3>Made with Giode</h3>
 				<ul>${p.giode.map((g) => `<li>${escapeHtml(g)}</li>`).join("")}</ul>
 			</div>
+			${p.website ? `<div class="side-card">
+				<h3>Website</h3>
+				<a class="repo-link" href="${p.website}" target="_blank" rel="noopener">${escapeHtml(p.website.replace(/^https:\/\//, "").replace(/\/$/, ""))}</a>
+				<p class="muted">${escapeHtml(p.name)}'s own website.</p>
+			</div>` : ""}
 			<div class="side-card">
 				<h3>Source</h3>
 				<a class="repo-link" href="${repoURL}" target="_blank" rel="noopener">${escapeHtml(p.repo)}</a>
