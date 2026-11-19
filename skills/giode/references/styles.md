@@ -196,6 +196,16 @@ Notes:
 
 ## Not supported (by design)
 
-Complex or platform-specific CSS: transitions, animations, transforms, box-sizing,
-grid, float, `position: sticky`, `white-space` (Gio's label always wraps), pseudo
-elements, media-query orientation. Raise an issue if one of these matters to you.
+Complex or platform-specific CSS: keyframe animations (`Transition` animates hover changes
+only), box-sizing, grid, float, `position: sticky`, `white-space: nowrap` without
+truncation, pseudo elements, media-query orientation. Raise an issue if one of these
+matters to you.
+
+These are supported, though they're sometimes taken to be missing:
+
+- **Transforms:** `Transform` translates, scales and rotates what a Box paints, without
+  changing the layout.
+- **Transitions:** `Transition` animates a Box's colors, shadow and opacity to and from its
+  `OnHover` styles.
+- **Truncation:** `MaxLines: 1` with `TextOverflow: TextOverflowEllipsis` keeps text on one
+  line ending in "…"; a larger `MaxLines` clamps it to that many lines.
