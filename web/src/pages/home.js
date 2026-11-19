@@ -146,7 +146,7 @@ export function renderHome(view) {
 			<p class="lead">Open-source apps you can download today - and read the code of.</p>
 		</div>
 		<div class="showcase">
-			${PROJECTS.map((p, i) => `<a class="show-card reveal" href="#/examples/${p.slug}" style="--accent:${p.accent}; --i:${i}">
+			${PROJECTS.map((p, i) => `<a class="show-card reveal" href="${p.website}" target="_blank" rel="noopener" style="--accent:${p.accent}; --i:${i}">
 				<img src="examples/${p.slug}/icon.png" alt="" width="56" height="56" loading="lazy">
 				<div><b>${escapeHtml(p.name)}</b><span>${escapeHtml(p.tagline)}</span></div>
 				<div class="show-plats">${p.platforms.map((pl) => platformIcon(pl, 14)).join("")}</div>
