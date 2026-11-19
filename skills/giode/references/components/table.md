@@ -38,6 +38,8 @@ through `Table` unmeasured, rather than being treated as a row of cells.
   or evenly split.
 - `TableRow`/`TableHeader` built standalone (not inside a `Table`) just hug their own
   cells' natural widths, uncoordinated with any other row.
-- No sorting or row selection - it's a layout primitive; build that behavior on top with
+- No sorting or row selection, and every row is laid out: it's a layout primitive. For
+  large data sets with sorting and selection use [DataGrid](datagrid.md). For smaller
+  tables, build the behavior on top with
   `TableCell`'s own `Styles` (e.g. a `Background` for a selected row) and ordinary Go
   slice sorting before building the rows.

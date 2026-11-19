@@ -13,6 +13,7 @@ stateless elements.
 | Input (autocomplete) | [input.md](input.md) | text, suggestions |
 | Tabs | [tabs.md](tabs.md) | selection |
 | DocTabs (document tabs) | [doctabs.md](doctabs.md) | tabs, selection, scroll |
+| DataGrid | [datagrid.md](datagrid.md) | columns, sort, selection, scroll |
 | Scroll | [scroll.md](scroll.md) | offset |
 | Drawer | [drawer.md](drawer.md) | external `*bool` |
 | Dialog | [dialog.md](dialog.md) | external `*bool` |

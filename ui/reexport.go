@@ -13,6 +13,7 @@ import (
 	"github.com/xmhrnx/giode/components/chip"
 	"github.com/xmhrnx/giode/components/colorpicker"
 	"github.com/xmhrnx/giode/components/copybutton"
+	"github.com/xmhrnx/giode/components/datagrid"
 	"github.com/xmhrnx/giode/components/dialog"
 	"github.com/xmhrnx/giode/components/doctabs"
 	"github.com/xmhrnx/giode/components/drawer"
@@ -159,6 +160,12 @@ type Tab = tabs.Tab
 
 // DocTab is one document's tab in DocTabs; DocTabsElement the strip.
 type DocTab = doctabs.Tab
+
+// DataGridColumn is one of a DataGrid's columns; DataGridElement the
+// grid, DataGridSortKey a level of its sort.
+type DataGridColumn = datagrid.Column
+type DataGridElement = datagrid.DataGrid
+type DataGridSortKey = datagrid.SortKey
 type DocTabsElement = doctabs.DocTabs
 
 // MenuElement is a Menu: a context menu, a menu bar's menu, or a
@@ -378,7 +385,10 @@ var (
 	// DocTabs is a strip of document tabs the app adds, removes and
 	// renames, with close buttons and unsaved dots; see doctabs.New.
 	DocTabs = doctabs.New
-	Scroll  = scroll.New
+	// DataGrid is a virtualized table for large data sets; see
+	// datagrid.New.
+	DataGrid = datagrid.New
+	Scroll   = scroll.New
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = swipeable.New

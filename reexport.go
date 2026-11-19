@@ -133,6 +133,14 @@ type Tab = ui.Tab
 // DocTab is one document's tab in DocTabs; DocTabsElement the strip.
 type DocTab = ui.DocTab
 
+// DataGridColumn is one of a DataGrid's columns; DataGridElement the
+// grid, DataGridSortKey a level of its sort.
+type DataGridColumn = ui.DataGridColumn
+
+type DataGridElement = ui.DataGridElement
+
+type DataGridSortKey = ui.DataGridSortKey
+
 type DocTabsElement = ui.DocTabsElement
 
 // MenuElement is a Menu: a context menu, a menu bar's menu, or a
@@ -339,7 +347,10 @@ var (
 	// DocTabs is a strip of document tabs the app adds, removes and
 	// renames, with close buttons and unsaved dots; see doctabs.New.
 	DocTabs = ui.DocTabs
-	Scroll  = ui.Scroll
+	// DataGrid is a virtualized table for large data sets; see
+	// datagrid.New.
+	DataGrid = ui.DataGrid
+	Scroll   = ui.Scroll
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = ui.Swipeable
