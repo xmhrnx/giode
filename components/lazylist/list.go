@@ -40,6 +40,9 @@ import (
 // (a Pressable, a field) should be looked up by the row's key with
 // Keyed, since rows are built only while near the viewport.
 type List struct {
+	// isHeader marks the rows that stay at the top (StickyHeaders).
+	isHeader func(i int) bool
+
 	// Contextual gives it a context menu (Context).
 	elements.Contextual
 
@@ -107,6 +110,16 @@ func New(count func() int, key func(i int) any, item func(i int) elements.Elemen
 		l.st = st[0]
 		l.gap = unit.Dp(st[0].Gap)
 	}
+	return l
+}
+
+// StickyHeaders keeps the header of the rows on screen at the top: the
+// last row before the first visible one that isHeader reports, laid
+// out even when it's far above, held at the top until the next header
+// pushes it up - a chat's day headers, a contact list's letters. It
+// returns l for chaining.
+func (l *List) StickyHeaders(isHeader func(i int) bool) *List {
+	l.isHeader = isHeader
 	return l
 }
 

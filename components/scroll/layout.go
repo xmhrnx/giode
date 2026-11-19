@@ -44,10 +44,14 @@ func (s *Scroll) layoutSelf(gtx layout.Context) layout.Dimensions {
 	} else if !s.fit || vert {
 		cgtx.Constraints.Min.X = gtx.Constraints.Max.X
 	}
+	origin := elements.AbsolutePosition()
 	macro := op.Record(gtx.Ops)
 	track := elements.TrackChild()
 	popSem := elements.PushSemanticScroll(s)
+	var sticky elements.StickyScope
+	popSticky := elements.PushStickyScope(&sticky)
 	dims := s.content().Layout(cgtx)
+	popSticky()
 	popSem()
 	track.End()
 	contentOps := macro.Stop()
@@ -150,6 +154,7 @@ func (s *Scroll) layoutSelf(gtx layout.Context) layout.Dimensions {
 	offOp := op.Offset(off).Push(gtx.Ops)
 	contentOps.Add(gtx.Ops)
 	offOp.Pop()
+	elements.PaintSticky(gtx, sticky.Items, origin, viewport, s.rtl)
 
 	if vert {
 		s.layoutScrollbar(gtx, viewport)

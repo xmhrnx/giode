@@ -798,6 +798,11 @@ const (
 	PositionStatic       = ui.PositionStatic
 	PositionRelative     = ui.PositionRelative
 	PositionAbsolute     = ui.PositionAbsolute
+	// PositionSticky, PositionStickyStart and PositionStickyTopStart hold
+	// a box at a Scroll's top, start or both edges when scrolled past.
+	PositionSticky         = ui.PositionSticky
+	PositionStickyStart    = ui.PositionStickyStart
+	PositionStickyTopStart = ui.PositionStickyTopStart
 	// Flush is an explicit zero offset for Top, Right, Bottom and Left,
 	// whose zero value means unset: Bottom: giode.Flush pins a box to
 	// the bottom edge.

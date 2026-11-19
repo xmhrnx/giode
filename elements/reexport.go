@@ -26,6 +26,10 @@ type (
 	// ContextMenu is a menu an element opens at the pointer when it's
 	// right-clicked or long-pressed.
 	ContextMenu = base.ContextMenu
+	// StickyScope and StickyItem are a scrolling container's sticky
+	// elements; see base.StickyItem.
+	StickyScope = base.StickyScope
+	StickyItem  = base.StickyItem
 	// Element is anything that can lay itself out in a frame.
 	Element = base.Element
 	// SemanticKind classifies a node of the semantic tree.
@@ -98,7 +102,13 @@ var (
 	PushColor      = base.PushColor
 	CurrentColor   = base.CurrentColor
 	ResolveColor   = base.ResolveColor
-	Measure        = base.Measure
+	// PushStickyScope collects the sticky elements a scrolling
+	// container's content lays out; see base.StickyItem.
+	PushStickyScope = base.PushStickyScope
+	// PaintSticky paints a scrolling container's sticky elements over
+	// its content, held at its edges.
+	PaintSticky = base.PaintSticky
+	Measure     = base.Measure
 )
 
 // Absolute position and tracking.

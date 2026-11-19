@@ -56,6 +56,7 @@ height until its version changes. Without `Version`, visible rows are rebuilt ev
 | `Following()` | Whether the list is keeping to its end. |
 | `VisibleRange()` | First and last row at least partly visible in the last frame. |
 | `Invalidate(key)` | Forget a row's measured height. |
+| `StickyHeaders(isHeader)` | Keeps the header of the rows on screen at the top: the nearest row above them that `isHeader(i)` reports, however far up, until the next header pushes it out. Use it for a chat's day headers or a contact list's letters. |
 | `ScrollBy(dx, dy)`, `ScrollOffset()` | Scroll by pixels and read the (estimated) offset; used by the MCP server's `ui_scroll`. |
 
 ## Per-row state

@@ -97,6 +97,7 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 		p.call.Add(gtx.Ops)
 		st.Pop()
 	}
+	l.pinHeader(gtx, rows)
 	popSem()
 
 	// Edge callbacks.
@@ -320,4 +321,53 @@ func (l *List) jumpTo(y, gap int) {
 		}
 		acc += h
 	}
+}
+
+// maxHeaderScan bounds how far back pinHeader looks for a header.
+const maxHeaderScan = 5000
+
+// pinHeader paints the header of the first visible row at the top,
+// pushed up by the next header (see StickyHeaders).
+func (l *List) pinHeader(gtx layout.Context, rows []placed) {
+	if l.isHeader == nil || len(rows) == 0 {
+		return
+	}
+	first := -1
+	for _, p := range rows {
+		if p.y+p.h > 0 {
+			first = p.idx
+			break
+		}
+	}
+	if first < 0 {
+		return
+	}
+	h := -1
+	for i := first; i >= 0 && first-i <= maxHeaderScan; i-- {
+		if l.isHeader(i) {
+			h = i
+			break
+		}
+	}
+	if h < 0 {
+		return
+	}
+	for _, p := range rows {
+		if p.idx == h && p.y >= 0 {
+			// In view where it is.
+			return
+		}
+	}
+	p := l.layoutRow(gtx, h)
+	y := 0
+	for _, r := range rows {
+		if r.idx > h && r.y > 0 && l.isHeader(r.idx) {
+			y = min(0, r.y-p.h)
+			break
+		}
+	}
+	p.track.Place(image.Pt(0, y))
+	st := op.Offset(image.Pt(0, y)).Push(gtx.Ops)
+	p.call.Add(gtx.Ops)
+	st.Pop()
 }

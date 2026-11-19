@@ -72,7 +72,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `MinWidth` / `MaxWidth` / `MinHeight` / `MaxHeight` | int | dp | Clamp the resolved size, including for expanding boxes (`Width: -1`, `FlexGrow`): `Width: -1, MaxWidth: 760` is a column at most 760dp wide, placed by the parent's `Justify`/`Align`. A minimum beats a maximum. `Text` and `RichText` take `MinWidth` and `MaxWidth` too: they wrap, or end in an ellipsis, at `MaxWidth`. |
 | `AspectRatio` | float | w/h | Derives the hugging axis from the resized axis. |
 | `Padding` / `Margin` | Inset | dp per side | `UniformInset(v)`, `SymmetricInset(h, v)` or `giode.Inset{Top, Right, Bottom, Left}`; `Start`/`End` follow the reading direction. An all-zero inset means unset (`Merge` keeps the base's, components use their default); `giode.NoInset` is an explicit zero. |
-| `Position` | string | `PositionStatic` (default), `PositionRelative`, `PositionAbsolute` | Absolute removes the element from the flow; see below. |
+| `Position` | string | `PositionStatic` (default), `PositionRelative`, `PositionAbsolute`, `PositionSticky`, `PositionStickyStart`, `PositionStickyTopStart` | Absolute removes the element from the flow; see below. Sticky boxes stay at a `Scroll`'s edge once scrolled past it; see [Sticky positioning](#sticky-positioning). |
 | `Top` / `Right` / `Bottom` / `Left` | int | dp | Offsets of absolute children. |
 | `ZIndex` | int | any | Stacking order of siblings, flow and positioned alike. |
 | `Overflow` | string | `OverflowVisible` (default), `OverflowHidden` | Hidden clips content to the padding box, following rounded corners. |
@@ -197,10 +197,32 @@ Notes:
   are laid out.
 - Absolute positioning applies to `Box` children; wrap other elements in a `Box`.
 
+## Sticky positioning
+
+A Box with a sticky `Position` keeps its place in the flow, but once the enclosing `Scroll`
+scrolls it past an edge, it stays at that edge:
+
+```go
+giode.Box(giode.Styles{Position: giode.PositionSticky, Background: "theme.surface"}, sectionTitle)
+```
+
+- `PositionSticky` holds the box at the top, `Top` dp below it. It stays there until the
+  next sticky box below pushes it up, as section headers do. Boxes on the same line, like a
+  header row's cells, don't push each other.
+- `PositionStickyStart` holds the box at the start edge (`Left` dp in) of a Scroll that
+  scrolls sideways: a table's frozen first column. Right to left, the start edge is the
+  right.
+- `PositionStickyTopStart` holds the box at both: the table's corner cell, painted over
+  the other sticky boxes.
+
+Outside a `Scroll` a sticky box is an ordinary one. In a `LazyList`, whose rows exist only
+near the screen, use `StickyHeaders` instead (see
+[lazylist.md](components/lazylist.md#methods)).
+
 ## Not supported (by design)
 
 Complex or platform-specific CSS: keyframe animations (`Transition` animates hover changes
-only), box-sizing, named grid areas and lines, float, `position: sticky`, `white-space: nowrap` without
+only), box-sizing, named grid areas and lines, float, `white-space: nowrap` without
 truncation, pseudo elements, media-query orientation. Raise an issue if one of these
 matters to you.
 

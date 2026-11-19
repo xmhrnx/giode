@@ -64,7 +64,7 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	c.retain = c.retain[:0]
 	popRetain := pushRetainScope(&c.retain)
 	reads := state.Track()
-	portals, backs, probeStart := len(portalQueue), len(backStack), len(probes)
+	portals, backs, probeStart, stickies := len(portalQueue), len(backStack), len(probes), stickyCount
 	semStart := 0
 	if semantics != nil {
 		semStart = len(*semantics)
@@ -81,7 +81,9 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	c.alive = frameNumber
 
 	c.reads = reads
-	c.portal = len(portalQueue) > portals || len(backStack) > backs
+	// Portals, back handlers and sticky elements register with others
+	// as the subtree lays out, which a replay would skip.
+	c.portal = len(portalQueue) > portals || len(backStack) > backs || stickyCount > stickies
 	origin := AbsolutePosition()
 	c.probes, c.probeRel = c.probes[:0], c.probeRel[:0]
 	for _, p := range probes[probeStart:] {

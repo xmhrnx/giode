@@ -2,6 +2,8 @@ package box
 
 import (
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/elements/internal/base"
 )
@@ -18,6 +20,9 @@ type boxBody struct{ b *BoxElement }
 // recorded last time until its hover or press state, its content's
 // state, its constraints or its direction change.
 func (b *BoxElement) Layout(gtx layout.Context) layout.Dimensions {
+	if p := b.st.Position; p.StickyTop() || p.StickyStart() {
+		return b.layoutSticky(gtx)
+	}
 	dims := b.layoutSelf(gtx)
 	// A right-click or long-press anywhere on it opens its context menu.
 	b.AnchorContext(gtx, dims.Size)
@@ -54,3 +59,23 @@ func (b *BoxElement) layoutUncached(gtx layout.Context) layout.Dimensions {
 }
 
 func (bb boxBody) Layout(gtx layout.Context) layout.Dimensions { return bb.b.layoutBody(gtx) }
+
+// layoutSticky lays a sticky box out into a recording for the
+// enclosing Scroll to paint (see base.StickyItem), keeping its place in
+// the flow; outside a Scroll it paints as usual.
+func (b *BoxElement) layoutSticky(gtx layout.Context) layout.Dimensions {
+	it := &base.StickyItem{Top: b.st.Position.StickyTop(), Start: b.st.Position.StickyStart()}
+	it.TopOffset, it.StartOffs = gtx.Dp(unit.Dp(b.st.Top)), gtx.Dp(unit.Dp(b.st.Left))
+	base.TrackPosition(&it.At)
+	it.Track = base.TrackChild()
+	macro := op.Record(gtx.Ops)
+	dims := b.layoutSelf(gtx)
+	b.AnchorContext(gtx, dims.Size)
+	it.Call = macro.Stop()
+	it.Track.End()
+	it.Size = dims.Size
+	if !base.AddSticky(it) {
+		it.Call.Add(gtx.Ops)
+	}
+	return dims
+}
