@@ -44,4 +44,5 @@ Add a new page to `NAV` in `web/src/nav.js`.
 ## Adding your app to the examples
 
 Built something with Giode? Open a pull request adding it to `web/src/projects.js`, with a
-square icon in `web/public/examples/<name>/`.
+square icon in `web/public/examples/<name>/` and your app's website in the entry's `website`
+field: each card on the examples and home pages opens that website.

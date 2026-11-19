@@ -13,7 +13,7 @@ all as plain Go structs. You get one native binary for Windows, macOS, Linux, An
 and the web, with no webview and no JavaScript. Raw Gio stays one call away.
 
 The app above is [`examples/tour`](examples/tour/main.go), about 150 lines. The
-[14 apps built with Giode](#apps-built-with-giode) are ready to download.
+[18 apps built with Giode](#apps-built-with-giode) are ready to download.
 
 ```go
 package main
@@ -86,27 +86,31 @@ Mobile builds can also use Gio's `gogio` tool directly; see [docs/mobile.md](doc
 
 ## Apps built with Giode
 
-Fourteen apps ship on Giode. Their installers and packages are collected in the
-[**Apps release**](https://github.com/xmhrnx/giode/releases/tag/apps) and refreshed every
-week, so you can try one without installing Go. Each app's own releases have the
-full history; the [website](https://xmhrnx.github.io/giode/#/examples) has screenshots.
+Eighteen apps ship on Giode, each with its own website. Their installers and packages are
+collected in the [**Apps release**](https://github.com/xmhrnx/giode/releases/tag/apps) and
+refreshed every week, so you can try one without installing Go. Each app's own releases have
+the full history; [Giode's website](https://xmhrnx.github.io/giode/#/examples) has screenshots.
 
-| App | What it does | Platforms |
-| --- | --- | --- |
-| [GoPlay](https://github.com/xmhrnx/goplay) | A video player for people who just want to watch something. | Windows, macOS, Linux |
-| [TouchUp](https://github.com/xmhrnx/touchup) | Upscale images, video and audio with AI engines that run on your own computer. | Windows, macOS, Linux |
-| [Sonora](https://github.com/xmhrnx/sonora) | A speech studio — text to speech and speech to text — with no code and no setup. | Windows, macOS, Linux, Android, iOS |
-| [Pocket Agent](https://github.com/xmhrnx/pocket-agent) | A private AI workspace for Android, iPhone and iPad. | Android, iOS |
-| [AnyFile](https://github.com/xmhrnx/anyfile) | Tells you what any file really is, and lets you explore everything inside it. | Windows, macOS, Linux |
-| [Silicon DB](https://github.com/xmhrnx/silicondb) | The specifications of every processing chip, from every manufacturer and era. | Android, iOS |
-| [DataDoc](https://github.com/xmhrnx/remanance) | Free, open-source data recovery, plus tools for disk space, duplicates, sync and renaming. | Windows, macOS, Linux, Android, iOS |
-| [GoEncode](https://github.com/xmhrnx/goencode) | Remux, encode and transcode media in batches with ffmpeg. | Windows, macOS, Linux, Android, iOS |
-| [Serverus](https://github.com/xmhrnx/serverus) | Manage remote servers: SSH terminals, files, monitoring, services and Docker in one app. | Windows, macOS, Linux, Android, iOS |
-| [MiddleMan](https://github.com/xmhrnx/middlelan) | See every connection, know every device: a network monitor for your computer and your LAN. | Windows, macOS, Linux, Android, iOS |
-| [GoCode](https://github.com/xmhrnx/gocode) | A coding agent that doesn't eat your RAM. | Windows, macOS, Linux |
-| [EasySend](https://github.com/xmhrnx/easysend) | Send files, folders and text between any devices — nearby, across the internet, or to someone without the app. | Windows, macOS, Linux, Android, iOS |
-| [DocLens](https://github.com/xmhrnx/doclens) | A document scanner that finds the page, flattens it and makes it searchable. | Android, iOS |
-| [NoiseFree](https://github.com/xmhrnx/noisefree) | Real-time AI noise removal for your microphone, on any GPU and any CPU. | Windows, macOS, Linux |
+| App | What it does | Platforms | Website |
+| --- | --- | --- | --- |
+| [GoPlay](https://github.com/xmhrnx/goplay) | A video player for people who just want to watch something. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/goplay/) |
+| [TouchUp](https://github.com/xmhrnx/touchup) | Upscale images, video and audio with AI engines that run on your own computer. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/touchup/) |
+| [Sonora](https://github.com/xmhrnx/sonora) | A speech studio — text to speech and speech to text — with no code and no setup. | Windows, macOS, Linux, Android, iOS | [Website](https://xmhrnx.github.io/sonora/) |
+| [Pocket Agent](https://github.com/xmhrnx/pocket-agent) | A private AI workspace for Android, iPhone and iPad. | Android, iOS | [Website](https://xmhrnx.github.io/pocket-agent/) |
+| [AnyFile](https://github.com/xmhrnx/anyfile) | Tells you what any file really is, and lets you explore everything inside it. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/anyfile/) |
+| [Silicon DB](https://github.com/xmhrnx/silicondb) | The specifications of every processing chip, from every manufacturer and era. | Android, iOS | [Website](https://xmhrnx.github.io/silicondb/) |
+| [DataDoc](https://github.com/xmhrnx/remanance) | Free, open-source data recovery, plus tools for disk space, duplicates, sync and renaming. | Windows, macOS, Linux, Android, iOS | [Website](https://xmhrnx.github.io/remanance/) |
+| [GoEncode](https://github.com/xmhrnx/goencode) | Remux, encode and transcode media in batches with ffmpeg. | Windows, macOS, Linux, Android, iOS | [Website](https://xmhrnx.github.io/goencode/) |
+| [Serverus](https://github.com/xmhrnx/serverus) | Manage remote servers: SSH terminals, files, monitoring, services and Docker in one app. | Windows, macOS, Linux, Android, iOS | [Website](https://xmhrnx.github.io/serverus/) |
+| [MiddleMan](https://github.com/xmhrnx/middlelan) | See every connection, know every device: a network monitor for your computer and your LAN. | Windows, macOS, Linux, Android, iOS | [Website](https://xmhrnx.github.io/middlelan/) |
+| [GoCode](https://github.com/xmhrnx/gocode) | A coding agent that doesn't eat your RAM. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/gocode/) |
+| [EasySend](https://github.com/xmhrnx/easysend) | Send files, folders and text between any devices — nearby, across the internet, or to someone without the app. | Windows, macOS, Linux, Android, iOS | [Website](https://xmhrnx.github.io/easysend/) |
+| [GoScan](https://github.com/xmhrnx/doclens) | A document scanner that finds the page, flattens it and makes it searchable. | Android, iOS | [Website](https://xmhrnx.github.io/doclens/) |
+| [NoiseFree](https://github.com/xmhrnx/noisefree) | Real-time AI noise removal for your microphone, on any GPU and any CPU. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/noisefree/) |
+| [GoPDF](https://github.com/xmhrnx/GoPDF) | A fast, native PDF editor: annotate, organize, merge, split and protect PDFs. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/GoPDF/) |
+| [Orchard](https://github.com/xmhrnx/orchard) | Keep every git repository on your computer up to date and in good shape. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/orchard/) |
+| [Gedanken](https://github.com/xmhrnx/gedanken) | Physics from motion to black holes, with the math and the history. | Android, iOS | [Website](https://xmhrnx.github.io/gedanken/) |
+| [Profile Manager](https://github.com/xmhrnx/profilemanager) | Switch sign-ins between accounts for CLIs and desktop apps. | Windows, macOS, Linux | [Website](https://xmhrnx.github.io/ProfileManager/) |
 
 ## Features
 

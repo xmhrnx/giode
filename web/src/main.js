@@ -1,7 +1,7 @@
 import "./style.css";
 import { renderHome } from "./pages/home.js";
 import { renderDocs, hasDoc } from "./pages/docs.js";
-import { renderExamples, renderProject } from "./pages/examples.js";
+import { renderExamples, openProject } from "./pages/examples.js";
 import { codeFor } from "./markdown.js";
 import { selectTab } from "./widgets.js";
 
@@ -11,7 +11,7 @@ import { selectTab } from "./widgets.js";
 //	#/                      home
 //	#/docs/<page>[#section] a docs page (Markdown under ../docs)
 //	#/examples              apps built with Giode
-//	#/examples/<slug>       one app, with its downloads
+//	#/examples/<slug>       redirects to that app's own website
 
 const view = document.getElementById("view");
 
@@ -43,7 +43,10 @@ async function route() {
 	} else if (parts[0] === "docs") {
 		await renderDocs(view, parts.slice(1).join("/") || "index");
 	} else if (parts[0] === "examples") {
-		if (parts[1]) renderProject(view, parts[1]);
+		if (parts[1]) {
+			openProject(view, parts[1]);
+			return;
+		}
 		else renderExamples(view);
 	} else if (await hasDoc(path)) {
 		// Links from before the redesign: #/styles, #/components/menu.
