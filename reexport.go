@@ -139,6 +139,29 @@ type DataGridColumn = ui.DataGridColumn
 
 type DataGridElement = ui.DataGridElement
 
+// Platform is a set of platforms, for OnlyOn and IsPlatform;
+// PlatformViews an element per platform, for ByPlatform.
+type Platform = ui.Platform
+
+type PlatformViews = ui.PlatformViews
+
+const (
+	// The platforms; combine them with |. PlatformLinux includes other
+	// Unix desktops; PlatformDesktop is Windows, macOS and Linux,
+	// PlatformMobile Android and iOS.
+	PlatformWindows = ui.PlatformWindows
+	PlatformMacOS   = ui.PlatformMacOS
+	PlatformLinux   = ui.PlatformLinux
+	PlatformAndroid = ui.PlatformAndroid
+	PlatformIOS     = ui.PlatformIOS
+	PlatformWeb     = ui.PlatformWeb
+	PlatformDesktop = ui.PlatformDesktop
+	PlatformMobile  = ui.PlatformMobile
+	// CurrentPlatform is the platform the app was built for: a
+	// constant.
+	CurrentPlatform = ui.CurrentPlatform
+)
+
 // DraggableElement is content that can be dragged (Draggable);
 // DropTargetElement an area drags can be dropped on (DropTarget). See
 // the dnd package.
@@ -416,6 +439,15 @@ var (
 	// DataGrid is a virtualized table for large data sets; see
 	// datagrid.New.
 	DataGrid = ui.DataGrid
+	// OnlyOn shows what its builder makes on some platforms only, and
+	// nothing elsewhere; see platform.OnlyOn.
+	OnlyOn = ui.OnlyOn
+	// ByPlatform shows the current platform's element of a
+	// PlatformViews; see platform.ByPlatform.
+	ByPlatform = ui.ByPlatform
+	// IsPlatform reports whether the app runs on one of a set of
+	// platforms.
+	IsPlatform = ui.IsPlatform
 	// Draggable is content that can be dragged to a DropTarget,
 	// carrying a payload; see dnd.NewDraggable.
 	Draggable = ui.Draggable

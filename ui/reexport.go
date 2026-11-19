@@ -48,6 +48,7 @@ import (
 	"github.com/xmhrnx/giode/components/zoom"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/elements/dnd"
+	"github.com/xmhrnx/giode/elements/platform"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/i18n"
 	"github.com/xmhrnx/giode/router"
@@ -166,6 +167,28 @@ type DocTab = doctabs.Tab
 // grid, DataGridSortKey a level of its sort.
 type DataGridColumn = datagrid.Column
 type DataGridElement = datagrid.DataGrid
+
+// Platform is a set of platforms, for OnlyOn and IsPlatform;
+// PlatformViews an element per platform, for ByPlatform.
+type Platform = platform.Platform
+type PlatformViews = platform.Views
+
+const (
+	// The platforms; combine them with |. PlatformLinux includes other
+	// Unix desktops; PlatformDesktop is Windows, macOS and Linux,
+	// PlatformMobile Android and iOS.
+	PlatformWindows = platform.Windows
+	PlatformMacOS   = platform.MacOS
+	PlatformLinux   = platform.Linux
+	PlatformAndroid = platform.Android
+	PlatformIOS     = platform.IOS
+	PlatformWeb     = platform.Web
+	PlatformDesktop = platform.Desktop
+	PlatformMobile  = platform.Mobile
+	// CurrentPlatform is the platform the app was built for: a
+	// constant.
+	CurrentPlatform = platform.Current
+)
 
 // DraggableElement is content that can be dragged (Draggable);
 // DropTargetElement an area drags can be dropped on (DropTarget). See
@@ -441,6 +464,15 @@ var (
 	// DataGrid is a virtualized table for large data sets; see
 	// datagrid.New.
 	DataGrid = datagrid.New
+	// OnlyOn shows what its builder makes on some platforms only, and
+	// nothing elsewhere; see platform.OnlyOn.
+	OnlyOn = platform.OnlyOn
+	// ByPlatform shows the current platform's element of a
+	// PlatformViews; see platform.ByPlatform.
+	ByPlatform = platform.ByPlatform
+	// IsPlatform reports whether the app runs on one of a set of
+	// platforms.
+	IsPlatform = platform.Is
 	// Draggable is content that can be dragged to a DropTarget,
 	// carrying a payload; see dnd.NewDraggable.
 	Draggable = dnd.NewDraggable

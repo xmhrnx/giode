@@ -447,3 +447,53 @@ returns `""` and `Compact` reports whether the window is narrower than
 `giode.CompactWidth` (600 dp).
 Like `AbsolutePosition`, they're only meaningful while the view is being laid out. A
 `Memo` inside the view rebuilds when the active breakpoint changes.
+
+## Per platform
+
+`OnlyOn` shows an element on some platforms and nothing elsewhere: no size, nothing drawn,
+and its builder isn't called.
+
+```go
+// frame/windows.go
+func Windows() giode.Element {
+	return giode.OnlyOn(giode.PlatformWindows, func() giode.Element {
+		return windowsTitleBar() // caption buttons on the right
+	})
+}
+
+// frame/mac.go
+func Mac() giode.Element {
+	return giode.OnlyOn(giode.PlatformMacOS, func() giode.Element {
+		return macTitleBar() // traffic lights on the left
+	})
+}
+
+// the view: only this platform's frame shows
+giode.Stack(giode.Styles{}, frame.Windows(), frame.Mac(), frame.Linux(), content)
+```
+
+Combine platforms with `|` (`giode.PlatformWindows | giode.PlatformLinux`), or use the
+groups: `PlatformDesktop` (Windows, macOS, Linux) and `PlatformMobile` (Android, iOS).
+The rest are `PlatformAndroid`, `PlatformIOS` and `PlatformWeb`. `PlatformLinux` also
+covers other Unix desktops (FreeBSD, OpenBSD), and never Android.
+
+`ByPlatform` picks one element from a set. A platform's own entry wins over `Desktop` or
+`Mobile`, and those over `Default`:
+
+```go
+giode.ByPlatform(giode.PlatformViews{
+	MacOS:   macTitleBar,
+	Desktop: windowsTitleBar, // Windows and Linux
+	Mobile:  mobileHeader,
+})
+```
+
+`giode.IsPlatform(p)` answers the same question for code that isn't a view, and
+`giode.CurrentPlatform` is the platform itself. It's a constant fixed when the app is
+built, so these checks cost nothing.
+
+All the platforms' builders are compiled into every build. Code that only compiles on
+one platform (Windows system calls, a cgo library) goes in files Go builds only there,
+named after the platform: `x_windows.go`, `x_darwin.go`, `x_linux.go`. Note that Go
+builds `_linux.go` files for Android too, and `_darwin.go` files for iOS too. Use a
+`//go:build linux && !android` or `//go:build darwin && !ios` line to keep them off phones.
