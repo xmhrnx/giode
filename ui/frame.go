@@ -8,6 +8,7 @@ import (
 	"gioui.org/op/clip"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/elements/dnd"
 	"github.com/xmhrnx/giode/i18n"
 	"github.com/xmhrnx/giode/state"
 )
@@ -43,6 +44,8 @@ func Frame(gtx layout.Context, view Element) (needsAnotherFrame bool) {
 	// portals.
 	elements.DrainContextMenus(gtx)
 	elements.DrainPortals(gtx)
+	// The drag in progress: its preview goes over everything.
+	dnd.Drain(gtx)
 	keepReleases(gtx)
 	elements.DispatchBack(gtx)
 	// Last, so app shortcuts get only the keys nothing else took.

@@ -30,6 +30,9 @@ type (
 	// elements; see base.StickyItem.
 	StickyScope = base.StickyScope
 	StickyItem  = base.StickyItem
+	// VisibleClip is the part of the window a scrolling container
+	// shows; see base.VisibleClip.
+	VisibleClip = base.VisibleClip
 	// Element is anything that can lay itself out in a frame.
 	Element = base.Element
 	// SemanticKind classifies a node of the semantic tree.
@@ -108,7 +111,10 @@ var (
 	// PaintSticky paints a scrolling container's sticky elements over
 	// its content, held at its edges.
 	PaintSticky = base.PaintSticky
-	Measure     = base.Measure
+	// PushVisibleClip makes a scrolling container's viewport the
+	// visible area of its content (drop targets use it).
+	PushVisibleClip = base.PushVisibleClip
+	Measure         = base.Measure
 )
 
 // Absolute position and tracking.

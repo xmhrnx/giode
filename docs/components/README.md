@@ -14,6 +14,7 @@ stateless elements.
 | Tabs | [tabs.md](tabs.md) | selection |
 | DocTabs (document tabs) | [doctabs.md](doctabs.md) | tabs, selection, scroll |
 | DataGrid | [datagrid.md](datagrid.md) | columns, sort, selection, scroll |
+| Draggable, DropTarget | [dragdrop.md](dragdrop.md) | drag in progress, slots |
 | Scroll | [scroll.md](scroll.md) | offset |
 | Drawer | [drawer.md](drawer.md) | external `*bool` |
 | Dialog | [dialog.md](dialog.md) | external `*bool` |

@@ -14,6 +14,7 @@ import (
 	"gioui.org/op/paint"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/elements/dnd"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -45,7 +46,10 @@ func (s *Scroll) layoutSelf(gtx layout.Context) layout.Dimensions {
 		cgtx.Constraints.Min.X = gtx.Constraints.Max.X
 	}
 	origin := elements.AbsolutePosition()
+	// Where it was last frame, exact, for auto-scrolling a drag.
+	shown := image.Rectangle{Min: s.vclip.Origin, Max: s.vclip.Origin.Add(s.vclip.Size)}
 	macro := op.Record(gtx.Ops)
+	popClip := elements.PushVisibleClip(&s.vclip)
 	track := elements.TrackChild()
 	popSem := elements.PushSemanticScroll(s)
 	var sticky elements.StickyScope
@@ -54,6 +58,7 @@ func (s *Scroll) layoutSelf(gtx layout.Context) layout.Dimensions {
 	popSticky()
 	popSem()
 	track.End()
+	popClip()
 	contentOps := macro.Stop()
 
 	// The viewport fills the space, or with FitContent hugs the
@@ -86,6 +91,24 @@ func (s *Scroll) layoutSelf(gtx layout.Context) layout.Dimensions {
 	}
 	if follow {
 		s.offset = float32(s.maxOffset())
+	}
+	s.vclip.Size = viewport
+	if dnd.Dragging() {
+		// A drag near an edge scrolls toward it.
+		left := s.viewLeft()
+		room := dnd.Room{
+			Up: vert && s.offset > 0, Down: vert && int(s.offset) < s.maxOffset(),
+			Left: horiz && left > 0, Right: horiz && int(left) < s.maxOffsetX(),
+		}
+		if d := dnd.AutoScroll(gtx, s, shown, room); d != (image.Point{}) {
+			s.offset += float32(d.Y)
+			if s.rtl {
+				s.offsetX -= float32(d.X)
+			} else {
+				s.offsetX += float32(d.X)
+			}
+			s.movedBy = true
+		}
 	}
 
 	// Wheel and touch scrolling. The scroll region covers the

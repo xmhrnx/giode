@@ -12,7 +12,7 @@ import (
 // fresh reports whether the recorded output is still valid for gtx and
 // deps, input aside.
 func (c *MemoCache) fresh(gtx layout.Context, deps []any) bool {
-	return c.valid && !c.live && !c.portal && !c.dirty &&
+	return c.valid && !c.live && !c.portal && !c.dirty && !c.dragStale() &&
 		c.constraints == gtx.Constraints &&
 		c.metric == gtx.Metric &&
 		c.theme == properties.ThemeVersion() &&
@@ -30,7 +30,7 @@ func (c *MemoCache) fresh(gtx layout.Context, deps []any) bool {
 // it: it delivers input to the widgets inside, and reports a change
 // when they changed or the cache must rebuild anyway.
 func (c *MemoCache) pass(gtx layout.Context) bool {
-	if !c.valid || c.live || c.reads.Changed() || c.epoch != cacheEpoch.Load() || c.theme != properties.ThemeVersion() ||
+	if !c.valid || c.live || c.dragStale() || c.reads.Changed() || c.epoch != cacheEpoch.Load() || c.theme != properties.ThemeVersion() ||
 		(c.watch != nil && c.watch.Changed()) {
 		c.dirty = true
 		return true
@@ -64,7 +64,7 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	c.retain = c.retain[:0]
 	popRetain := pushRetainScope(&c.retain)
 	reads := state.Track()
-	portals, backs, probeStart, stickies := len(portalQueue), len(backStack), len(probes), stickyCount
+	portals, backs, probeStart, stickies, drags := len(portalQueue), len(backStack), len(probes), stickyCount, dragAware
 	semStart := 0
 	if semantics != nil {
 		semStart = len(*semantics)
@@ -84,6 +84,9 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	// Portals, back handlers and sticky elements register with others
 	// as the subtree lays out, which a replay would skip.
 	c.portal = len(portalQueue) > portals || len(backStack) > backs || stickyCount > stickies
+	// Drag sources and drop targets register every frame of a drag.
+	c.drag = dragAware > drags
+	c.dragEpoch = dragEpoch
 	origin := AbsolutePosition()
 	c.probes, c.probeRel = c.probes[:0], c.probeRel[:0]
 	for _, p := range probes[probeStart:] {
@@ -110,4 +113,11 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	c.valid = true
 
 	c.call.Add(gtx.Ops)
+}
+
+// dragStale reports whether a subtree taking part in drag and drop must
+// be laid out again: during a drag, and on the frame after one starts or
+// ends.
+func (c *MemoCache) dragStale() bool {
+	return c.drag && (dragActive || c.dragEpoch != dragEpoch)
 }

@@ -92,6 +92,10 @@ type MemoCache struct {
 	// portal is set when the subtree registered portals or Back
 	// handlers, which can't be replayed from cache.
 	portal bool
+	// drag is set when the subtree takes part in drag and drop, and
+	// dragEpoch is the drag epoch it was recorded in (see dragStale).
+	drag      bool
+	dragEpoch uint64
 	// nodes are the semantic nodes recorded with the subtree, relative
 	// to its origin.
 	nodes []SemanticNode

@@ -40,6 +40,8 @@ import (
 // (a Pressable, a field) should be looked up by the row's key with
 // Keyed, since rows are built only while near the viewport.
 type List struct {
+	// vclip is its viewport, for drop targets in its rows.
+	vclip elements.VisibleClip
 	// isHeader marks the rows that stay at the top (StickyHeaders).
 	isHeader func(i int) bool
 

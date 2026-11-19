@@ -47,6 +47,7 @@ import (
 	"github.com/xmhrnx/giode/components/virtuallist"
 	"github.com/xmhrnx/giode/components/zoom"
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/elements/dnd"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/i18n"
 	"github.com/xmhrnx/giode/router"
@@ -165,6 +166,58 @@ type DocTab = doctabs.Tab
 // grid, DataGridSortKey a level of its sort.
 type DataGridColumn = datagrid.Column
 type DataGridElement = datagrid.DataGrid
+
+// DraggableElement is content that can be dragged (Draggable);
+// DropTargetElement an area drags can be dropped on (DropTarget). See
+// the dnd package.
+type DraggableElement = dnd.Draggable
+type DropTargetElement = dnd.DropTarget
+
+// DragState is a Draggable's state for its content, DropState a
+// DropTarget's; DropEvent is a drop, DragResult how a drag ended.
+type DragState = dnd.DragState
+type DropState = dnd.DropState
+type DropEvent = dnd.DropEvent
+type DragResult = dnd.DragResult
+
+// DragSourceStyle is how a dragged Draggable shows in its place;
+// DragAxis limits its preview's movement.
+type DragSourceStyle = dnd.SourceStyle
+type DragAxis = dnd.Axis
+
+// DragAccept returns a DropTarget.Accept predicate for payloads of
+// type T.
+func DragAccept[T any]() func(payload any) bool { return dnd.AcceptType[T]() }
+
+// DragPayload returns a drop's payload as a T.
+func DragPayload[T any](payload any) (T, bool) { return dnd.As[T](payload) }
+
+// MoveItem moves s[from] to insertion slot to (a DropEvent's Index for
+// a drop in its own list) and returns the index it lands at.
+func MoveItem[T any](s []T, from, to int) int { return dnd.Move(s, from, to) }
+
+// InsertItem inserts v at slot i and returns the slice; RemoveItem
+// removes s[i].
+func InsertItem[T any](s []T, i int, v T) []T { return dnd.Insert(s, i, v) }
+
+// RemoveItem: see InsertItem.
+func RemoveItem[T any](s []T, i int) []T { return dnd.Remove(s, i) }
+
+const (
+	// DragSourceDim fades a dragged Draggable in its place (the
+	// default), DragSourceHide leaves its space empty, DragSourceKeep
+	// draws it as it is.
+	DragSourceDim  = dnd.SourceDim
+	DragSourceHide = dnd.SourceHide
+	DragSourceKeep = dnd.SourceKeep
+	// DragAxisVertical and DragAxisHorizontal: a list's axis
+	// (DropTarget.List), or the one a preview keeps to
+	// (Draggable.LockAxis).
+	DragAxisBoth       = dnd.AxisBoth
+	DragAxisVertical   = dnd.AxisVertical
+	DragAxisHorizontal = dnd.AxisHorizontal
+)
+
 type DataGridSortKey = datagrid.SortKey
 type DocTabsElement = doctabs.DocTabs
 
@@ -388,7 +441,20 @@ var (
 	// DataGrid is a virtualized table for large data sets; see
 	// datagrid.New.
 	DataGrid = datagrid.New
-	Scroll   = scroll.New
+	// Draggable is content that can be dragged to a DropTarget,
+	// carrying a payload; see dnd.NewDraggable.
+	Draggable = dnd.NewDraggable
+	// DropTarget is an area drags can be dropped on; see
+	// dnd.NewDropTarget.
+	DropTarget = dnd.NewDropTarget
+	// DropListItem makes an element item index of the innermost list
+	// DropTarget, for its insertion slots; see dnd.ListItem.
+	DropListItem = dnd.ListItem
+	// Dragging reports whether a drag is in progress; CancelDrag ends
+	// it.
+	Dragging   = dnd.Dragging
+	CancelDrag = dnd.Cancel
+	Scroll     = scroll.New
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = swipeable.New

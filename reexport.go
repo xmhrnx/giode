@@ -139,6 +139,72 @@ type DataGridColumn = ui.DataGridColumn
 
 type DataGridElement = ui.DataGridElement
 
+// DraggableElement is content that can be dragged (Draggable);
+// DropTargetElement an area drags can be dropped on (DropTarget). See
+// the dnd package.
+type DraggableElement = ui.DraggableElement
+
+type DropTargetElement = ui.DropTargetElement
+
+// DragState is a Draggable's state for its content, DropState a
+// DropTarget's; DropEvent is a drop, DragResult how a drag ended.
+type DragState = ui.DragState
+
+type DropState = ui.DropState
+
+type DropEvent = ui.DropEvent
+
+type DragResult = ui.DragResult
+
+// DragSourceStyle is how a dragged Draggable shows in its place;
+// DragAxis limits its preview's movement.
+type DragSourceStyle = ui.DragSourceStyle
+
+type DragAxis = ui.DragAxis
+
+// DragAccept returns a DropTarget.Accept predicate for payloads of
+// type T.
+func DragAccept[T any]() func(payload any) bool {
+	return ui.DragAccept[T]()
+}
+
+// DragPayload returns a drop's payload as a T.
+func DragPayload[T any](payload any) (T, bool) {
+	return ui.DragPayload[T](payload)
+}
+
+// MoveItem moves s[from] to insertion slot to (a DropEvent's Index for
+// a drop in its own list) and returns the index it lands at.
+func MoveItem[T any](s []T, from, to int) int {
+	return ui.MoveItem[T](s, from, to)
+}
+
+// InsertItem inserts v at slot i and returns the slice; RemoveItem
+// removes s[i].
+func InsertItem[T any](s []T, i int, v T) []T {
+	return ui.InsertItem[T](s, i, v)
+}
+
+// RemoveItem: see InsertItem.
+func RemoveItem[T any](s []T, i int) []T {
+	return ui.RemoveItem[T](s, i)
+}
+
+const (
+	// DragSourceDim fades a dragged Draggable in its place (the
+	// default), DragSourceHide leaves its space empty, DragSourceKeep
+	// draws it as it is.
+	DragSourceDim  = ui.DragSourceDim
+	DragSourceHide = ui.DragSourceHide
+	DragSourceKeep = ui.DragSourceKeep
+	// DragAxisVertical and DragAxisHorizontal: a list's axis
+	// (DropTarget.List), or the one a preview keeps to
+	// (Draggable.LockAxis).
+	DragAxisBoth       = ui.DragAxisBoth
+	DragAxisVertical   = ui.DragAxisVertical
+	DragAxisHorizontal = ui.DragAxisHorizontal
+)
+
 type DataGridSortKey = ui.DataGridSortKey
 
 type DocTabsElement = ui.DocTabsElement
@@ -350,7 +416,20 @@ var (
 	// DataGrid is a virtualized table for large data sets; see
 	// datagrid.New.
 	DataGrid = ui.DataGrid
-	Scroll   = ui.Scroll
+	// Draggable is content that can be dragged to a DropTarget,
+	// carrying a payload; see dnd.NewDraggable.
+	Draggable = ui.Draggable
+	// DropTarget is an area drags can be dropped on; see
+	// dnd.NewDropTarget.
+	DropTarget = ui.DropTarget
+	// DropListItem makes an element item index of the innermost list
+	// DropTarget, for its insertion slots; see dnd.ListItem.
+	DropListItem = ui.DropListItem
+	// Dragging reports whether a drag is in progress; CancelDrag ends
+	// it.
+	Dragging   = ui.Dragging
+	CancelDrag = ui.CancelDrag
+	Scroll     = ui.Scroll
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.
 	Swipeable = ui.Swipeable

@@ -32,3 +32,12 @@ func SetLongPressFeedback(fn func()) {
 	}
 	longPressFeedback.Store(&fn)
 }
+
+// PlayLongPressFeedback plays the long-press feedback: a haptic tap, as
+// the app sets it. Elements that start something with a long press (a
+// touch drag) call it.
+func PlayLongPressFeedback() {
+	if fn := longPressFeedback.Load(); fn != nil {
+		(*fn)()
+	}
+}

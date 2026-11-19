@@ -50,6 +50,10 @@ those kinds.
 
 ## Dragging
 
+These events are raw: the element doesn't move unless the app moves it. To drag things
+onto drop targets - cards between columns, rows within a list - with a preview that
+follows the pointer, use `Draggable` and `DropTarget`; see [dragdrop.md](dragdrop.md).
+
 ```go
 tab := giode.Pressable(tabContent).
 	OnClick(func(giode.ClickEvent) { activate(id) }).

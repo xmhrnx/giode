@@ -15,6 +15,7 @@ import (
 	"gioui.org/op/paint"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/elements/dnd"
 	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/styles/properties"
 )
@@ -53,6 +54,17 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 
 	// Input: wheel, touch and automation move the anchor.
 	l.updateScroll(gtx)
+	if dnd.Dragging() {
+		// A drag near an edge scrolls toward it.
+		shown := image.Rectangle{Min: l.vclip.Origin, Max: l.vclip.Origin.Add(l.vclip.Size)}
+		room := dnd.Room{Up: l.barOffset > 0, Down: int(l.barOffset) < l.contentH-l.viewportH}
+		if d := dnd.AutoScroll(gtx, l, shown, room); d.Y != 0 {
+			if d.Y < 0 {
+				l.following = false
+			}
+			l.movedBy += d.Y
+		}
+	}
 	moved := l.movedBy
 	l.movedBy = 0
 	l.anchorOff -= moved
@@ -65,6 +77,8 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 	l.scroll.Add(gtx.Ops)
 
 	var rows []placed
+	popClip := elements.PushVisibleClip(&l.vclip)
+	l.vclip.Size = viewport
 	if l.n > 0 {
 		rows = l.place(gtx, viewport, gap, overscan)
 		// Rows above the anchor, or all of them when following the
@@ -76,6 +90,7 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 		}
 		elements.ReorderTracked(tracks)
 	}
+	popClip()
 
 	// Paint, and record the visible range.
 	popSem := elements.PushSemanticScroll(l)

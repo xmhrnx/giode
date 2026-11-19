@@ -17,6 +17,7 @@ import (
 	"gioui.org/op/paint"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/elements/dnd"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -68,6 +69,14 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 	event.Op(gtx.Ops, l)
 	ps.Pop()
 	l.offset = l.clamp(l.offset)
+	if dnd.Dragging() {
+		// A drag near an edge scrolls toward it.
+		shown := image.Rectangle{Min: l.vclip.Origin, Max: l.vclip.Origin.Add(l.vclip.Size)}
+		room := dnd.Room{Up: l.offset > 0, Down: l.offset < l.maxOffset()}
+		if d := dnd.AutoScroll(gtx, l, shown, room); d.Y != 0 {
+			l.offset = l.clamp(l.offset + float32(d.Y))
+		}
+	}
 	dist := l.scroll.Update(gtx.Metric, gtx.Source, gtx.Now, gesture.Vertical,
 		pointer.ScrollRange{},
 		pointer.ScrollRange{Min: -int(l.offset), Max: int(l.maxOffset() - l.offset)})
@@ -93,6 +102,8 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 	}
 	rowSize := image.Pt(viewport.X, l.itemPx)
 	popSem := elements.PushSemanticScroll(l)
+	popClip := elements.PushVisibleClip(&l.vclip)
+	l.vclip.Size = viewport
 	for i := from; i <= to; i++ {
 		y := i*l.itemPx - int(l.offset)
 		off := op.Offset(image.Pt(0, y)).Push(gtx.Ops)
@@ -110,6 +121,7 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 		pop()
 		off.Pop()
 	}
+	popClip()
 	popSem()
 	if l.focused {
 		kit.MarkLive()

@@ -31,6 +31,8 @@ import (
 // state (a Pressable, a field) should be looked up by the item's key
 // with Keyed, since rows are built only while visible.
 type List struct {
+	// vclip is its viewport, for drop targets in its rows.
+	vclip elements.VisibleClip
 	// Contextual gives it a context menu (Context).
 	elements.Contextual
 

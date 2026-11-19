@@ -21,6 +21,8 @@ import (
 type Scroll struct {
 	// Contextual gives it a context menu (Context).
 	elements.Contextual
+	// vclip is its viewport, for drop targets in its content.
+	vclip elements.VisibleClip
 
 	offset        float32
 	scroll        gesture.Scroll
