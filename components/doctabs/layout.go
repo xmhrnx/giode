@@ -306,7 +306,7 @@ func (d *DocTabs) drawTab(gtx layout.Context, i int, r image.Rectangle, col colo
 		if sel || d.hoverClose {
 			gc = col.text
 		}
-		kit.DrawGlyph(gtx, kit.GlyphClose, gsize, gc)
+		drawGlyph(gtx, kit.GlyphClose, gsize, gc)
 		goff.Pop()
 	case t.Modified:
 		rad := gtx.Dp(dotRadius)
@@ -353,7 +353,7 @@ func (d *DocTabs) drawNew(gtx layout.Context, col colors) {
 	if d.hoverNew {
 		gc = col.text
 	}
-	kit.DrawGlyph(gtx, kit.GlyphPlus, gsize, gc)
+	drawGlyph(gtx, kit.GlyphPlus, gsize, gc)
 	goff.Pop()
 	pop := elements.PushOffset(r.Min)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: "New Tab", Target: newActor{d}}, r.Size())
@@ -671,4 +671,11 @@ func (a newActor) Click() {
 	if a.d.onNew != nil {
 		a.d.onNew()
 	}
+}
+
+// drawGlyph draws a glyph at its own size, whatever the constraints:
+// kit.DrawGlyph fills a minimum it's given.
+func drawGlyph(gtx layout.Context, g kit.Glyph, size unit.Dp, col color.NRGBA) {
+	gtx.Constraints = layout.Constraints{Max: image.Pt(1<<16, 1<<16)}
+	kit.DrawGlyph(gtx, g, size, col)
 }

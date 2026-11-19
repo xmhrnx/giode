@@ -10,6 +10,9 @@
 package datagrid
 
 import (
+	"image"
+	"slices"
+
 	"gioui.org/gesture"
 	"gioui.org/layout"
 
@@ -43,7 +46,34 @@ type Column struct {
 	// Cell draws a cell instead of its text: a badge, an avatar, a
 	// progress bar. It's laid out in the cell, which clips it.
 	Cell func(row int, v any) elements.Element
+	// Editor makes the column's cells editable (see OnEdit): EditText,
+	// EditNumber, EditDate, EditSelect from Options, EditCheckbox.
+	Editor  EditorKind
+	Options []string
+	// Aggregate summarizes the column's values for the footer row and
+	// group headers: Sum, Avg, Count, Min, Max, or your own.
+	Aggregate func(values []any) any
 }
+
+// EditorKind is how a column's cells are edited.
+type EditorKind uint8
+
+const (
+	// EditNone: not editable.
+	EditNone EditorKind = iota
+	// EditText edits the text; OnEdit gets a string.
+	EditText
+	// EditNumber edits a number; OnEdit gets a float64.
+	EditNumber
+	// EditDate edits a date as YYYY-MM-DD; OnEdit gets a time.Time.
+	EditDate
+	// EditSelect picks one of the column's Options from a menu;
+	// OnEdit gets the string.
+	EditSelect
+	// EditCheckbox flips a bool with a click or Space; OnEdit gets the
+	// bool.
+	EditCheckbox
+)
 
 // SortKey is one level of a sort: a column's key, ascending or not.
 type SortKey struct {
@@ -65,13 +95,30 @@ type DataGrid struct {
 
 	src     Source
 	cols    []Column
-	order   []int // the columns in display order, by index into cols
+	seq     []int // every column in display order, hidden ones too
+	order   []int // the shown columns in display order, by index into cols
 	widths  []float32
 	frozen  int
 	checks  bool
 	st      styles.Styles
 	rowH    int // dp
 	headerH int // dp
+
+	groupBy   string
+	collapsed map[any]bool
+	groups    []group
+	view      []viewRow
+	aggs      map[string]any
+
+	onEdit   func(row int, col string, v any) error
+	onLayout func(GridLayout)
+	edit     editState
+	hmenu    *menu.Menu
+	headCtx  elements.Contextual
+	origin   image.Point
+	dragCol  int // the display column being dragged to a new place, or -1
+	dragFrom float32
+	dragging bool
 
 	sort       []SortKey
 	onSort     func(keys []SortKey)
@@ -122,12 +169,14 @@ type cell struct {
 // optional: FontSize is the cells' text size (13 by default),
 // Background the rows', BorderColor the grid lines.
 func New(src Source, cols []Column, st ...styles.Styles) *DataGrid {
-	g := &DataGrid{src: src, rowH: 32, headerH: 36, resizing: -1, hoverRow: -1, pressRow: -1, menuRow: -1}
+	g := &DataGrid{src: src, rowH: 32, headerH: 36, resizing: -1, hoverRow: -1, pressRow: -1, menuRow: -1, dragCol: -1}
 	if len(st) > 0 {
 		g.st = st[0]
 	}
 	g.SetColumns(cols)
 	g.menu = menu.New()
+	g.hmenu = menu.New()
+	g.headCtx.Context(g.hmenu)
 	return g
 }
 
@@ -142,7 +191,7 @@ func (g *DataGrid) SetColumns(cols []Column) {
 	}
 	g.cols = append([]Column(nil), cols...)
 	g.widths = make([]float32, len(cols))
-	g.order = g.order[:0]
+	g.seq = g.seq[:0]
 	for i, c := range g.cols {
 		w := float32(c.Width)
 		if w <= 0 {
@@ -152,10 +201,137 @@ func (g *DataGrid) SetColumns(cols []Column) {
 			w = prev
 		}
 		g.widths[i] = w
-		if !c.Hidden {
-			g.order = append(g.order, i)
+		g.seq = append(g.seq, i)
+	}
+	g.reorder()
+	g.aggs = nil
+}
+
+// reorder derives the shown columns from seq.
+func (g *DataGrid) reorder() {
+	g.order = g.order[:0]
+	for _, ci := range g.seq {
+		if !g.cols[ci].Hidden {
+			g.order = append(g.order, ci)
 		}
 	}
+}
+
+// colIndex returns the column with key's index, or -1.
+func (g *DataGrid) colIndex(key string) int {
+	for i, c := range g.cols {
+		if c.Key == key {
+			return i
+		}
+	}
+	return -1
+}
+
+// SetColumnHidden shows or hides the column with key, as the header
+// menu does.
+func (g *DataGrid) SetColumnHidden(key string, hidden bool) {
+	if ci := g.colIndex(key); ci >= 0 {
+		g.cols[ci].Hidden = hidden
+		g.reorder()
+		g.focus.col = min(g.focus.col, max(len(g.order)-1, 0))
+		g.changedLayout()
+	}
+}
+
+// MoveColumn puts the column with key at position to among all the
+// columns, as dragging its header does.
+func (g *DataGrid) MoveColumn(key string, to int) {
+	ci := g.colIndex(key)
+	if ci < 0 {
+		return
+	}
+	i := slices.Index(g.seq, ci)
+	g.seq = slices.Delete(g.seq, i, i+1)
+	to = min(max(to, 0), len(g.seq))
+	g.seq = slices.Insert(g.seq, to, ci)
+	g.reorder()
+	g.changedLayout()
+}
+
+// GridLayout is what the user changed about a grid - column order,
+// widths and visibility, the sort, the grouping - to save (it encodes
+// as JSON) and restore with RestoreLayout.
+type GridLayout struct {
+	Columns []ColumnLayout `json:"columns"`
+	Sort    []SortKey      `json:"sort,omitempty"`
+	GroupBy string         `json:"groupBy,omitempty"`
+}
+
+// ColumnLayout is a column's place in a GridLayout.
+type ColumnLayout struct {
+	Key    string `json:"key"`
+	Width  int    `json:"width"`
+	Hidden bool   `json:"hidden,omitempty"`
+}
+
+// SaveLayout returns the grid's layout.
+func (g *DataGrid) SaveLayout() GridLayout {
+	var l GridLayout
+	for _, ci := range g.seq {
+		c := g.cols[ci]
+		l.Columns = append(l.Columns, ColumnLayout{Key: c.Key, Width: int(g.widths[ci] + 0.5), Hidden: c.Hidden})
+	}
+	l.Sort, l.GroupBy = g.SortKeys(), g.groupBy
+	return l
+}
+
+// RestoreLayout applies a saved layout. Columns it doesn't name keep
+// their place after the ones it does; names of columns gone are
+// skipped.
+func (g *DataGrid) RestoreLayout(l GridLayout) {
+	var seq []int
+	seen := map[int]bool{}
+	for _, cl := range l.Columns {
+		ci := g.colIndex(cl.Key)
+		if ci < 0 || seen[ci] {
+			continue
+		}
+		seen[ci] = true
+		seq = append(seq, ci)
+		if cl.Width > 0 {
+			g.widths[ci] = float32(cl.Width)
+		}
+		g.cols[ci].Hidden = cl.Hidden
+	}
+	for _, ci := range g.seq {
+		if !seen[ci] {
+			seq = append(seq, ci)
+		}
+	}
+	g.seq = seq
+	g.reorder()
+	g.Sort(l.Sort...)
+	g.groupBy = l.GroupBy
+	g.collapsed = map[any]bool{}
+	g.Refresh()
+}
+
+// OnLayoutChange sets the handler called when the user changes the
+// layout - resizes, moves, hides or shows a column, sorts, groups - to
+// save it. It returns g for chaining.
+func (g *DataGrid) OnLayoutChange(fn func(GridLayout)) *DataGrid {
+	g.onLayout = fn
+	return g
+}
+
+func (g *DataGrid) changedLayout() {
+	if g.onLayout != nil {
+		g.onLayout(g.SaveLayout())
+	}
+}
+
+// OnEdit sets the handler that saves an edited cell: row, the column's
+// key and the new value, typed by the column's Editor. An error keeps
+// the editor open and shows the error under the cell; nil closes it.
+// It returns g for chaining.
+func (g *DataGrid) OnEdit(fn func(row int, col string, v any) error) *DataGrid {
+	g.onEdit = fn
+	return g
 }
 
 // Columns returns the columns, with their current widths in dp.
@@ -228,6 +404,9 @@ func (g *DataGrid) Sort(keys ...SortKey) {
 	if s, ok := g.src.(Sorter); ok {
 		s.Sort(g.sort)
 	}
+	if g.groupBy != "" {
+		g.rebuildView()
+	}
 }
 
 // SortKeys returns the current sort.
@@ -282,19 +461,30 @@ func (g *DataGrid) SelectAll(on bool) {
 
 // Select selects row alone, focuses it and scrolls it into view.
 func (g *DataGrid) Select(row int) {
+	if d := g.displayOf(row); d >= 0 {
+		g.selectOnly(d)
+	}
+}
+
+// selectOnly selects display row d alone, focusing it.
+func (g *DataGrid) selectOnly(d int) {
 	g.sel = selection{}
-	g.sel.set(g.keyOf(row), true)
-	g.focus.row, g.anchor = row, row
+	if src, _ := g.at(d); src >= 0 {
+		g.sel.set(g.keyOf(src), true)
+	}
+	g.focus.row, g.anchor = d, d
 	g.reveal = true
 	g.selected()
 }
 
-// Focused returns the row and column key of the focused cell.
+// Focused returns the row (-1 on a group header) and column key of the
+// focused cell.
 func (g *DataGrid) Focused() (row int, col string) {
 	if g.focus.col >= 0 && g.focus.col < len(g.order) {
 		col = g.cols[g.order[g.focus.col]].Key
 	}
-	return g.focus.row, col
+	row, _ = g.at(g.focus.row)
+	return row, col
 }
 
 func (g *DataGrid) selected() {

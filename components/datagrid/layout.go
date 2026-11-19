@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -31,6 +32,7 @@ type frameLayout struct {
 	colX        []int
 	frozenCols  int
 	bodyH       int
+	footerH     int
 	first, last int // rows on screen, [first, last)
 	maxX, maxY  int
 	pxPerDp     float32
@@ -83,6 +85,14 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if !kit.HandleInput(g.pass) {
 		kit.OpaqueInput()
 	}
+	elements.TrackPosition(&g.origin)
+	if g.edit.refocus {
+		g.edit.refocus = false
+		gtx.Execute(key.FocusCmd{Tag: g})
+	}
+	if g.groupBy != "" && g.view == nil {
+		g.rebuildView()
+	}
 	size := gtx.Constraints.Max
 	if size.Y >= 1<<20 {
 		size.Y = gtx.Dp(400)
@@ -90,7 +100,7 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 	size = gtx.Constraints.Constrain(size)
 	g.computeLayout(gtx, size)
 	l := &g.lay
-	n := g.src.Len()
+	n := g.count()
 	pal := g.palette()
 
 	// Scrolling: wheel and touch, then keeping the focus in view.
@@ -111,7 +121,7 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Input areas: the grid's own, under everything; the scroll
 	// gestures over the body.
 	event.Op(gtx.Ops, g)
-	body := image.Rect(0, l.headerH, size.X, size.Y)
+	body := image.Rect(0, l.headerH, size.X, size.Y-l.footerH)
 	bodyArea := clip.Rect(body).Push(gtx.Ops)
 	g.scrollY.Add(gtx.Ops)
 	g.scrollX.Add(gtx.Ops)
@@ -122,17 +132,22 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 	bc := clip.Rect(body).Push(gtx.Ops)
 	g.paintRows(gtx, pal, false)
 	g.paintRows(gtx, pal, true)
+	g.paintGroupLabels(gtx, pal)
 	if l.frozenW > 0 && g.offX > 0 {
 		// A shadow where the scrolling columns slide under.
 		paintShadow(gtx.Ops, image.Rect(l.frozenW, l.headerH, l.frozenW+gtx.Dp(6), size.Y), pal.border)
 	}
+	g.layoutEditor(gtx)
 	bc.Pop()
 
+	g.paintFooter(gtx, pal)
 	g.paintHeader(gtx, pal)
 	g.paintScrollbars(gtx)
 	g.paintStatus(gtx, pal)
 
-	// The row menu opens over the body.
+	// The column menu opens over the header, the row menu over the
+	// body.
+	g.headCtx.AnchorContext(gtx, image.Pt(size.X, l.headerH))
 	if g.rowMenu != nil {
 		off := op.Offset(body.Min).Push(gtx.Ops)
 		pop := elements.PushOffset(body.Min)
@@ -166,8 +181,12 @@ func (g *DataGrid) computeLayout(gtx layout.Context, size image.Point) {
 	l.colX = append(l.colX, x)
 	l.frozenCols = min(g.frozen, len(g.order))
 	l.frozenW = l.colX[l.frozenCols]
-	l.bodyH = max(size.Y-l.headerH, 0)
-	l.maxY = max(g.src.Len()*l.rowH-l.bodyH, 0)
+	l.footerH = 0
+	if g.hasFooter() {
+		l.footerH = l.rowH
+	}
+	l.bodyH = max(size.Y-l.headerH-l.footerH, 0)
+	l.maxY = max(g.count()*l.rowH-l.bodyH, 0)
 	l.maxX = max(x-size.X, 0)
 }
 
@@ -187,10 +206,11 @@ func (l *frameLayout) rowY(row int, offY float32) int {
 // paintRows paints the visible rows' frozen part or scrolling part.
 func (g *DataGrid) paintRows(gtx layout.Context, pal palette, frozen bool) {
 	l := &g.lay
-	region := image.Rect(l.frozenW, l.headerH, l.size.X, l.size.Y)
+	bottom := l.headerH + l.bodyH
+	region := image.Rect(l.frozenW, l.headerH, l.size.X, bottom)
 	c0, c1 := l.frozenCols, len(g.order)
 	if frozen {
-		region = image.Rect(0, l.headerH, l.frozenW, l.size.Y)
+		region = image.Rect(0, l.headerH, l.frozenW, bottom)
 		c0, c1 = 0, l.frozenCols
 	}
 	if region.Empty() {
@@ -202,8 +222,13 @@ func (g *DataGrid) paintRows(gtx layout.Context, pal palette, frozen bool) {
 	for row := l.first; row < l.last; row++ {
 		y := l.rowY(row, g.offY)
 		rr := image.Rect(region.Min.X, y, region.Max.X, y+l.rowH)
+		src, grp := g.at(row)
+		if grp != nil {
+			g.paintGroupRow(gtx, pal, rr, row, grp, c0, c1, region)
+			continue
+		}
 		paint.FillShape(gtx.Ops, pal.bg, clip.Rect(rr).Op())
-		sel := g.Selected(row)
+		sel := g.Selected(src)
 		switch {
 		case sel:
 			paint.FillShape(gtx.Ops, pal.selected, clip.Rect(rr).Op())
@@ -214,7 +239,7 @@ func (g *DataGrid) paintRows(gtx layout.Context, pal palette, frozen bool) {
 		if frozen && l.checkW > 0 {
 			g.paintCheck(gtx, pal, image.Rect(0, y, l.checkW, y+l.rowH), sel, false)
 		}
-		loaded := loader == nil || loader.Loaded(row)
+		loaded := loader == nil || loader.Loaded(src)
 		for c := c0; c < c1; c++ {
 			x := l.cellX(c, g.offX)
 			w := l.colX[c+1] - l.colX[c]
@@ -227,7 +252,7 @@ func (g *DataGrid) paintRows(gtx layout.Context, pal palette, frozen bool) {
 				g.paintPlaceholder(gtx, pal, r)
 				continue
 			}
-			g.paintCell(gtx, pal, r, g.cols[g.order[c]], row)
+			g.paintCell(gtx, pal, r, g.cols[g.order[c]], src)
 		}
 		if g.focused && row == g.focus.row && g.focus.col >= c0 && g.focus.col < c1 {
 			c := g.focus.col
@@ -247,6 +272,12 @@ func (g *DataGrid) paintCell(gtx layout.Context, pal palette, r image.Rectangle,
 	}
 	defer clip.Rect(r).Push(gtx.Ops).Pop()
 	v := g.src.Value(row, col.Key)
+	if col.Editor == EditCheckbox && col.Cell == nil {
+		// A checkbox, at the cell's start.
+		b, _ := v.(bool)
+		g.paintCheck(gtx, pal, image.Rect(r.Min.X, r.Min.Y, r.Min.X+gtx.Dp(40), r.Max.Y), b, false)
+		return
+	}
 	cgtx := gtx
 	cgtx.Constraints = layout.Constraints{Max: inner.Size()}
 	if col.Cell != nil {
@@ -307,7 +338,7 @@ func (g *DataGrid) paintCheck(gtx layout.Context, pal palette, r image.Rectangle
 		}
 		gs := unit.Dp(12)
 		off := op.Offset(b.Min.Add(image.Pt((s-gtx.Dp(gs))/2, (s-gtx.Dp(gs))/2))).Push(gtx.Ops)
-		kit.DrawGlyph(gtx, gl, gs, elements.ResolveColor("theme.onprimary"))
+		drawGlyph(gtx, gl, gs, elements.ResolveColor("theme.onprimary"))
 		off.Pop()
 		return
 	}
@@ -402,7 +433,7 @@ func (g *DataGrid) paintHeaderCell(gtx layout.Context, pal palette, r image.Rect
 		gs := unit.Dp(10)
 		x := r.Max.X - pad - ind
 		off := op.Offset(image.Pt(x, (r.Dy()-gtx.Dp(gs))/2)).Push(gtx.Ops)
-		kit.DrawGlyph(gtx, gl, gs, pal.text)
+		drawGlyph(gtx, gl, gs, pal.text)
 		off.Pop()
 		if len(g.sort) > 1 {
 			cgtx := gtx
@@ -421,7 +452,7 @@ func (g *DataGrid) paintScrollbars(gtx layout.Context) {
 	if l.maxY > 0 {
 		off := op.Offset(image.Pt(0, l.headerH)).Push(gtx.Ops)
 		y := g.offY
-		g.barY.Layout(gtx, image.Pt(l.size.X, l.bodyH), g.src.Len()*l.rowH, &y, sb)
+		g.barY.Layout(gtx, image.Pt(l.size.X, l.bodyH), g.count()*l.rowH, &y, sb)
 		g.offY = y
 		off.Pop()
 	}
@@ -468,7 +499,7 @@ func (g *DataGrid) paintStatus(gtx layout.Context, pal palette) {
 // around them.
 func (g *DataGrid) load(first, last int) {
 	ld, ok := g.src.(Loader)
-	if !ok || first >= last {
+	if !ok || first >= last || g.view != nil {
 		return
 	}
 	page := last - first
@@ -501,4 +532,145 @@ func paintShadow(ops *op.Ops, r image.Rectangle, c color.NRGBA) {
 		cc.A = uint8(int(c.A) * (n - i) / (n * 2))
 		paint.FillShape(ops, cc, clip.Rect(image.Rect(r.Min.X+i, r.Min.Y, r.Min.X+i+1, r.Max.Y)).Op())
 	}
+}
+
+// paintGroupRow paints a group's header row: its aggregates in their
+// columns (the label is painted over the row by paintGroupLabels).
+func (g *DataGrid) paintGroupRow(gtx layout.Context, pal palette, rr image.Rectangle, row int, grp *group, c0, c1 int, region image.Rectangle) {
+	l := &g.lay
+	paint.FillShape(gtx.Ops, pal.header, clip.Rect(rr).Op())
+	line := max(gtx.Dp(1), 1)
+	paint.FillShape(gtx.Ops, pal.border, clip.Rect(image.Rect(rr.Min.X, rr.Max.Y-line, rr.Max.X, rr.Max.Y)).Op())
+	for c := max(c0, 1); c < c1; c++ {
+		ci := g.order[c]
+		col := g.cols[ci]
+		if col.Aggregate == nil {
+			continue
+		}
+		x := l.cellX(c, g.offX)
+		w := l.colX[c+1] - l.colX[c]
+		if x+w <= region.Min.X || x >= region.Max.X {
+			continue
+		}
+		r := image.Rect(x, rr.Min.Y, x+w, rr.Max.Y-line)
+		g.paintText(gtx, pal.muted, r, formatValue(col, g.aggregate(ci, grp.rows)), col.Align, true)
+	}
+	if g.focused && row == g.focus.row {
+		strokeRect(gtx.Ops, rr, max(gtx.Dp(2), 1), pal.focus)
+	}
+}
+
+// paintGroupLabels paints the visible group headers' labels - an arrow,
+// the value and the row count - over their rows' first column.
+func (g *DataGrid) paintGroupLabels(gtx layout.Context, pal palette) {
+	if g.view == nil {
+		return
+	}
+	l := &g.lay
+	title := g.groupBy
+	if ci := g.colIndex(g.groupBy); ci >= 0 {
+		title = g.cols[ci].Title
+	}
+	w := l.colX[min(1, len(g.order))]
+	if l.frozenCols == 0 {
+		w = max(w-int(g.offX), 0)
+	}
+	w = max(w, gtx.Dp(160))
+	for row := l.first; row < l.last; row++ {
+		_, grp := g.at(row)
+		if grp == nil {
+			continue
+		}
+		y := l.rowY(row, g.offY)
+		pad := gtx.Dp(8)
+		gl := kit.GlyphChevronDown
+		if g.collapsed[groupKey(grp.value)] {
+			gl = kit.GlyphChevronRight
+		}
+		gs := unit.Dp(12)
+		off := op.Offset(image.Pt(pad, y+(l.rowH-gtx.Dp(gs))/2)).Push(gtx.Ops)
+		drawGlyph(gtx, gl, gs, pal.text)
+		off.Pop()
+		ci := g.colIndex(g.groupBy)
+		v := text(grp.value)
+		if ci >= 0 {
+			v = formatValue(g.cols[ci], grp.value)
+		}
+		if v == "" {
+			v = "(none)"
+		}
+		label := title + ": " + v + "  ·  " + strconv.Itoa(len(grp.rows))
+		x := pad + gtx.Dp(18)
+		g.paintText(gtx, pal.text, image.Rect(x, y, x+w, y+l.rowH), label, properties.TextAlignStart, false)
+	}
+}
+
+// paintFooter paints the aggregates row at the bottom.
+func (g *DataGrid) paintFooter(gtx layout.Context, pal palette) {
+	l := &g.lay
+	if l.footerH == 0 {
+		return
+	}
+	top := l.size.Y - l.footerH
+	fr := image.Rect(0, top, l.size.X, l.size.Y)
+	paint.FillShape(gtx.Ops, pal.header, clip.Rect(fr).Op())
+	line := max(gtx.Dp(1), 1)
+	paint.FillShape(gtx.Ops, pal.border, clip.Rect(image.Rect(0, top, l.size.X, top+line)).Op())
+	for pass := 0; pass < 2; pass++ {
+		frozen := pass == 1
+		region := image.Rect(l.frozenW, top, l.size.X, l.size.Y)
+		c0, c1 := l.frozenCols, len(g.order)
+		if frozen {
+			region = image.Rect(0, top, l.frozenW, l.size.Y)
+			c0, c1 = 0, l.frozenCols
+			paint.FillShape(gtx.Ops, pal.header, clip.Rect(region).Op())
+		}
+		if region.Empty() {
+			continue
+		}
+		cl := clip.Rect(region).Push(gtx.Ops)
+		for c := c0; c < c1; c++ {
+			ci := g.order[c]
+			col := g.cols[ci]
+			if col.Aggregate == nil {
+				continue
+			}
+			x := l.cellX(c, g.offX)
+			w := l.colX[c+1] - l.colX[c]
+			g.paintText(gtx, pal.text, image.Rect(x, top+line, x+w, l.size.Y), formatValue(col, g.aggregate(ci, nil)), col.Align, true)
+		}
+		cl.Pop()
+	}
+}
+
+// paintText draws one line of text in r, padded and centered
+// vertically.
+func (g *DataGrid) paintText(gtx layout.Context, c color.NRGBA, r image.Rectangle, s string, align properties.TextAlign, bold bool) {
+	pad := gtx.Dp(8)
+	inner := image.Rect(r.Min.X+pad, r.Min.Y, r.Max.X-pad, r.Max.Y)
+	if inner.Dx() <= 0 || s == "" {
+		return
+	}
+	defer clip.Rect(r).Push(gtx.Ops).Pop()
+	st := styles.Styles{FontSize: g.fontSize(), Color: properties.CalcColorReverse(c), MaxLines: 1, TextOverflow: properties.TextOverflowEllipsis, TextAlign: align, Width: -1}
+	if bold {
+		st.FontWeight = properties.FontWeightSemiBold
+	}
+	cgtx := gtx
+	cgtx.Constraints = layout.Constraints{Max: inner.Size()}
+	rec := op.Record(gtx.Ops)
+	pop := elements.PushOffset(inner.Min)
+	dims := kit.Unselectable(elements.Text(s, st).Layout)(cgtx)
+	pop()
+	call := rec.Stop()
+	off := op.Offset(image.Pt(inner.Min.X, inner.Min.Y+(inner.Dy()-dims.Size.Y)/2)).Push(gtx.Ops)
+	call.Add(gtx.Ops)
+	off.Pop()
+}
+
+// drawGlyph draws a glyph at its own size, whatever the constraints:
+// kit.DrawGlyph fills a minimum it's given.
+func drawGlyph(gtx layout.Context, g kit.Glyph, size unit.Dp, col color.NRGBA) {
+	gtx.Constraints = layout.Constraints{Max: image.Pt(1<<16, 1<<16)}
+	kit.DrawGlyph(gtx, g, size, col)
 }

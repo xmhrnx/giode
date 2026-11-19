@@ -2,6 +2,7 @@ package datagrid
 
 import (
 	"image"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,13 +13,14 @@ import (
 	"gioui.org/layout"
 
 	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/components/menu"
 )
 
 // navKeys are the keys the grid handles while focused.
 var navKeys = []key.Name{
 	key.NameUpArrow, key.NameDownArrow, key.NameLeftArrow, key.NameRightArrow,
 	key.NameHome, key.NameEnd, key.NamePageUp, key.NamePageDown,
-	key.NameReturn, key.NameEnter, key.NameSpace, "A", "C",
+	key.NameReturn, key.NameEnter, key.NameSpace, key.NameF2, "A", "C",
 }
 
 // doubleClick is the longest time between a double click's clicks.
@@ -111,7 +113,7 @@ func (g *DataGrid) hitTest(gtx layout.Context, p image.Point) hit {
 	h.header = p.Y < l.headerH
 	if !h.header {
 		row := (p.Y - l.headerH + int(g.offY)) / l.rowH
-		if row < g.src.Len() {
+		if row < g.count() && p.Y < l.headerH+l.bodyH {
 			h.row = row
 		}
 	}
@@ -153,12 +155,16 @@ func (g *DataGrid) onPointer(gtx layout.Context, e pointer.Event) {
 		gtx.Execute(key.FocusCmd{Tag: g})
 		g.pressRow, g.pressCol = -1, -1
 		if e.Buttons.Contain(pointer.ButtonSecondary) {
-			if h.row >= 0 {
-				if !g.Selected(h.row) {
-					g.Select(h.row)
+			if h.header {
+				g.buildHeaderMenu(h.col)
+				return
+			}
+			if src, _ := g.at(h.row); src >= 0 {
+				if !g.Selected(src) {
+					g.selectOnly(h.row)
 				}
 				g.focus = cell{h.row, max(h.col, 0)}
-				g.buildMenu(h.row, h.col)
+				g.buildMenu(src, h.col)
 			}
 			return
 		}
@@ -175,17 +181,40 @@ func (g *DataGrid) onPointer(gtx layout.Context, e pointer.Event) {
 			if h.check {
 				g.pressCol = -2
 			}
+			g.dragCol, g.dragFrom, g.dragging = h.col, e.Position.X, false
 		case h.row >= 0:
 			g.pressRow, g.pressCol = h.row, h.col
-			if h.check {
+			if _, grp := g.at(h.row); grp != nil {
+				g.focus.row = h.row
+				g.SetGroupOpen(grp.value, g.collapsed[groupKey(grp.value)])
+				return
+			} else if h.check {
 				g.toggle(h.row)
 				g.anchor = h.row
 				g.focus.row = h.row
+				return
+			} else if g.editor(h.col) == EditCheckbox {
+				g.focus = cell{h.row, h.col}
+				g.startEdit(h.row, h.col)
 				return
 			}
 			g.clickRow(h.row, max(h.col, 0), e.Modifiers, e.Time)
 		}
 	case pointer.Drag:
+		if g.dragCol >= 0 && g.resizing < 0 {
+			if !g.dragging && abs32(e.Position.X-g.dragFrom) > float32(gtx.Dp(6)) {
+				g.dragging = true
+			}
+			if g.dragging {
+				// Moved past the middle of a neighbour: swap with it,
+				// within the frozen columns or within the others.
+				h := g.hitTest(gtx, image.Pt(p.X, g.lay.headerH/2))
+				if h.col >= 0 && h.col != g.dragCol && (h.col < g.lay.frozenCols) == (g.dragCol < g.lay.frozenCols) {
+					g.moveShown(g.dragCol, h.col)
+					g.dragCol = h.col
+				}
+			}
+		}
 		if g.resizing >= 0 {
 			ci := g.order[g.resizing]
 			minW := float32(g.cols[ci].MinWidth)
@@ -195,8 +224,15 @@ func (g *DataGrid) onPointer(gtx layout.Context, e pointer.Event) {
 			g.widths[ci] = max(g.resizeW+(e.Position.X-g.resizeX)/g.lay.pxPerDp, minW)
 		}
 	case pointer.Release:
+		dragged := g.dragging
+		g.dragCol, g.dragging = -1, false
 		if g.resizing >= 0 {
 			g.resizing = -1
+			g.changedLayout()
+			return
+		}
+		if dragged {
+			g.changedLayout()
 			return
 		}
 		h := g.hitTest(gtx, p)
@@ -225,34 +261,70 @@ func (g *DataGrid) clickRow(row, col int, mods key.Modifiers, t time.Duration) {
 	default:
 		double := g.lastClick == row && t-time.Duration(g.clickedAt) < doubleClick && g.clickedAt != 0
 		g.sel = selection{}
-		g.sel.set(g.keyOf(row), true)
+		src, _ := g.at(row)
+		g.sel.set(g.keyOf(src), true)
 		g.anchor = row
 		g.selected()
-		if double && g.onActivate != nil {
-			g.onActivate(row)
+		if double {
 			g.clickedAt = 0
+			if g.editor(col) != EditNone {
+				g.startEdit(row, col)
+			} else if g.onActivate != nil {
+				g.onActivate(src)
+			}
 			return
 		}
 	}
 	g.lastClick, g.clickedAt = row, int64(t)
 }
 
+// toggle flips display row's selection.
 func (g *DataGrid) toggle(row int) {
-	k := g.keyOf(row)
+	src, _ := g.at(row)
+	if src < 0 {
+		return
+	}
+	k := g.keyOf(src)
 	g.sel.set(k, !g.sel.has(k))
 	g.selected()
 }
 
-// selectRange selects rows a to b, adding to the selection with keep.
+// selectRange selects display rows a to b, adding to the selection
+// with keep.
 func (g *DataGrid) selectRange(a, b int, keep bool) {
 	if !keep {
 		g.sel = selection{}
 	}
 	lo, hi := min(a, b), max(a, b)
-	for r := lo; r <= hi && r < g.src.Len(); r++ {
-		g.sel.set(g.keyOf(r), true)
+	for r := lo; r <= hi && r < g.count(); r++ {
+		if src, _ := g.at(r); src >= 0 {
+			g.sel.set(g.keyOf(src), true)
+		}
 	}
 	g.selected()
+}
+
+// moveShown moves shown column from to the place of shown column to.
+func (g *DataGrid) moveShown(from, to int) {
+	ci, target := g.order[from], g.order[to]
+	i := slices.Index(g.seq, ci)
+	g.seq = slices.Delete(g.seq, i, i+1)
+	j := slices.Index(g.seq, target)
+	if to > from {
+		j++
+	}
+	g.seq = slices.Insert(g.seq, j, ci)
+	g.reorder()
+	if g.focus.col == from {
+		g.focus.col = to
+	}
+}
+
+func abs32(v float32) float32 {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // toggleSort sorts by column ci: ascending, descending, then not; with
@@ -292,10 +364,11 @@ func (g *DataGrid) toggleSort(ci int, add bool) {
 	if g.onSort != nil {
 		g.onSort(g.SortKeys())
 	}
+	g.changedLayout()
 }
 
 func (g *DataGrid) onKey(gtx layout.Context, e key.Event) {
-	n := g.src.Len()
+	n := g.count()
 	if n == 0 {
 		return
 	}
@@ -328,13 +401,25 @@ func (g *DataGrid) onKey(gtx layout.Context, e key.Event) {
 		} else {
 			col = len(g.order) - 1
 		}
-	case key.NameReturn, key.NameEnter:
-		if g.onActivate != nil && row >= 0 && row < n {
-			g.onActivate(row)
+	case key.NameReturn, key.NameEnter, key.NameF2:
+		src, grp := g.at(row)
+		switch {
+		case grp != nil:
+			g.SetGroupOpen(grp.value, g.collapsed[groupKey(grp.value)])
+		case g.editor(col) != EditNone:
+			g.startEdit(row, col)
+		case e.Name != key.NameF2 && g.onActivate != nil && src >= 0:
+			g.onActivate(src)
 		}
 		return
 	case key.NameSpace:
-		if row >= 0 && row < n {
+		src, grp := g.at(row)
+		switch {
+		case grp != nil:
+			g.SetGroupOpen(grp.value, g.collapsed[groupKey(grp.value)])
+		case g.editor(col) == EditCheckbox:
+			g.startEdit(row, col)
+		case src >= 0:
 			g.toggle(row)
 			g.anchor = row
 		}
@@ -364,7 +449,7 @@ func (g *DataGrid) onKey(gtx layout.Context, e key.Event) {
 		if shift {
 			g.selectRange(g.anchor, row, false)
 		} else {
-			g.Select(row)
+			g.selectOnly(row)
 		}
 	}
 }
@@ -374,8 +459,8 @@ func (g *DataGrid) onKey(gtx layout.Context, e key.Event) {
 // columns' text: what Ctrl+C copies, for pasting into a spreadsheet.
 func (g *DataGrid) CopyText() string {
 	rows := g.SelectedRows()
-	if len(rows) == 0 && g.focus.row >= 0 && g.focus.row < g.src.Len() {
-		rows = []int{g.focus.row}
+	if src, _ := g.at(g.focus.row); len(rows) == 0 && src >= 0 && src < g.src.Len() {
+		rows = []int{src}
 	}
 	var b strings.Builder
 	for i, r := range rows {
@@ -404,4 +489,53 @@ func (g *DataGrid) buildMenu(row, col int) {
 	}
 	g.menuRow, g.menuCol = row, key
 	g.rowMenu(row, key, g.menu.Clear())
+}
+
+// buildHeaderMenu fills the column menu for display column col: sort,
+// group, and the columns to show.
+func (g *DataGrid) buildHeaderMenu(col int) {
+	if g.hmenu.Opened() {
+		return
+	}
+	m := g.hmenu.Clear()
+	if col >= 0 && col < len(g.order) {
+		ci := g.order[col]
+		c := g.cols[ci]
+		if c.Sortable {
+			m.Item("Sort Ascending", func() { g.setSort(SortKey{Key: c.Key}) })
+			m.Item("Sort Descending", func() { g.setSort(SortKey{Key: c.Key, Descending: true}) })
+			if len(g.sort) > 0 {
+				m.Item("Clear Sort", func() { g.setSort() })
+			}
+			m.Separator()
+		}
+		if g.groupBy == c.Key {
+			m.Item("Ungroup", func() { g.GroupBy("") })
+		} else {
+			m.Item("Group by "+c.Title, func() { g.GroupBy(c.Key) })
+		}
+		if len(g.order) > 1 {
+			m.Item("Hide "+c.Title, func() { g.SetColumnHidden(c.Key, true) })
+		}
+		m.Separator()
+	}
+	cols := menu.New()
+	for _, ci := range g.seq {
+		c := g.cols[ci]
+		cols.CheckItem(c.Title, func() bool { return !g.cols[ci].Hidden }, func() {
+			if g.cols[ci].Hidden || len(g.order) > 1 {
+				g.SetColumnHidden(c.Key, !g.cols[ci].Hidden)
+			}
+		})
+	}
+	m.SubMenu("Columns", cols)
+}
+
+// setSort sorts as the user asked, telling OnSort.
+func (g *DataGrid) setSort(keys ...SortKey) {
+	g.Sort(keys...)
+	if g.onSort != nil {
+		g.onSort(g.SortKeys())
+	}
+	g.changedLayout()
 }
