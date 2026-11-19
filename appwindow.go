@@ -197,6 +197,7 @@ func New(cfg Config) *App {
 	}
 	a.rendererErr = setupRenderer(cfg)
 	installFileDrag(a)
+	installExporter(a)
 	// Until the first frame, the window shows the app's background
 	// (theme tokens resolved now) rather than the platform's white.
 	setNativeBackground(properties.CalcColor(cfg.Background), true)

@@ -123,11 +123,66 @@ holding one lays its subtree out while a drag runs and replays it again after. A
 of 500 cards in 6 `LazyList` columns lays out a drag frame in about 1.5 ms on a desktop
 CPU, the same as a frame without a drag.
 
-## Not yet
+## Dragging out of the app
 
-Dragging out of the app (files or text to another application) and between the app's
-windows aren't supported yet. Files dragged in from the system arrive through
-`Config.OnFileDrop`; see [window.md](../window.md).
+`Export` lets a `Draggable` leave the window. Dragged past the window's edge with a mouse,
+it becomes the operating system's drag, carrying what the function returns: files, text,
+or both. A file manager, a mail composer, an editor or another Giode app can take it.
+
+```go
+card := giode.Draggable(doc.ID, cardView).
+	Export(func() giode.DragExportData {
+		return giode.DragExportData{Files: []string{doc.Path}, Text: doc.Title}
+	}).
+	OnDragEnd(func(r giode.DragResult) {
+		if r.Exported && r.Dropped {
+			toast("Copied to another app")
+		}
+	})
+```
+
+The in-app drag ends at the edge: targets inside the window no longer see it. `OnDragEnd`
+runs when the system's drag ends, with `Exported` set and `Dropped` saying whether another
+application took it. Files are offered for copying; the app's own copy stays where it is.
+
+| Platform | How |
+| --- | --- |
+| Windows | The shell's `SHDoDragDrop`, with `CF_HDROP` (files) and `CF_UNICODETEXT`. |
+| macOS | An `NSDraggingSession` with file URLs and a string, showing the files' icons. |
+| Linux | An XDND source on X11 and `wl_data_device.start_drag` on Wayland, through the giode CLI's Gio patches (an app built with a plain `go build` keeps drags in the window). |
+
+Elsewhere (Android, iOS, the web), and for touch and keyboard drags, the drag stays in the
+window. `giode.CanDragOut()` reports whether this build can export drags.
+
+## Files from other applications
+
+With `Config.FileDropTargets` set (or `OnFileDrop` or `OnFileDrag`), files dragged in from
+a file manager or another app reach the view's drop targets. A target accepting
+`giode.DroppedFiles` highlights while the files are over it and receives them:
+
+```go
+inbox := giode.DropTarget(inboxView).
+	Accept(giode.DragAccept[giode.DroppedFiles]()).
+	OnDrop(func(e giode.DropEvent) {
+		files, _ := giode.DragPayload[giode.DroppedFiles](e.Payload)
+		attach(files.Paths)
+	})
+```
+
+`Paths` is empty while the files are over the window, because not every platform says
+what's dragged before the drop; it's filled in `OnDrop`. A list target gives the slot as
+usual, so files can be dropped between a list's items. Files dropped where no target
+takes them go to `OnFileDrop`.
+
+## Between windows
+
+A Giode app runs one window, so two windows are two apps or two copies of one. Files
+travel between them as between any applications: one `Export`s them, the other's targets
+take `DroppedFiles`. Exported text reaches other applications' text fields, but Giode's
+drop targets take only files so far, and in-app payloads (`any` values) don't leave their
+app.
+
+## Gestures that move things by hand
 
 `Pressable`'s `OnDragStart`, `OnDragMove` and `OnDragEnd` remain for gestures that move
 something by hand, like a slider or a splitter; see [pressable.md](pressable.md).

@@ -355,3 +355,96 @@ func TestMove(t *testing.T) {
 		t.Errorf("no-op move: got %d, %v", got, s)
 	}
 }
+
+// A drag leaving the window becomes the system's, with what Export
+// gives; OnDragEnd runs when that drag ends.
+func TestExportLeavingWindow(t *testing.T) {
+	var got []dnd.ExportData
+	var finishExport func(bool)
+	dnd.SetExporter(func(data dnd.ExportData, done func(bool)) bool {
+		got = append(got, data)
+		finishExport = done
+		return true
+	})
+	defer dnd.SetExporter(nil)
+	b := newBoard()
+	b.card("a").Export(func() dnd.ExportData { return dnd.ExportData{Files: []string{"/tmp/a.txt"}} })
+	h := &harness{view: b.view, now: time.Unix(0, 0)}
+	h.frame()
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(50, 20)})
+	h.r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: f32.Pt(50, 20), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(150, 30), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	h.frame()
+	if !dnd.Dragging() || len(got) != 0 {
+		t.Fatalf("dragging %v, exports %v: want an in-app drag inside the window", dnd.Dragging(), got)
+	}
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(450, 30), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	h.frame()
+	if dnd.Dragging() || len(got) != 1 || got[0].Files[0] != "/tmp/a.txt" {
+		t.Fatalf("dragging %v, exports %v: want the drag handed over", dnd.Dragging(), got)
+	}
+	if len(b.ends) != 0 {
+		t.Fatalf("ended before the system's drag: %+v", b.ends)
+	}
+	finishExport(true)
+	// The platform ends the press the system's drag took over.
+	h.r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: f32.Pt(450, 30)})
+	h.frame()
+	if len(b.ends) != 1 || !b.ends[0].Exported || !b.ends[0].Dropped {
+		t.Errorf("end %+v", b.ends)
+	}
+	// A card without Export stays in the window.
+	h.drag(f32.Pt(150, 20), f32.Pt(160, 30), f32.Pt(450, 30))
+	if len(got) != 1 || len(b.ends) != 2 || !b.ends[1].Cancelled || b.ends[1].Exported {
+		t.Errorf("exports %v, ends %+v", got, b.ends)
+	}
+}
+
+// Files dragged in from another application go to targets accepting
+// Files.
+func TestExternalFiles(t *testing.T) {
+	var drops []dnd.DropEvent
+	var states []dnd.DropState
+	files := dnd.NewDropTarget(func(s dnd.DropState) elements.Element {
+		states = append(states, s)
+		return sized(200, 100)
+	}).Accept(dnd.AcceptType[dnd.Files]()).OnDrop(func(e dnd.DropEvent) { drops = append(drops, e) })
+	other := dnd.NewDropTarget(func(dnd.DropState) elements.Element { return sized(200, 100) }).
+		Accept(dnd.AcceptType[string]())
+	h := &harness{view: func() elements.Element { return elements.Stack(styles.Styles{}, files, other) }, now: time.Unix(0, 0)}
+	h.frame()
+	dnd.External(dnd.ExternalEnter, f32.Pt(20, 20), nil)
+	h.frame()
+	h.frame()
+	if last := states[len(states)-1]; !last.Active || !last.Over {
+		t.Errorf("state over the files target: %+v", last)
+	}
+	if taken := dnd.External(dnd.ExternalDrop, f32.Pt(20, 20), []string{"/x/y.pdf"}); !taken {
+		t.Error("drop not taken")
+	}
+	if len(drops) != 1 || drops[0].Payload.(dnd.Files).Paths[0] != "/x/y.pdf" || drops[0].Source != nil {
+		t.Errorf("drops %+v", drops)
+	}
+	// Over the target that doesn't take files: not taken.
+	dnd.External(dnd.ExternalEnter, f32.Pt(20, 150), nil)
+	h.frame()
+	if taken := dnd.External(dnd.ExternalDrop, f32.Pt(20, 150), []string{"/x/z"}); taken || len(drops) != 1 {
+		t.Errorf("taken %v, drops %d", taken, len(drops))
+	}
+	// A drop with no drag before it.
+	h.frame()
+	if taken := dnd.External(dnd.ExternalDrop, f32.Pt(20, 20), []string{"/x/w"}); !taken || len(drops) != 2 {
+		t.Errorf("drop without a drag: taken %v, drops %d", taken, len(drops))
+	}
+	h.frame()
+	dnd.External(dnd.ExternalEnter, f32.Pt(20, 20), nil)
+	h.frame()
+	dnd.External(dnd.ExternalLeave, f32.Pt(0, 0), nil)
+	h.frame()
+	if dnd.Dragging() {
+		t.Error("still dragging after leave")
+	}
+}

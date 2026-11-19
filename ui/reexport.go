@@ -206,6 +206,14 @@ type DragResult = dnd.DragResult
 // DragSourceStyle is how a dragged Draggable shows in its place;
 // DragAxis limits its preview's movement.
 type DragSourceStyle = dnd.SourceStyle
+
+// DragExportData is what a Draggable gives other applications when it's
+// dragged out of the window (Export): files, text.
+type DragExportData = dnd.ExportData
+
+// DroppedFiles is the payload of files dragged in from other
+// applications, for drop targets (Config.FileDropTargets).
+type DroppedFiles = dnd.Files
 type DragAxis = dnd.Axis
 
 // DragAccept returns a DropTarget.Accept predicate for payloads of
@@ -486,6 +494,9 @@ var (
 	// it.
 	Dragging   = dnd.Dragging
 	CancelDrag = dnd.Cancel
+	// CanDragOut reports whether drags can leave the window on this
+	// platform (Draggable.Export).
+	CanDragOut = dnd.CanExport
 	Scroll     = scroll.New
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.

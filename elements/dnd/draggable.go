@@ -66,6 +66,10 @@ type DragResult struct {
 	// Cancelled is set when it ended without a drop: released where no
 	// target accepts it, Escape, or Cancel.
 	Cancelled bool
+	// Exported is set when it left the window as an operating system
+	// drag (Export); Dropped then says whether another application took
+	// it.
+	Exported bool
 }
 
 // Draggable is content that can be dragged to a DropTarget, carrying a
@@ -89,6 +93,7 @@ type Draggable struct {
 
 	onStart func()
 	onEnd   func(DragResult)
+	export  func() ExportData
 
 	disabled       bool
 	touchImmediate bool
@@ -186,6 +191,18 @@ func (d *Draggable) OnDragStart(fn func()) *Draggable {
 // runs after the target's OnDrop. It returns d for chaining.
 func (d *Draggable) OnDragEnd(fn func(DragResult)) *Draggable {
 	d.onEnd = fn
+	return d
+}
+
+// Export makes it leave the window: dragged past the window's edge with
+// a mouse, it becomes the operating system's drag of what fn returns -
+// files or text - for other applications (a file manager, a mail, an
+// editor, another copy of the app). The in-app drag ends there, and
+// OnDragEnd runs when the system's drag does, with Exported set.
+// Supported on Windows, macOS and Linux (CanExport); elsewhere the drag
+// stays in the window. It returns d for chaining.
+func (d *Draggable) Export(fn func() ExportData) *Draggable {
+	d.export = fn
 	return d
 }
 

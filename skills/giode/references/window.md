@@ -489,6 +489,11 @@ if _, dragging := app.FileDrag(); dragging {
 
 Android, iOS and the web don't support it; a warning is logged once if it's set there.
 
+Drop targets in the view can take the files too: with `FileDropTargets: true` (or
+`OnFileDrop` or `OnFileDrag` set), a `DropTarget` accepting `giode.DroppedFiles` highlights
+while files are dragged over it and receives them in `OnDrop`; files dropped on it don't
+reach `OnFileDrop`. See [components/dragdrop.md](components/dragdrop.md#files-from-other-applications).
+
 ## Files opened with the app
 
 With `[[file_types]]` in `giode.toml`, the giode CLI puts the app in the desktop's "Open

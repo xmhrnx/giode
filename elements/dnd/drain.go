@@ -34,6 +34,10 @@ func Drain(gtx layout.Context) {
 	if win == (image.Point{}) {
 		win = gtx.Constraints.Max
 	}
+	if s.src == nil {
+		drainExternal(gtx, s)
+		return
+	}
 	// The source's handler, window-wide and registered last: its events
 	// keep coming, in window coordinates, wherever the source is.
 	cl := clip.Rect{Max: win}.Push(gtx.Ops)
@@ -138,16 +142,40 @@ func Drain(gtx layout.Context) {
 		gtx.Execute(op.InvalidateCmd{})
 		return
 	}
+	if !s.pos.Round().In(image.Rectangle{Max: win}) && export(s) {
+		// Dragged out of the window: the system's drag now.
+		gtx.Execute(op.InvalidateCmd{})
+		return
+	}
 	// The line over the preview: the pointer, and so the preview, is
 	// usually right on it.
 	paintPreview(gtx, s, win)
 	paintIndicator(gtx, s)
 }
 
-// endFrame forgets the frame's targets.
+// drainExternal follows a drag from another application: it has no
+// source here, and the system draws its preview.
+func drainExternal(gtx layout.Context, s *session) {
+	over, index := hitTest(s)
+	if over != s.over || index != s.index {
+		if s.over != nil && s.over != over && s.over.onLeave != nil {
+			s.over.onLeave(s.payload)
+		}
+		if over != nil && over != s.over && over.onEnter != nil {
+			over.onEnter(s.payload)
+		}
+		s.over, s.index = over, index
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	paintIndicator(gtx, s)
+}
+
+// endFrame keeps the frame's targets as the last frame's, for a drop
+// arriving between frames without a drag before it, and starts the next
+// frame's list.
 func endFrame() {
-	clear(targets)
-	targets = targets[:0]
+	clear(lastTargets)
+	lastTargets, targets = targets, lastTargets[:0]
 	listStack = listStack[:0]
 	frame++
 }
@@ -167,9 +195,14 @@ func accepting(s *session) []*DropTarget {
 // hitTest finds the topmost target under the pointer that takes the
 // payload, and the slot in it.
 func hitTest(s *session) (*DropTarget, int) {
+	return hitTestIn(targets, s)
+}
+
+// hitTestIn is hitTest among ts.
+func hitTestIn(ts []*DropTarget, s *session) (*DropTarget, int) {
 	p := s.pos.Round()
-	for i := len(targets) - 1; i >= 0; i-- {
-		t := targets[i]
+	for i := len(ts) - 1; i >= 0; i-- {
+		t := ts[i]
 		if !t.accepts(s.payload) || !p.In(t.visible()) {
 			continue
 		}

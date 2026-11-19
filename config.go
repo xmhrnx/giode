@@ -199,6 +199,13 @@ type Config struct {
 	// during layout. Setting it accepts drops as OnFileDrop does. On
 	// Windows, an app running as administrator gets only the drop.
 	OnFileDrag func(FileDrag)
+	// FileDropTargets accepts files dragged in from other applications
+	// for the view's drop targets alone: a DropTarget accepting
+	// giode.DroppedFiles highlights while files are dragged over it and
+	// takes them when they're dropped on it. OnFileDrop and OnFileDrag
+	// turn this on too; files dropped on a target don't reach
+	// OnFileDrop.
+	FileDropTargets bool
 	// MCP starts a Model Context Protocol server alongside the window,
 	// so AI agents can see and drive the running app: inspect the UI,
 	// click, type, take screenshots, read and set named state - plus

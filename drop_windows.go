@@ -64,7 +64,9 @@ type dropTarget struct {
 // DragAcceptFiles sends (not posts) a style-change message to that
 // thread, which would deadlock if sent from the event goroutine.
 func (a *App) enableFileDrop(hwnd uintptr) {
-	if (!a.fileDragWanted() && !a.closeToTray.Load() && !a.minimizeToTray.Load()) || hwnd == 0 {
+	// Always: dragging out of the window (Draggable.Export) runs from the
+	// window procedure too.
+	if hwnd == 0 {
 		return
 	}
 	dropMu.Lock()
@@ -101,7 +103,7 @@ func (a *App) enableFileDrop(hwnd uintptr) {
 			procDragAcceptFiles.Call(hwnd, 1)
 			a.logf(LogLevelDebug, "giode: file drop enabled")
 		}
-		if a.cfg.OnFileDrag != nil {
+		if a.cfg.OnFileDrag != nil || a.cfg.FileDropTargets {
 			// Drag enter, over and leave come through OLE, which takes
 			// over drops from apps at the same integrity level; from an
 			// unelevated Explorer to an elevated app WM_DROPFILES still
@@ -141,6 +143,9 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		return 0
 	case wmRegisterOLE:
 		registerOLEDrop(t.app, hwnd)
+		return 0
+	case wmStartDrag:
+		runExport(t.app, hwnd)
 		return 0
 	}
 	r, _, _ := procCallWindowProcW.Call(t.oldProc, hwnd, msg, wparam, lparam)

@@ -183,6 +183,14 @@ type DragResult = ui.DragResult
 // DragAxis limits its preview's movement.
 type DragSourceStyle = ui.DragSourceStyle
 
+// DragExportData is what a Draggable gives other applications when it's
+// dragged out of the window (Export): files, text.
+type DragExportData = ui.DragExportData
+
+// DroppedFiles is the payload of files dragged in from other
+// applications, for drop targets (Config.FileDropTargets).
+type DroppedFiles = ui.DroppedFiles
+
 type DragAxis = ui.DragAxis
 
 // DragAccept returns a DropTarget.Accept predicate for payloads of
@@ -461,6 +469,9 @@ var (
 	// it.
 	Dragging   = ui.Dragging
 	CancelDrag = ui.CancelDrag
+	// CanDragOut reports whether drags can leave the window on this
+	// platform (Draggable.Export).
+	CanDragOut = ui.CanDragOut
 	Scroll     = ui.Scroll
 	// Swipeable makes a row reveal actions when swiped sideways; see
 	// swipeable.New.

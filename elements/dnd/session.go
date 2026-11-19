@@ -75,6 +75,8 @@ var (
 	// targets are the drop targets laid out this frame, in layout
 	// order.
 	targets []*DropTarget
+	// lastTargets are the last frame's.
+	lastTargets []*DropTarget
 	// listStack holds the list targets being laid out, innermost last.
 	listStack []*DropTarget
 )
@@ -195,9 +197,128 @@ func finish(drop bool) {
 	} else if s.over != nil && s.over.onLeave != nil {
 		s.over.onLeave(s.payload)
 	}
-	if s.src.onEnd != nil {
+	if s.src != nil && s.src.onEnd != nil {
 		s.src.onEnd(res)
 	}
+}
+
+// ExportData is what a Draggable gives other applications when it's
+// dragged out of the window (Draggable.Export).
+type ExportData struct {
+	// Files are paths of local files, for a file manager, a mail
+	// composer, an editor.
+	Files []string
+	// Text is plain text, for a text field or an editor.
+	Text string
+}
+
+func (e ExportData) empty() bool { return len(e.Files) == 0 && e.Text == "" }
+
+// Exporter starts a drag of data in the operating system's drag and
+// drop, from the pointer's position, while its button is still held.
+// It reports whether it started; done is called on the UI goroutine
+// when the drag ends, with whether another application took the drop.
+// The app sets it (SetExporter) where the platform supports it.
+type Exporter func(data ExportData, done func(dropped bool)) bool
+
+var exporter Exporter
+
+// SetExporter sets the function that hands drags leaving the window to
+// the operating system. The app calls it; component authors don't need
+// to.
+func SetExporter(fn Exporter) { exporter = fn }
+
+// CanExport reports whether drags can leave the window on this
+// platform.
+func CanExport() bool { return exporter != nil }
+
+// export hands the drag to the operating system, if its source exports
+// something. It reports whether it did: the in-app drag is then over,
+// and the source's OnDragEnd runs when the system's drag ends.
+func export(s *session) bool {
+	d := s.src
+	if exporter == nil || d == nil || d.export == nil || s.keyboard || s.touch {
+		return false
+	}
+	data := d.export()
+	if data.empty() {
+		return false
+	}
+	ended := false
+	if !exporter(data, func(dropped bool) {
+		if ended {
+			return
+		}
+		ended = true
+		if d.onEnd != nil {
+			d.onEnd(DragResult{Exported: true, Dropped: dropped, Cancelled: !dropped, Index: -1})
+		}
+	}) {
+		return false
+	}
+	active = nil
+	base.SetDragActive(false)
+	if s.over != nil && s.over.onLeave != nil {
+		s.over.onLeave(s.payload)
+	}
+	return true
+}
+
+// Files is the payload of files dragged in from another application:
+// a DropTarget that accepts it (Accept(AcceptType[Files]())) takes them.
+// Paths is empty while the drag is over the window - not every platform
+// tells what's dragged before the drop - and filled in OnDrop.
+type Files struct {
+	Paths []string
+}
+
+// ExternalKind is the stage of a drag from another application.
+type ExternalKind int
+
+const (
+	ExternalEnter ExternalKind = iota + 1
+	ExternalMove
+	ExternalLeave
+	ExternalDrop
+)
+
+// External reports files dragged over the window from another
+// application, at pos in window pixels, on the UI goroutine: targets
+// accepting Files highlight and take them as with an in-app drag. For
+// ExternalDrop, paths are the files, and it reports whether a target
+// took them. The app calls it; component authors don't need to.
+func External(kind ExternalKind, pos f32.Point, paths []string) (taken bool) {
+	s := active
+	if s != nil && s.src != nil {
+		// An in-app drag owns the pointer.
+		return false
+	}
+	switch kind {
+	case ExternalEnter, ExternalMove:
+		if s == nil {
+			s = &session{payload: Files{}, index: -1, srcIndex: -1, located: true, scrolled: map[any]*scrollTick{}}
+			active = s
+			base.SetDragActive(true)
+		}
+		s.pos = pos
+	case ExternalLeave:
+		finish(false)
+	case ExternalDrop:
+		if s == nil {
+			// A drop with no drag reported before it (Windows tells an
+			// app running as administrator only of the drop): find the
+			// target among the last frame's.
+			s = &session{payload: Files{}, pos: pos, index: -1, srcIndex: -1, located: true}
+			s.over, s.index = hitTestIn(lastTargets, s)
+			active = s
+			base.SetDragActive(true)
+		}
+		s.pos = pos
+		s.payload = Files{Paths: paths}
+		taken = s.over != nil
+		finish(true)
+	}
+	return taken
 }
 
 // callOf returns d's recording from this frame, if it was laid out.

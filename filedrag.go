@@ -8,6 +8,7 @@ import (
 	"gioui.org/f32"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/elements/dnd"
 )
 
 // FileDragKind is the stage of a FileDrag.
@@ -73,7 +74,7 @@ func (a *App) FileDrag() (d FileDrag, ok bool) {
 
 // fileDragWanted reports whether the app takes file drops.
 func (a *App) fileDragWanted() bool {
-	return a.cfg.OnFileDrop != nil || a.cfg.OnFileDrag != nil
+	return a.cfg.OnFileDrop != nil || a.cfg.OnFileDrag != nil || a.cfg.FileDropTargets
 }
 
 // deliverFileDrag records a drag event and hands it to OnFileDrag on
@@ -88,6 +89,16 @@ func (a *App) deliverFileDrag(kind FileDragKind, pos f32.Point) {
 		return
 	}
 	a.Post(func() {
+		// The view's drop targets follow it (dnd.Files); the drop
+		// itself goes to them in deliverFileDrop.
+		switch kind {
+		case FileDragEnter:
+			dnd.External(dnd.ExternalEnter, pos, nil)
+		case FileDragOver:
+			dnd.External(dnd.ExternalMove, pos, nil)
+		case FileDragLeave:
+			dnd.External(dnd.ExternalLeave, pos, nil)
+		}
 		if a.cfg.OnFileDrag != nil {
 			a.cfg.OnFileDrag(FileDrag{Kind: kind, Position: pos})
 		}
@@ -100,12 +111,14 @@ func (a *App) deliverFileDrag(kind FileDragKind, pos f32.Point) {
 
 // deliverFileDrop ends a drag with a drop: FileDragDrop, then
 // OnFileDrop with the paths. It's safe from any goroutine.
+// A drop target accepting DroppedFiles under the pointer takes the
+// files instead of OnFileDrop.
 func (a *App) deliverFileDrop(paths []string, pos f32.Point) {
 	a.deliverFileDrag(FileDragDrop, pos)
-	if len(paths) == 0 {
-		return
-	}
 	a.Post(func() {
+		if dnd.External(dnd.ExternalDrop, pos, paths) || len(paths) == 0 {
+			return
+		}
 		if a.cfg.OnFileDrop != nil {
 			a.cfg.OnFileDrop(paths)
 		}
