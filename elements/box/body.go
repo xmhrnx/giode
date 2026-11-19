@@ -83,7 +83,12 @@ func (b *BoxElement) layoutBody(gtx layout.Context) layout.Dimensions {
 	for _, el := range outside {
 		el.Layout(cgtx)
 	}
-	dims := b.layoutFlex(cgtx, st, flow, zs)
+	var dims layout.Dimensions
+	if st.Display == properties.DisplayGrid {
+		dims = b.layoutGrid(cgtx, st, flow, zs)
+	} else {
+		dims = b.layoutFlex(cgtx, st, flow, zs)
+	}
 	if len(absolute) > 0 {
 		b.layoutAbsolute(cgtx, absolute, dims.Size, zs)
 	}

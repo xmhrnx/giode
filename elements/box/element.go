@@ -2,6 +2,7 @@ package box
 
 import (
 	"gioui.org/layout"
+	"github.com/xmhrnx/giode/styles/properties"
 
 	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/styles"
@@ -59,6 +60,10 @@ func (b *BoxElement) FlexWeight(axis layout.Axis) int {
 
 func (b *BoxElement) FlexPercent(axis layout.Axis) int {
 	return base.PercentOf(b.st, axis)
+}
+
+func (b *BoxElement) GridPlacement() (col, row properties.GridSpan) {
+	return b.st.GridColumn, b.st.GridRow
 }
 
 func (b *BoxElement) ZIndex() int {

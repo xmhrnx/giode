@@ -26,6 +26,18 @@ type Styles struct {
 	// Gap is the spacing between flex children, and between wrapped
 	// lines.
 	Gap properties.Gap
+	// RowGap is the spacing between a grid's rows; Gap when 0.
+	RowGap properties.Gap
+	// GridColumns and GridRows size a grid's tracks (Display:
+	// DisplayGrid), as CSS's grid-template-columns: "200 1fr 2fr",
+	// "repeat(auto-fill, minmax(220, 1fr))". Rows past GridRows are
+	// auto.
+	GridColumns properties.GridTracks
+	GridRows    properties.GridTracks
+	// GridColumn and GridRow place a grid's child: Span(n), or
+	// Cell(start, span) from a 1-based track.
+	GridColumn properties.GridSpan
+	GridRow    properties.GridSpan
 	// FlexGrow is the share of spare space a flex child takes.
 	FlexGrow properties.FlexGrow
 	// Width and Height size the element: 0 hugs content, -1 expands,

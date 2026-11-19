@@ -45,6 +45,7 @@ var (
 	Box                  = box.Box
 	Row                  = box.Row
 	Stack                = box.Stack
+	Grid                 = box.Grid
 	NewPressable         = box.NewPressable
 	SetLongPressFeedback = box.SetLongPressFeedback
 )

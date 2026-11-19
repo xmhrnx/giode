@@ -31,6 +31,47 @@ giode.Stack(giode.Styles{Gap: 8}, a, b, c)                        // vertical
 
 `Row` sets `FlexDirection` to row, `Stack` to column.
 
+## Grid
+
+Lays children out on columns and rows, after CSS grid. It's a Box with `Display` set to
+`DisplayGrid`, so padding, background, borders and z-index work as on any Box.
+
+```go
+// Cards: as many columns of at least 220 dp as fit, the first card two columns wide.
+giode.Grid(giode.Styles{GridColumns: "repeat(auto-fill, minmax(220, 1fr))", Gap: 12},
+	giode.Box(giode.Styles{GridColumn: giode.GridSpan(2)}, revenue),
+	pipeline, forecast, activity,
+)
+
+// A form: labels as wide as the widest, fields filling the rest.
+giode.Grid(giode.Styles{GridColumns: "auto 1fr", Gap: 12, RowGap: 8, Align: giode.AlignCenter},
+	giode.Text("Name"), nameInput,
+	giode.Text("Email address"), emailInput,
+)
+```
+
+- **Column sizes.** `GridColumns` sizes the columns as CSS's `grid-template-columns`
+  does, in dp:
+  - a number is fixed: `200`;
+  - `1fr` takes a share of the space the others leave;
+  - `auto` is as wide as the widest child in that column;
+  - `minmax(160, 1fr)` is a share of at least 160 dp;
+  - `repeat(3, 1fr)` repeats tracks;
+  - `repeat(auto-fill, minmax(220, 1fr))` makes as many columns as fit.
+
+  With no `GridColumns` there's one column.
+- **Rows.** Rows are as tall as their tallest child; `GridRows` can fix some (`"40 auto"`),
+  and `fr` rows share the leftover of a grid with a fixed height.
+- **Placement.** Children fill the cells in reading order. A child's `GridColumn` and
+  `GridRow` move it: `giode.GridSpan(2)` spans two tracks wherever there's room, and
+  `giode.GridCell(3, 1)` puts it in the third track. Children with both set are placed
+  first, and the rest flow around them.
+- **Gaps.** `Gap` spaces the columns; `RowGap` spaces the rows, `Gap` when unset.
+- **Alignment.** Children fill their cells. With `Align` set to `AlignStart`,
+  `AlignCenter` or `AlignEnd` they keep their own height and sit at the top, middle or
+  bottom of their row.
+- **Right to left.** In right-to-left locales the first column is on the right.
+
 ## Hover
 
 Every stateless element with something to paint supports `OnHover`: `Box` (and `Row`/

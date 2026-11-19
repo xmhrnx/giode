@@ -29,6 +29,21 @@ func merge(base, over Styles) Styles {
 	if over.Gap != 0 {
 		base.Gap = over.Gap
 	}
+	if over.RowGap != 0 {
+		base.RowGap = over.RowGap
+	}
+	if over.GridColumns != "" {
+		base.GridColumns = over.GridColumns
+	}
+	if over.GridRows != "" {
+		base.GridRows = over.GridRows
+	}
+	if over.GridColumn != (properties.GridSpan{}) {
+		base.GridColumn = over.GridColumn
+	}
+	if over.GridRow != (properties.GridSpan{}) {
+		base.GridRow = over.GridRow
+	}
 	if over.FlexGrow != 0 {
 		base.FlexGrow = over.FlexGrow
 	}

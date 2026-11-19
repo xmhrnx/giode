@@ -62,7 +62,10 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `Align` | string | `AlignStart`, `AlignCenter`, `AlignEnd`, `AlignStretch`, `AlignBaseline` | Cross-axis alignment (align-items). `AlignStretch` makes every child as tall as the tallest in its row (as wide as the widest in a column), so cards side by side share a bottom edge. `AlignBaseline` lines a row's children up on their baselines: text in different sizes, or a formula beside text. |
 | `Justify` | string | `JustifyStart` (default), `JustifyCenter`, `JustifyEnd`, `JustifySpaceBetween`, `JustifySpaceAround`, `JustifySpaceEvenly` | Main-axis distribution. |
 | `Wrap` | string | `WrapWrap`, `WrapNoWrap` | Whether children continue onto new lines. Unset: Row wraps, Stack does not. |
-| `Gap` | int | dp | Space between children and between wrapped lines. |
+| `Gap` | int | dp | Space between children and between wrapped lines; between a grid's columns. |
+| `RowGap` | int | dp | Space between a grid's rows; `Gap` when 0. |
+| `GridColumns` / `GridRows` | string | `"200 1fr 2fr"`, `"auto 1fr"`, `"repeat(3, 1fr)"`, `"repeat(auto-fill, minmax(220, 1fr))"` | A grid's tracks (`Display: DisplayGrid`, or `giode.Grid`); see [elements.md](elements.md#grid). |
+| `GridColumn` / `GridRow` | GridSpan | `GridSpan(n)`, `GridCell(start, span)` | Where a grid's child goes: n tracks wide, or from a 1-based track. Unset: the next free cell. |
 | `FlexGrow` | int | ≥0 | Share of spare main-axis space. |
 | `Width` / `Height` | int | `0` hug, `-1` expand, `>0` fixed dp | |
 | `WidthPct` / `HeightPct` | int | 1–100 | Percent of available space; takes precedence over `Width`/`Height`. |
@@ -89,7 +92,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `BoxShadow` | struct | `{X, Y, Blur, Spread int; Color string}` | Drop shadow behind the box. |
 | `Opacity` | float | 0–1 | Transparency of the element and its children; 0 means unset. |
 | `Transform` | struct | `{Rotate, Scale, ScaleX, ScaleY float32; TranslateX, TranslateY int; OriginX, OriginY float32}` | Paint-only transform around the center, like CSS: layout is unaffected. |
-| `Display` | string | `DisplayNone` | Removes the element: no space, no paint. |
+| `Display` | string | `DisplayNone`, `DisplayGrid` | `DisplayNone` removes the element: no space, no paint. `DisplayGrid` lays a Box's children out on a grid. |
 | `Visibility` | string | `VisibilityHidden` | Keeps the space, paints nothing, takes no input. |
 | `Transition` | `StyleTransition` | `{Duration time.Duration; Easing}` | Animates `Background`, `Color`, `BorderColor`, shadow color and `Opacity` between a Box's base and `OnHover` styles. `EaseInOut` (default), `EaseLinear`, `EaseIn`, `EaseOut`. |
 
@@ -197,7 +200,7 @@ Notes:
 ## Not supported (by design)
 
 Complex or platform-specific CSS: keyframe animations (`Transition` animates hover changes
-only), box-sizing, grid, float, `position: sticky`, `white-space: nowrap` without
+only), box-sizing, named grid areas and lines, float, `position: sticky`, `white-space: nowrap` without
 truncation, pseudo elements, media-query orientation. Raise an issue if one of these
 matters to you.
 

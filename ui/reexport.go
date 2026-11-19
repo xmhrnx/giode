@@ -267,8 +267,15 @@ var (
 	Box   = elements.Box
 	Row   = elements.Row
 	Stack = elements.Stack
-	Text  = elements.Text
-	Raw   = elements.Raw
+	// Grid lays children out on a grid; see elements.Grid.
+	Grid = elements.Grid
+	// GridSpan places a grid's child across n tracks, wherever there's
+	// room; GridCell from a 1-based track across span tracks. They go
+	// in its GridColumn and GridRow.
+	GridSpan = properties.Span
+	GridCell = properties.Cell
+	Text     = elements.Text
+	Raw      = elements.Raw
 	// Intl returns the translation of key in the app's locale with data
 	// filled into its {placeholders}: a map, a struct or name, value
 	// pairs; a "count" picks plural forms. Turn translations on with
@@ -927,6 +934,7 @@ const (
 	OverflowHidden  = properties.OverflowHidden
 
 	DisplayNone       = properties.DisplayNone
+	DisplayGrid       = properties.DisplayGrid
 	VisibilityVisible = properties.VisibilityVisible
 	VisibilityHidden  = properties.VisibilityHidden
 

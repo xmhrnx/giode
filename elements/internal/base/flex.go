@@ -4,6 +4,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // FlexHints marks elements that carry layout hints: how much they grow
@@ -68,4 +69,18 @@ const Unbounded = 1e6
 // anything above half of it counts.
 func IsUnbounded(max int) bool {
 	return max >= Unbounded/2
+}
+
+// GridHints marks elements that say where they go on a grid.
+type GridHints interface {
+	GridPlacement() (col, row properties.GridSpan)
+}
+
+// GridPlacementOf returns el's grid placement: automatic, one track,
+// when it says none.
+func GridPlacementOf(el Element) (col, row properties.GridSpan) {
+	if g, ok := el.(GridHints); ok {
+		return g.GridPlacement()
+	}
+	return properties.GridSpan{}, properties.GridSpan{}
 }

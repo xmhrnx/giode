@@ -31,6 +31,7 @@ func (s Styles) Px(m unit.Metric) Styles {
 		return o
 	}
 	s.Gap = properties.Gap(dp(int(s.Gap)))
+	s.RowGap = properties.Gap(dp(int(s.RowGap)))
 	s.Width = properties.Width(size(int(s.Width)))
 	s.Height = properties.Height(size(int(s.Height)))
 	s.Padding = inset(s.Padding)
