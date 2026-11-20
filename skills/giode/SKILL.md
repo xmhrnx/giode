@@ -33,6 +33,7 @@ in this conversation; the API is alpha and changes. Map:
 | Screen capture and screen sharing | `references/screencap.md` |
 | Showing video frames: remote video, decoded streams, self view | `references/video.md` |
 | Playing video and audio files and streams, captions | `references/media.md` |
+| Voice and video calls, data channels over WebRTC | `references/rtc.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |

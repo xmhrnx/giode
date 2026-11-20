@@ -39,6 +39,7 @@ export const NAV = [
 			{ path: "screencap", label: "Screen capture" },
 			{ path: "video", label: "Video" },
 			{ path: "media", label: "Media player" },
+			{ path: "rtc", label: "Calls (WebRTC)" },
 			{ path: "mcp", label: "MCP server" },
 			{ path: "extending", label: "Extending the library" },
 			{ path: "low-level", label: "Low-level access" },
