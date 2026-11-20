@@ -34,6 +34,7 @@ in this conversation; the API is alpha and changes. Map:
 | Showing video frames: remote video, decoded streams, self view | `references/video.md` |
 | Playing video and audio files and streams, captions | `references/media.md` |
 | Voice and video calls, data channels over WebRTC | `references/rtc.md` |
+| Ringing with the system call screen (CallKit, ConnectionService), VoIP pushes | `references/telecom.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |
