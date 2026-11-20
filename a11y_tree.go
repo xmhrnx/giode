@@ -34,6 +34,9 @@ type a11yTree struct {
 	// them: node numbers, and text to announce.
 	changed  []int32
 	announce []a11yAnnouncement
+	// notify, when set, runs after each update on the UI goroutine: a
+	// platform bridge reporting the changes.
+	notify func()
 }
 
 type a11yAnnouncement struct {
@@ -207,6 +210,26 @@ func (t *a11yTree) node(k int32) (n elements.SemanticNode, parent int32, childre
 		return elements.SemanticNode{}, 0, nil, false
 	}
 	return t.nodes[i], t.parent[k], append([]int32(nil), t.children[k]...), true
+}
+
+// focusedNode returns the number of the node with keyboard focus, 0
+// for none.
+func (t *a11yTree) focusedNode() int32 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for _, n := range t.nodes {
+		if n.Focused {
+			return t.num[n.ID]
+		}
+	}
+	return 0
+}
+
+// isFocusable is focusable, taking the lock.
+func (t *a11yTree) isFocusable(n elements.SemanticNode, k int32) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.focusable(n, k)
 }
 
 // at returns the node a touch at p (window pixels) explores: the

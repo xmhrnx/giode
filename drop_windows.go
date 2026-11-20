@@ -123,6 +123,7 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		if t != nil {
 			procSetWindowLongPtrW.Call(hwnd, gwlpWndProc, t.oldProc)
 			revokeOLEDrop(hwnd)
+			uiaWindowGone(hwnd)
 		}
 	}
 	dropMu.Unlock()
@@ -147,6 +148,14 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 	case wmStartDrag:
 		runExport(t.app, hwnd)
 		return 0
+	case wmGetObject:
+		// UI Automation asking for the window's provider (lParam
+		// UiaRootObjectId, sign-extended or not).
+		if int32(uint32(lparam)) == uiaRootObjectID {
+			if r, ok := uiaGetObject(t.app, hwnd, wparam, lparam); ok {
+				return r
+			}
+		}
 	}
 	r, _, _ := procCallWindowProcW.Call(t.oldProc, hwnd, msg, wparam, lparam)
 	return r

@@ -176,6 +176,9 @@ func (a *App) runLoop(view func() Element) error {
 				nodes = elements.EndSemantics()
 				if a.a11y != nil && elements.SemanticsWanted() {
 					a.a11y.update(nodes)
+					if a.a11y.notify != nil {
+						a.a11y.notify()
+					}
 				}
 			}
 			if a.cfg.ShowFrameTimes {

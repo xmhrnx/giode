@@ -7,7 +7,7 @@ it's in - and hands it to the platform's screen reader. The same tree serves aut
 | Platform | Screen reader | Status |
 | --- | --- | --- |
 | Android | TalkBack | Built with the giode CLI (its Gio patches, revision 20 on): every node, its actions and announcements reach TalkBack. Not yet checked on a device. |
-| Windows | NVDA, Narrator (UI Automation) | Not yet. |
+| Windows | Narrator, NVDA, JAWS (UI Automation) | Every node, its patterns (invoke, toggle, value, range, expand and collapse, selection), focus changes and announcements. Asked for a point, it answers for the mouse cursor's. Not yet checked with a screen reader. |
 | macOS | VoiceOver (NSAccessibility) | Not yet. |
 | iOS | VoiceOver (UIAccessibility) | Not yet. |
 | Linux | Orca (AT-SPI) | Not yet. |
