@@ -47,9 +47,9 @@ func (d *Doc) Markdown() string {
 		indent := strings.Repeat("   ", blk.Level)
 		switch blk.Kind {
 		case Heading:
-			b.WriteString(strings.Repeat("#", max(1, min(6, blk.Level))) + " " + inlineMarkdown(blk.Spans, false))
+			b.WriteString(strings.Repeat("#", max(1, min(6, blk.Level))) + " " + trimEnd(inlineMarkdown(blk.Spans, false)))
 		case Bullet:
-			b.WriteString(indent + "- " + inlineMarkdown(blk.Spans, false))
+			b.WriteString(indent + "- " + trimEnd(inlineMarkdown(blk.Spans, false)))
 		case Numbered:
 			for l := range num {
 				if l > blk.Level {
@@ -57,15 +57,15 @@ func (d *Doc) Markdown() string {
 				}
 			}
 			num[blk.Level]++
-			b.WriteString(indent + strconv.Itoa(num[blk.Level]) + ". " + inlineMarkdown(blk.Spans, false))
+			b.WriteString(indent + strconv.Itoa(num[blk.Level]) + ". " + trimEnd(inlineMarkdown(blk.Spans, false)))
 		case Task:
 			box := "[ ] "
 			if blk.Checked {
 				box = "[x] "
 			}
-			b.WriteString(indent + "- " + box + inlineMarkdown(blk.Spans, false))
+			b.WriteString(indent + "- " + box + trimEnd(inlineMarkdown(blk.Spans, false)))
 		case Quote:
-			b.WriteString(strings.Repeat(">", blk.Level+1) + " " + inlineMarkdown(blk.Spans, false))
+			b.WriteString(strings.Repeat(">", blk.Level+1) + " " + trimEnd(inlineMarkdown(blk.Spans, false)))
 		case Code:
 			t := blk.Text()
 			fence := "```"
@@ -92,7 +92,7 @@ func (d *Doc) Markdown() string {
 		case Rule:
 			b.WriteString("---")
 		default:
-			t := inlineMarkdown(blk.Spans, true)
+			t := trimEnd(inlineMarkdown(blk.Spans, true))
 			if t == "" && i > 0 && i < len(d.Blocks)-1 {
 				t = "&nbsp;" // an empty paragraph survives the round trip
 			}
@@ -103,6 +103,9 @@ func (d *Doc) Markdown() string {
 }
 
 var mdSpecial = strings.NewReplacer(`\`, `\\`, "*", `\*`, "_", `\_`, "`", "\\`", "[", `\[`, "]", `\]`, "<", `\<`, "~", `\~`, "&", `\&`)
+
+// trimEnd drops trailing spaces, which Markdown drops too.
+func trimEnd(s string) string { return strings.TrimRight(s, " \t") }
 
 func escapeMarkdown(s string) string { return mdSpecial.Replace(s) }
 

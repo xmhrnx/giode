@@ -984,3 +984,32 @@ func (s *State) ReplaceRange(from, to Pos, text string) *Tx {
 	s.Sel = Caret(p)
 	return s.commit()
 }
+
+// InsertLineBreak breaks the line within the block (Shift+Enter): the
+// text holds a newline.
+func (s *State) InsertLineBreak() *Tx {
+	s.begin("type")
+	p := s.textCaret(s.deleteRange(s.Sel.Start(), s.Sel.End()))
+	m := s.typingMarks(p)
+	s.replace(p.Block, p.Offset, p.Offset, []Span{{Text: "\n", Marks: m}})
+	p.Offset++
+	s.Sel = Caret(p)
+	return s.commit()
+}
+
+// Text navigation over a block's runes (atoms as one), for editors.
+
+// PrevStop is the start of the character before off: a grapheme
+// cluster, approximately.
+func PrevStop(text []rune, off int) int { return prevStop(text, off) }
+
+// NextStop is the end of the character after off.
+func NextStop(text []rune, off int) int { return nextStop(text, off) }
+
+// WordStart is the start of the word before off; WordEnd the end of the
+// one after.
+func WordStart(text []rune, off int) int { return wordStart(text, off) }
+func WordEnd(text []rune, off int) int   { return wordEnd(text, off) }
+
+// IsWordRune reports whether r is part of a word.
+func IsWordRune(r rune) bool { return isWord(r) }
