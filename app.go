@@ -183,9 +183,9 @@ func (a *App) runLoop(view func() Element) error {
 			if recordTree {
 				nodes = elements.EndSemantics()
 				if a.a11y != nil && elements.SemanticsWanted() {
-					a.a11y.update(nodes)
-					if a.a11y.notify != nil {
-						a.a11y.notify()
+					a.a11y.Update(nodes)
+					if a.a11y.Notify != nil {
+						a.a11y.Notify()
 					}
 				}
 			}

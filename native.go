@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/a11y"
 	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
@@ -21,7 +22,7 @@ func (a *App) handleViewEvent(ev app.ViewEvent) {
 	a.trayView(ev)
 	window.Placed(ev, a.topMost.Load())
 	a.startInTray(ev)
-	a.a11yView(ev)
+	a11y.ViewReady(a.a11yHost(), ev)
 	if ev.Valid() {
 		a.menuBarView()
 	}

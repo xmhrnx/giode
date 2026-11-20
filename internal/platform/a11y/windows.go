@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package a11y
 
 import (
 	"image"
@@ -24,6 +24,7 @@ import (
 // UI goroutine.
 
 var (
+	user32                                     = windows.NewLazySystemDLL("user32.dll")
 	uiaCore                                    = windows.NewLazySystemDLL("uiautomationcore.dll")
 	procUiaReturnRawElementProvider            = uiaCore.NewProc("UiaReturnRawElementProvider")
 	procUiaHostProviderFromHwnd                = uiaCore.NewProc("UiaHostProviderFromHwnd")
@@ -40,8 +41,8 @@ var (
 )
 
 const (
-	wmGetObject     = 0x003D
-	uiaRootObjectID = -25
+	WMGetObject     = 0x003D
+	UIARootObjectID = -25
 
 	uiaAppendRuntimeID = 3
 	eNotImpl           = 0x80004001
@@ -203,8 +204,8 @@ func (o *uiaNode) iface(off uintptr) unsafe.Pointer {
 
 // uiaBridge is a window's UI Automation provider tree.
 type uiaBridge struct {
-	a    *App
-	t    *a11yTree
+	a    Host
+	t    *Tree
 	hwnd uintptr
 
 	mu   sync.Mutex
@@ -236,7 +237,7 @@ var (
 	vtText     *[9]uintptr
 	vtTextRng  *[21]uintptr
 	uiaMu      sync.Mutex
-	uiaBridges = map[*App]*uiaBridge{}
+	uiaBridges = map[Host]*uiaBridge{}
 )
 
 // unknown returns the IUnknown slots of an interface at off.
@@ -436,11 +437,12 @@ func initUIAVtables() {
 }
 
 // installA11y sets up the tree; the bridge starts when a screen reader
-// first asks the window for it (uiaGetObject).
-func installA11y(a *App) {
-	t := newA11yTree()
-	a.a11y = t
-	t.notify = func() {
+// first asks the window for it (GetObject).
+// Install sets the tree up for the platform's bridge.
+func Install(a Host) *Tree {
+	t := NewTree()
+	setTree(a, t)
+	t.Notify = func() {
 		uiaMu.Lock()
 		b := uiaBridges[a]
 		uiaMu.Unlock()
@@ -450,25 +452,27 @@ func installA11y(a *App) {
 		}
 		b.events()
 	}
+	return t
 }
 
-// uiaGetObject answers WM_GETOBJECT for UI Automation's root object.
-func uiaGetObject(a *App, hwnd, wparam, lparam uintptr) (uintptr, bool) {
-	if a.a11y == nil || procUiaReturnRawElementProvider.Find() != nil {
+// GetObject answers WM_GETOBJECT for UI Automation's root object.
+func GetObject(a Host, hwnd, wparam, lparam uintptr) (uintptr, bool) {
+	t := treeOf(a)
+	if t == nil || procUiaReturnRawElementProvider.Find() != nil {
 		return 0, false
 	}
 	uiaOnce.Do(initUIAVtables)
 	uiaMu.Lock()
 	b := uiaBridges[a]
 	if b == nil {
-		b = &uiaBridge{a: a, t: a.a11y, hwnd: hwnd, objs: map[int32]*uiaNode{}, notify: procUiaRaiseNotificationEvent.Find() == nil}
+		b = &uiaBridge{a: a, t: t, hwnd: hwnd, objs: map[int32]*uiaNode{}, notify: procUiaRaiseNotificationEvent.Find() == nil}
 		uiaBridges[a] = b
 	}
 	uiaMu.Unlock()
 	if !elements.SemanticsWanted() {
 		// From now on each frame records the tree.
 		elements.SetSemanticsWanted(true)
-		a.invalidate()
+		a.Invalidate()
 	}
 	root := b.provider(0, offSimple)
 	r, _, _ := procUiaReturnRawElementProvider.Call(hwnd, wparam, lparam, uintptr(root))
@@ -477,8 +481,8 @@ func uiaGetObject(a *App, hwnd, wparam, lparam uintptr) (uintptr, bool) {
 	return r, true
 }
 
-// uiaWindowGone lets go of the window's providers.
-func uiaWindowGone(hwnd uintptr) {
+// WindowGone lets go of the window's providers.
+func WindowGone(hwnd uintptr) {
 	if procUiaReturnRawElementProvider.Find() == nil {
 		procUiaReturnRawElementProvider.Call(hwnd, 0, 0, 0)
 	}

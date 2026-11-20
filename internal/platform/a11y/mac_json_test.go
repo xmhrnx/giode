@@ -1,4 +1,4 @@
-package giode
+package a11y
 
 import (
 	"encoding/json"
@@ -15,8 +15,8 @@ func (s *macStepper) Value() float32   { return s.v }
 func (s *macStepper) Change(v float32) { s.v = v }
 
 func TestMacNodes(t *testing.T) {
-	tree := newA11yTree()
-	tree.update([]elements.SemanticNode{
+	tree := NewTree()
+	tree.Update([]elements.SemanticNode{
 		{ID: "sw", Kind: elements.SemanticSwitch, Label: "Wi-Fi", Checked: elements.Checked, Bounds: image.Rect(0, 0, 100, 30)},
 		{ID: "vol", Kind: elements.SemanticSlider, Label: "Volume", Min: 0, Max: 1, Now: 0.4, Target: &macStepper{}, Bounds: image.Rect(0, 40, 200, 60)},
 		{ID: "h", Kind: elements.SemanticHeading, Label: "Network", Level: 2, Bounds: image.Rect(0, 70, 200, 90)},
@@ -54,8 +54,8 @@ func TestMacNodes(t *testing.T) {
 }
 
 func TestReadingOrder(t *testing.T) {
-	tree := newA11yTree()
-	tree.update([]elements.SemanticNode{
+	tree := NewTree()
+	tree.Update([]elements.SemanticNode{
 		{ID: "list", Kind: elements.SemanticList, Bounds: image.Rect(0, 0, 100, 100)},
 		{ID: "a", Kind: elements.SemanticButton, Label: "A", Parent: "list", Bounds: image.Rect(0, 0, 100, 20)},
 		{ID: "a.text", Kind: elements.SemanticText, Label: "A", Bounds: image.Rect(5, 5, 50, 15)},
@@ -74,8 +74,8 @@ func TestUTF16Offsets(t *testing.T) {
 	if utf16Offset(s, 2) != 3 || runeOffset(s, 3) != 2 || runeOffset(s, 1) != 1 {
 		t.Errorf("utf16Offset(2) = %d, runeOffset(3) = %d", utf16Offset(s, 2), runeOffset(s, 3))
 	}
-	tree := newA11yTree()
-	tree.update([]elements.SemanticNode{{ID: "f", Kind: elements.SemanticInput, Value: s, HasCaret: true, Caret: 3, Anchor: 1}})
+	tree := NewTree()
+	tree.Update([]elements.SemanticNode{{ID: "f", Kind: elements.SemanticInput, Value: s, HasCaret: true, Caret: 3, Anchor: 1}})
 	var n macNode
 	json.Unmarshal([]byte(tree.macJSON(tree.num["f"])), &n)
 	if !n.HasCaret || n.SelStart != 1 || n.SelEnd != 4 || n.Length != 4 {

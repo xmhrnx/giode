@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package a11y
 
 import (
 	"image"
@@ -21,9 +21,9 @@ func (c *uiaClickable) Click() { c.clicked++ }
 // UI Automation does.
 func TestUIAProviders(t *testing.T) {
 	uiaOnce.Do(initUIAVtables)
-	tree := newA11yTree()
+	tree := NewTree()
 	ok := &uiaClickable{}
-	tree.update([]elements.SemanticNode{
+	tree.Update([]elements.SemanticNode{
 		{ID: "save", Kind: elements.SemanticButton, Label: "Save", Bounds: image.Rect(10, 10, 90, 40), Target: ok, Focused: true},
 		{ID: "dark", Kind: elements.SemanticSwitch, Label: "Dark mode", Bounds: image.Rect(10, 50, 90, 80), Checked: elements.Checked},
 		{ID: "h", Kind: elements.SemanticHeading, Label: "Settings", Level: 2, Bounds: image.Rect(10, 90, 200, 120)},
@@ -127,8 +127,8 @@ func TestUIAProviders(t *testing.T) {
 // ITextProvider and ITextRangeProvider, as Narrator does.
 func TestUIATextPattern(t *testing.T) {
 	uiaOnce.Do(initUIAVtables)
-	tree := newA11yTree()
-	tree.update([]elements.SemanticNode{
+	tree := NewTree()
+	tree.Update([]elements.SemanticNode{
 		{ID: "name", Kind: elements.SemanticInput, Label: "Name", Value: "Ada Lovelace", Bounds: image.Rect(0, 0, 120, 30),
 			Focused: true, HasCaret: true, Caret: 12, Anchor: 4},
 	})

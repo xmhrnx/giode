@@ -1,13 +1,7 @@
-package giode
+package a11y
 
 import (
-	"context"
 	"encoding/json"
-	"image"
-	"time"
-
-	"gioui.org/f32"
-	"gioui.org/io/pointer"
 
 	"github.com/xmhrnx/giode/elements"
 )
@@ -111,7 +105,7 @@ func androidClass(k elements.SemanticKind) string {
 }
 
 // androidJSON describes node k (0 the root) for the patched GioView.
-func (t *a11yTree) androidJSON(k int32) string {
+func (t *Tree) androidJSON(k int32) string {
 	n, parent, children, ok := t.node(k)
 	if !ok {
 		return ""
@@ -230,7 +224,7 @@ func fillAndroidNode(out *androidNode, n elements.SemanticNode, focusable bool) 
 // androidSelection returns the focused text field and its selection in
 // UTF-16 units (start the anchor, end the caret) and its length, for
 // TalkBack to read what the caret moves over.
-func (t *a11yTree) androidSelection() (id int32, start, end, count int, ok bool) {
+func (t *Tree) androidSelection() (id int32, start, end, count int, ok bool) {
 	k := t.focusedNode()
 	n, _, _, found := t.node(k)
 	if !found || !n.HasCaret {
@@ -260,21 +254,4 @@ func androidAction(id int) a11yAction {
 		return a11ySetSelection
 	}
 	return 0
-}
-
-// a11yTap taps the middle of r, as a finger would, for a node with no
-// component to call. It needs giode's Gio patches.
-func a11yTap(a *App, r image.Rectangle) bool {
-	c := r.Min.Add(r.Size().Div(2))
-	p := f32.Pt(float32(c.X), float32(c.Y))
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		for _, k := range []pointer.Kind{pointer.Press, pointer.Release} {
-			if injectEvent(ctx, a, pointer.Event{Kind: k, Source: pointer.Touch, Position: p, Time: time.Since(inputEpoch)}) != nil {
-				return
-			}
-		}
-	}()
-	return true
 }

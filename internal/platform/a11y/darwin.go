@@ -1,6 +1,6 @@
 //go:build darwin
 
-package giode
+package a11y
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
@@ -34,17 +34,18 @@ import (
 
 var (
 	axMu    sync.Mutex
-	axApps  = map[uintptr]*App{}
-	axViews = map[*App]uintptr{}
+	axApps  = map[uintptr]Host{}
+	axViews = map[Host]uintptr{}
 	// axGen counts tree updates, for elements to know their cache is old.
 	axGen atomic.Int64
 )
 
-func installA11y(a *App) {
-	t := newA11yTree()
-	a.a11y = t
+// Install sets the tree up for the platform's bridge.
+func Install(a Host) *Tree {
+	t := NewTree()
+	setTree(a, t)
 	var focus int32
-	t.notify = func() {
+	t.Notify = func() {
 		axGen.Add(1)
 		changed, announce := t.takeChanges()
 		axMu.Lock()
@@ -95,12 +96,13 @@ func installA11y(a *App) {
 		// giodeAXChanged takes the buffers and frees them.
 		C.giodeAXChanged(C.uintptr_t(view), C.int32_t(sendFocus), cids, C.int(len(ids)), ctext, C.int(assertive), C.int(boolInt(layout)))
 	}
+	return t
 }
 
-// a11yInstall gives the view with handle view its accessibility
+// install gives the view with handle view its accessibility
 // elements.
-func (a *App) a11yInstall(view uintptr) {
-	if view == 0 || a.a11y == nil {
+func install(a Host, view uintptr) {
+	if view == 0 || treeOf(a) == nil {
 		return
 	}
 	axMu.Lock()
@@ -110,14 +112,18 @@ func (a *App) a11yInstall(view uintptr) {
 	C.giodeAXInstall(C.uintptr_t(view))
 }
 
-func axTree(view C.uintptr_t) (*App, *a11yTree) {
+func axTree(view C.uintptr_t) (Host, *Tree) {
 	axMu.Lock()
 	a := axApps[uintptr(view)]
 	axMu.Unlock()
-	if a == nil || a.a11y == nil {
+	if a == nil {
 		return nil, nil
 	}
-	return a, a.a11y
+	t := treeOf(a)
+	if t == nil {
+		return nil, nil
+	}
+	return a, t
 }
 
 //export giodeAXWanted
@@ -125,7 +131,7 @@ func giodeAXWanted(view C.uintptr_t) {
 	a, _ := axTree(view)
 	if a != nil && !elements.SemanticsWanted() {
 		elements.SetSemanticsWanted(true)
-		a.invalidate()
+		a.Invalidate()
 	}
 }
 

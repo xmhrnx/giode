@@ -1,4 +1,7 @@
-package giode
+// Package a11y exposes the UI's semantic tree to the platform's
+// accessibility services: UI Automation, AT-SPI, NSAccessibility and
+// UIAccessibility, and Android's AccessibilityNodeProvider.
+package a11y
 
 import (
 	"image"
@@ -7,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // The accessibility tree platform bridges read (TalkBack on Android; the
@@ -14,9 +18,9 @@ import (
 // nodes, with numeric IDs that stay the same while a node does, parents
 // and children, and what changed since the last look.
 
-// a11yTree is safe to read from the platform's accessibility thread
+// Tree is safe to read from the platform's accessibility thread
 // while the UI goroutine updates it.
-type a11yTree struct {
+type Tree struct {
 	mu    sync.Mutex
 	nodes []elements.SemanticNode
 	// num maps node IDs to the numbers platforms see, from 1; next is the
@@ -37,7 +41,7 @@ type a11yTree struct {
 	announce []a11yAnnouncement
 	// notify, when set, runs after each update on the UI goroutine: a
 	// platform bridge reporting the changes.
-	notify func()
+	Notify func()
 }
 
 type a11yAnnouncement struct {
@@ -45,8 +49,8 @@ type a11yAnnouncement struct {
 	assertive bool
 }
 
-func newA11yTree() *a11yTree {
-	return &a11yTree{num: map[string]int32{}, index: map[int32]int{}, parent: map[int32]int32{}, children: map[int32][]int32{}, sums: map[int32]string{}}
+func NewTree() *Tree {
+	return &Tree{num: map[string]int32{}, index: map[int32]int{}, parent: map[int32]int32{}, children: map[int32][]int32{}, sums: map[int32]string{}}
 }
 
 // actionable reports whether a node does something when activated, so
@@ -67,7 +71,7 @@ func textual(n elements.SemanticNode) bool {
 }
 
 // update replaces the tree with a frame's nodes.
-func (t *a11yTree) update(nodes []elements.SemanticNode) {
+func (t *Tree) Update(nodes []elements.SemanticNode) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.nodes = append(t.nodes[:0], nodes...)
@@ -191,7 +195,7 @@ func a11yText(n elements.SemanticNode) string {
 }
 
 // takeChanges returns and forgets what changed since the last call.
-func (t *a11yTree) takeChanges() ([]int32, []a11yAnnouncement) {
+func (t *Tree) takeChanges() ([]int32, []a11yAnnouncement) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	c, a := t.changed, t.announce
@@ -200,7 +204,7 @@ func (t *a11yTree) takeChanges() ([]int32, []a11yAnnouncement) {
 }
 
 // node returns node k, and its parent and children.
-func (t *a11yTree) node(k int32) (n elements.SemanticNode, parent int32, children []int32, ok bool) {
+func (t *Tree) node(k int32) (n elements.SemanticNode, parent int32, children []int32, ok bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if k == 0 {
@@ -215,7 +219,7 @@ func (t *a11yTree) node(k int32) (n elements.SemanticNode, parent int32, childre
 
 // focusedNode returns the number of the node with keyboard focus, 0
 // for none.
-func (t *a11yTree) focusedNode() int32 {
+func (t *Tree) focusedNode() int32 {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	for _, n := range t.nodes {
@@ -228,7 +232,7 @@ func (t *a11yTree) focusedNode() int32 {
 
 // readingOrder returns the nodes a screen reader stops on, depth first
 // from the root: for platforms that take a flat list (iOS).
-func (t *a11yTree) readingOrder() []int32 {
+func (t *Tree) readingOrder() []int32 {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	out := []int32{}
@@ -249,14 +253,14 @@ func (t *a11yTree) readingOrder() []int32 {
 }
 
 // number returns the number of the node with ID id, 0 when none.
-func (t *a11yTree) number(id string) int32 {
+func (t *Tree) number(id string) int32 {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.num[id]
 }
 
 // isFocusable is focusable, taking the lock.
-func (t *a11yTree) isFocusable(n elements.SemanticNode, k int32) bool {
+func (t *Tree) isFocusable(n elements.SemanticNode, k int32) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.focusable(n, k)
@@ -265,7 +269,7 @@ func (t *a11yTree) isFocusable(n elements.SemanticNode, k int32) bool {
 // at returns the node a touch at p (window pixels) explores: the
 // smallest one there that can be focused, preferring controls; 0 when
 // none.
-func (t *a11yTree) at(p image.Point) int32 {
+func (t *Tree) at(p image.Point) int32 {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	best, bestScore := int32(0), 0
@@ -292,7 +296,7 @@ func (t *a11yTree) at(p image.Point) int32 {
 
 // focusable reports whether a screen reader stops on node k: controls,
 // and text that isn't part of a control.
-func (t *a11yTree) focusable(n elements.SemanticNode, k int32) bool {
+func (t *Tree) focusable(n elements.SemanticNode, k int32) bool {
 	switch n.Kind {
 	case elements.SemanticScroll, elements.SemanticGroup, elements.SemanticList, elements.SemanticTable,
 		elements.SemanticTree, elements.SemanticMenu, elements.SemanticMenuBar, elements.SemanticTabList,
@@ -373,7 +377,7 @@ type a11yStepper interface {
 
 // perform does action on node k, on the UI goroutine. It reports
 // whether the node takes the action.
-func (t *a11yTree) perform(a *App, k int32, action a11yAction, arg string) bool {
+func (t *Tree) perform(a Host, k int32, action a11yAction, arg string) bool {
 	n, _, _, ok := t.node(k)
 	if !ok || n.Disabled {
 		return false
@@ -385,7 +389,7 @@ func (t *a11yTree) perform(a *App, k int32, action a11yAction, arg string) bool 
 			return true
 		}
 		// No component to call: a tap at its middle, as a finger would.
-		return a11yTap(a, n.Bounds)
+		return a.Tap(n.Bounds)
 	case a11yScrollForward, a11yScrollBackward:
 		s, ok := n.Target.(interface{ ScrollBy(dx, dy float32) })
 		if !ok {
@@ -460,4 +464,36 @@ func boolInt(b bool) int32 {
 		return 1
 	}
 	return 0
+}
+
+// Host is what the bridges need of the app.
+type Host interface {
+	platform.Host
+	// Invalidate asks for a frame.
+	Invalidate()
+	// Focused reports whether the window has the keyboard focus.
+	Focused() bool
+	// Size is the window's size in pixels, false before it's shown.
+	Size() (image.Point, bool)
+	// Tap taps the middle of r, as a finger would, for a node with no
+	// component to call.
+	Tap(r image.Rectangle) bool
+}
+
+// trees are the installed trees, by host.
+var (
+	treesMu sync.Mutex
+	trees   = map[Host]*Tree{}
+)
+
+func setTree(h Host, t *Tree) {
+	treesMu.Lock()
+	trees[h] = t
+	treesMu.Unlock()
+}
+
+func treeOf(h Host) *Tree {
+	treesMu.Lock()
+	defer treesMu.Unlock()
+	return trees[h]
 }

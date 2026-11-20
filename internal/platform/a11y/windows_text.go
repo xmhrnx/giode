@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package a11y
 
 import (
 	"image"

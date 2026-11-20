@@ -1,6 +1,6 @@
 //go:build windows && 386
 
-package giode
+package a11y
 
 import (
 	"math"

@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package a11y
 
 import (
 	"errors"
@@ -17,6 +17,7 @@ import (
 	"github.com/godbus/dbus/v5"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
@@ -120,8 +121,8 @@ type atspiRect struct{ X, Y, W, H int32 }
 
 // atspiBridge is the app's AT-SPI objects on the accessibility bus.
 type atspiBridge struct {
-	a    *App
-	t    *a11yTree
+	a    Host
+	t    *Tree
 	conn *dbus.Conn
 	// desktop is the registry's root, the application's parent.
 	desktop atspiRef
@@ -137,14 +138,15 @@ type atspiBridge struct {
 	origin func() (x, y int, ok bool)
 }
 
-func installA11y(a *App) {
-	t := newA11yTree()
-	a.a11y = t
+// Install sets the tree up for the platform's bridge.
+func Install(a Host) *Tree {
+	t := NewTree()
+	setTree(a, t)
 	if os.Getenv("NO_AT_BRIDGE") == "1" {
-		return
+		return t
 	}
 	var bridge atomic.Pointer[atspiBridge]
-	t.notify = func() {
+	t.Notify = func() {
 		if b := bridge.Load(); b != nil {
 			b.events()
 		} else {
@@ -154,11 +156,12 @@ func installA11y(a *App) {
 	go func() {
 		b, err := startATSPI(a, t)
 		if err != nil {
-			a.logf(LogLevelDebug, "giode: no AT-SPI bridge: %v", err)
+			a.Logf(platform.Debug, "giode: no AT-SPI bridge: %v", err)
 			return
 		}
 		bridge.Store(b)
 	}()
+	return t
 }
 
 // atspiAddress returns the accessibility bus's address.
@@ -209,7 +212,7 @@ func screenReaderOn() bool {
 	return on
 }
 
-func startATSPI(a *App, t *a11yTree) (*atspiBridge, error) {
+func startATSPI(a Host, t *Tree) (*atspiBridge, error) {
 	addr, err := atspiAddress()
 	if err != nil {
 		return nil, err
@@ -226,7 +229,7 @@ func startATSPI(a *App, t *a11yTree) (*atspiBridge, error) {
 
 // connectATSPI connects to the accessibility bus at addr, exports the
 // objects and embeds the application in the registry.
-func connectATSPI(a *App, t *a11yTree, addr string) (*atspiBridge, error) {
+func connectATSPI(a Host, t *Tree, addr string) (*atspiBridge, error) {
 	conn, err := dbus.Dial(addr)
 	if err != nil {
 		return nil, err
@@ -256,7 +259,7 @@ func connectATSPI(a *App, t *a11yTree, addr string) (*atspiBridge, error) {
 	return b, nil
 }
 
-func newATSPIBridge(a *App, t *a11yTree, conn *dbus.Conn) *atspiBridge {
+func newATSPIBridge(a Host, t *Tree, conn *dbus.Conn) *atspiBridge {
 	b := &atspiBridge{a: a, t: t, conn: conn, desktop: atspiRef{"", atspiNullPath}}
 	b.origin = func() (int, int, bool) { return 0, 0, false }
 	return b
@@ -290,7 +293,7 @@ func (b *atspiBridge) enable() {
 	}
 	if b.a != nil && !elements.SemanticsWanted() {
 		elements.SetSemanticsWanted(true)
-		b.a.invalidate()
+		b.a.Invalidate()
 	}
 	b.emit(atspiFramePath, "org.a11y.atspi.Event.Window.Activate", "", 0, 0, "")
 }
@@ -578,9 +581,8 @@ func (b *atspiBridge) extents(o atspiObj, n elements.SemanticNode, coords uint32
 	if o.root || o.frame {
 		r = image.Rectangle{}
 		if b.a != nil {
-			if f, err := b.a.Frame(); err == nil {
-				s := b.a.scale()
-				r = image.Rect(0, 0, int(f.Width*s), int(f.Height*s))
+			if sz, ok := b.a.Size(); ok {
+				r = image.Rectangle{Max: sz}
 			}
 		}
 	}

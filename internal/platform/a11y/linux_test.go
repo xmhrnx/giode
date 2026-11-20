@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package a11y
 
 import (
 	"bufio"
@@ -54,9 +54,9 @@ func dialBus(t *testing.T, addr string) *dbus.Conn {
 	return c
 }
 
-func atspiTestTree() *a11yTree {
-	tree := newA11yTree()
-	tree.update([]elements.SemanticNode{
+func atspiTestTree() *Tree {
+	tree := NewTree()
+	tree.Update([]elements.SemanticNode{
 		{ID: "name", Kind: elements.SemanticInput, Label: "Name", Value: "Ada Lovelace", Required: true, Bounds: image.Rect(10, 10, 210, 40), Focused: true, Target: &atspiTextTarget{},
 			HasCaret: true, Caret: 12, Anchor: 4},
 		{ID: "dark", Kind: elements.SemanticSwitch, Label: "Dark mode", Checked: elements.Checked, Bounds: image.Rect(10, 50, 110, 80)},
@@ -171,7 +171,7 @@ func TestATSPIObjects(t *testing.T) {
 	}
 	sig := make(chan *dbus.Signal, 16)
 	client.Signal(sig)
-	tree.update([]elements.SemanticNode{
+	tree.Update([]elements.SemanticNode{
 		{ID: "name", Kind: elements.SemanticInput, Label: "Name", Value: "Ada Lovelace", Bounds: image.Rect(10, 10, 210, 40)},
 		{ID: "dark", Kind: elements.SemanticSwitch, Label: "Dark mode", Checked: elements.Checked, Bounds: image.Rect(10, 50, 110, 80), Focused: true},
 		{ID: "vol", Kind: elements.SemanticSlider, Label: "Volume", Min: 0, Max: 1, Now: 0.25, Bounds: image.Rect(10, 90, 210, 110)},

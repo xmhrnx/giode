@@ -1,6 +1,6 @@
 //go:build windows && amd64
 
-package giode
+package a11y
 
 import (
 	"unsafe"

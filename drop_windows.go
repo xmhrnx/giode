@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/a11y"
 	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/internal/platform/shell"
 	"github.com/xmhrnx/giode/internal/platform/window"
@@ -119,7 +120,7 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		if t != nil {
 			procSetWindowLongPtrW.Call(hwnd, gwlpWndProc, t.oldProc)
 			filedrag.RevokeOLE(hwnd)
-			uiaWindowGone(hwnd)
+			a11y.WindowGone(hwnd)
 		}
 	}
 	dropMu.Unlock()
@@ -144,11 +145,11 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 	case shell.WMShare:
 		shell.RunShare(hwnd)
 		return 0
-	case wmGetObject:
+	case a11y.WMGetObject:
 		// UI Automation asking for the window's provider (lParam
 		// UiaRootObjectId, sign-extended or not).
-		if int32(uint32(lparam)) == uiaRootObjectID {
-			if r, ok := uiaGetObject(t.app, hwnd, wparam, lparam); ok {
+		if int32(uint32(lparam)) == a11y.UIARootObjectID {
+			if r, ok := a11y.GetObject(t.app.a11yHost(), hwnd, wparam, lparam); ok {
 				return r
 			}
 		}

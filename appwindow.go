@@ -19,6 +19,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/host"
 	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/internal/platform/a11y"
 	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/state"
@@ -84,7 +85,7 @@ type App struct {
 	textScaleSet       atomic.Uint32
 	prefCheck          chan struct{}
 	// a11y is the tree a screen reader bridge reads, nil without one.
-	a11y *a11yTree
+	a11y *a11y.Tree
 
 	// explorer shows the file dialogs; it sees every window event.
 	explorer *explorer.Explorer
@@ -219,7 +220,7 @@ func New(cfg Config) *App {
 		filedrag.Install()
 	}
 	filedrag.InstallExporter(a.host())
-	installA11y(a)
+	a.a11y = a11y.Install(a.a11yHost())
 	// Until the first frame, the window shows the app's background
 	// (theme tokens resolved now) rather than the platform's white.
 	if !cfg.Transparent {

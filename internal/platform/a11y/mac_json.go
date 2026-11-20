@@ -1,4 +1,4 @@
-package giode
+package a11y
 
 import (
 	"encoding/json"
@@ -133,7 +133,7 @@ func macRole(n elements.SemanticNode) (role, subrole, desc string) {
 }
 
 // macJSON describes node k (0 the root, the view) for the macOS bridge.
-func (t *a11yTree) macJSON(k int32) string {
+func (t *Tree) macJSON(k int32) string {
 	n, parent, children, ok := t.node(k)
 	if !ok {
 		return ""
@@ -285,7 +285,7 @@ func macAction(name string) a11yAction {
 
 // utf16RangeToRunes turns "start,end" in UTF-16 units of node k's value
 // into runes.
-func utf16RangeToRunes(t *a11yTree, k int32, arg string) string {
+func utf16RangeToRunes(t *Tree, k int32, arg string) string {
 	n, _, _, ok := t.node(k)
 	a, b, found := strings.Cut(arg, ",")
 	start, err1 := strconv.Atoi(a)

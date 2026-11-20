@@ -1,4 +1,4 @@
-package giode
+package a11y
 
 import (
 	"encoding/json"
@@ -21,8 +21,8 @@ func TestA11yTree(t *testing.T) {
 		{ID: "checkbox-1", Kind: elements.SemanticCheckbox, Label: "Remember", Checked: elements.Checked, Bounds: image.Rect(0, 90, 200, 120), Parent: "dialog#1"},
 		{ID: "dialog#1", Kind: elements.SemanticDialog, Label: "Preferences", Bounds: image.Rect(0, 45, 220, 130)},
 	}
-	tr := newA11yTree()
-	tr.update(nodes)
+	tr := NewTree()
+	tr.Update(nodes)
 	num := func(id string) int32 { return tr.num[id] }
 
 	// The text inside the button is the button's; the dialog holds the
@@ -70,7 +70,7 @@ func TestA11yTree(t *testing.T) {
 	before := num("checkbox-1")
 	nodes[3].Checked = elements.Unchecked
 	nodes = append(nodes, elements.SemanticNode{ID: "alert@5", Kind: elements.SemanticAlert, Label: "Couldn't save", Bounds: image.Rect(0, 140, 200, 160)})
-	tr.update(nodes)
+	tr.Update(nodes)
 	if num("checkbox-1") != before {
 		t.Error("the checkbox's number changed")
 	}
@@ -84,7 +84,7 @@ func TestA11yTree(t *testing.T) {
 	if !found || len(ann) != 1 || ann[0].text != "Couldn't save" || !ann[0].assertive {
 		t.Errorf("changes %v, announcements %+v", ch, ann)
 	}
-	tr.update(nodes)
+	tr.Update(nodes)
 	if ch, ann := tr.takeChanges(); len(ch) != 0 || len(ann) != 0 {
 		t.Errorf("an unchanged frame reported %v %v", ch, ann)
 	}

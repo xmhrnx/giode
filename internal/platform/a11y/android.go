@@ -1,6 +1,6 @@
 //go:build android && giode_gio6
 
-package giode
+package a11y
 
 import (
 	"image"
@@ -13,15 +13,17 @@ import (
 // TalkBack on Android: giode's patched GioView fills its virtual
 // accessibility nodes from the tree (see a11y_tree.go), and runs their
 // actions here.
-func installA11y(a *App) {
-	t := newA11yTree()
-	a.a11y = t
+// Install sets the tree up for the platform's bridge.
+func Install(a Host) *Tree {
+	t := NewTree()
+	setTree(a, t)
 	app.GiodeSetA11yProvider(&androidA11y{a: a, t: t})
+	return t
 }
 
 type androidA11y struct {
-	a *App
-	t *a11yTree
+	a Host
+	t *Tree
 	// sel is the selection A11ySelection last reported.
 	sel [4]int
 }
@@ -29,7 +31,7 @@ type androidA11y struct {
 func (p *androidA11y) A11yActive(on bool) {
 	if on != elements.SemanticsWanted() {
 		elements.SetSemanticsWanted(on)
-		p.a.invalidate()
+		p.a.Invalidate()
 	}
 }
 
