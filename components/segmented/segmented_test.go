@@ -57,7 +57,7 @@ func TestRTLOrder(t *testing.T) {
 	c.Layout(gtx)
 	b := map[string]image.Rectangle{}
 	for _, n := range elements.EndSemantics() {
-		if n.Kind == elements.SemanticTab {
+		if n.Kind == elements.SemanticRadio {
 			b[n.Label] = n.Bounds
 		}
 	}

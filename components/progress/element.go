@@ -2,6 +2,7 @@ package progress
 
 import (
 	"image"
+	"strconv"
 
 	"math"
 
@@ -21,6 +22,8 @@ type ProgressElement struct {
 
 	value float32
 	st    styles.Styles
+	// label names the bar for screen readers (Label).
+	label string
 
 	kit.HoverTracker
 	hoverSt *styles.Styles // set with OnHover
@@ -33,6 +36,13 @@ type ProgressElement struct {
 func (p *ProgressElement) OnHover(st styles.Styles) *ProgressElement {
 	p.Enable()
 	p.hoverSt = &st
+	return p
+}
+
+// Label names the bar for screen readers ("Uploading report.pdf"),
+// which read its value as a percentage. It returns p for chaining.
+func (p *ProgressElement) Label(s string) *ProgressElement {
+	p.label = s
 	return p
 }
 
@@ -57,6 +67,9 @@ func (p *ProgressElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	}
 	dims := p.bar(st).Layout(gtx)
 	p.RegisterArea(gtx, image.Point{}, dims.Size, st.Cursor)
+	v := float64(min(max(p.value, 0), 1))
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticProgress, Label: p.label,
+		Value: strconv.Itoa(int(v*100+0.5)) + "%", Min: 0, Max: 1, Now: v}, dims.Size)
 	return dims
 }
 

@@ -139,10 +139,18 @@ func (c *Control) layoutSelf(gtx layout.Context) layout.Dimensions {
 				}
 				return elements.Box(styles.Styles{Width: -1, Height: -1, Justify: properties.JustifyCenter, Align: properties.AlignCenter}, segment(i, true)).Layout(gtx)
 			}))
-			elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticTab, Label: c.options[i], Value: boolString(i == c.selected), Target: &c.clicks[i]}, d.Size)
+			elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticRadio, Label: c.options[i], Value: boolString(i == c.selected), Selected: i == c.selected, Checked: checkOf(i == c.selected), Pos: i + 1, Count: len(c.options), Target: &c.clicks[i]}, d.Size)
 		}()
 	}
 	kit.BlockDrag(gtx, size)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticSelect, Label: c.options[c.selected], Value: c.options[c.selected], Target: c}, size)
 	return layout.Dimensions{Size: size}
+}
+
+// checkOf is a radio segment's checked state.
+func checkOf(on bool) elements.CheckState {
+	if on {
+		return elements.Checked
+	}
+	return elements.Unchecked
 }

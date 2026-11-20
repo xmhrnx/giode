@@ -88,5 +88,7 @@ func (s *SpinnerElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 
 	// Keep animating while visible.
 	kit.RequestFrame(gtx)
+	// An indeterminate progress indicator to screen readers: busy.
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticProgress, Label: "Loading", Busy: true}, size)
 	return layout.Dimensions{Size: size}
 }

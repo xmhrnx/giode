@@ -61,7 +61,7 @@ func TestShowExpireAndMax(t *testing.T) {
 	h.t.Show(Error, "three")
 	h.frame(0)
 	nodes := h.frame(300 * time.Millisecond)
-	if got := labels(nodes, elements.SemanticText); len(got) != 2 || got[0] != "one" || got[1] != "two" {
+	if got := labels(nodes, elements.SemanticStatus); len(got) != 2 || got[0] != "one" || got[1] != "two" {
 		t.Fatalf("visible toasts = %v, want the first two (Max 2)", got)
 	}
 	// After the first two expire and animate out, the third shows.
@@ -69,7 +69,8 @@ func TestShowExpireAndMax(t *testing.T) {
 	h.frame(300 * time.Millisecond)
 	h.frame(300 * time.Millisecond)
 	nodes = h.frame(100 * time.Millisecond)
-	if got := labels(nodes, elements.SemanticText); len(got) != 1 || got[0] != "three" {
+	// An error toast is an alert, announced at once.
+	if got := labels(nodes, elements.SemanticAlert); len(got) != 1 || got[0] != "three" {
 		t.Fatalf("after expiry = %v, want [three]", got)
 	}
 	h.frame(2 * time.Second)
@@ -87,7 +88,7 @@ func TestHoverPausesExpiry(t *testing.T) {
 	nodes := h.frame(300 * time.Millisecond)
 	var bounds image.Rectangle
 	for _, n := range nodes {
-		if n.Kind == elements.SemanticText {
+		if n.Kind == elements.SemanticStatus {
 			bounds = n.Bounds
 		}
 	}
@@ -161,7 +162,7 @@ func TestInsetKeepsToastsClearOfBars(t *testing.T) {
 		h.frame(0)
 		nodes := h.frame(time.Second)
 		for _, n := range nodes {
-			if n.Kind == elements.SemanticText && n.Label == "saved" {
+			if n.Kind == elements.SemanticStatus && n.Label == "saved" {
 				return n.Bounds.Max.Y
 			}
 		}

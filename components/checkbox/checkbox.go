@@ -172,7 +172,11 @@ func (c *Checkbox) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if c.bool.Value {
 		value = "true"
 	}
-	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticCheckbox, Label: c.label, Value: value, Target: c}, dims.Size)
+	chk := elements.Unchecked
+	if c.bool.Value {
+		chk = elements.Checked
+	}
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticCheckbox, Label: c.label, Value: value, Checked: chk, Focused: gtx.Source.Focused(&c.bool), Target: c}, dims.Size)
 	return dims
 }
 

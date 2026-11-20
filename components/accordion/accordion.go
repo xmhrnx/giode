@@ -148,6 +148,26 @@ func (a *Accordion) header(it *item, st styles.Styles) elements.Element {
 		// frameless window's whole-window drag area - see
 		// button.Layout's identical comment.
 		kit.BlockDrag(gtx, dims.Size)
+		exp := elements.Collapsed
+		if it.expanded {
+			exp = elements.Expanded
+		}
+		elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: it.label, Expanded: exp, Target: headerActor{a, it}}, dims.Size)
 		return dims
 	})
+}
+
+// headerActor clicks a section's header for automation and assistive
+// technology: it expands or collapses the section.
+type headerActor struct {
+	a  *Accordion
+	it *item
+}
+
+func (h headerActor) Click() {
+	for i, it := range h.a.items {
+		if it == h.it {
+			h.a.SetExpanded(i, !it.expanded)
+		}
+	}
 }

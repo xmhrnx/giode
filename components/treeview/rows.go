@@ -55,7 +55,19 @@ func (t *Tree) rowView(i int) elements.Element {
 		Loading:  expanded && hasKids && len(n.Children()) == 0,
 		Focused:  t.list.HasFocus(),
 	}
-	w.row.Label(labelOf(n)).Content(func(s elements.PressState) elements.Element {
+	depth, pos, count := r.depth, i, len(t.rows)
+	w.row.Label(labelOf(n)).Semantics(func(sn *elements.SemanticNode) {
+		sn.Kind = elements.SemanticTreeItem
+		sn.Level = depth + 1
+		sn.Selected = state.Selected
+		sn.Pos, sn.Count = pos+1, count
+		if hasKids {
+			sn.Expanded = elements.Collapsed
+			if expanded {
+				sn.Expanded = elements.Expanded
+			}
+		}
+	}).Content(func(s elements.PressState) elements.Element {
 		state.Hovered = s.Hovered
 		bg := ""
 		sel := t.st.BorderColor

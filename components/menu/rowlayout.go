@@ -176,8 +176,16 @@ func (r *menuRow) Layout(gtx layout.Context) layout.Dimensions {
 	node := elements.SemanticNode{Kind: elements.SemanticMenuItem, Label: item.label, Target: menuItemActor{r.menu, item}}
 	if item.check != checkNone {
 		node.Value = "false"
+		node.Checked = elements.Unchecked
 		if item.checked != nil && item.checked() {
 			node.Value = "true"
+			node.Checked = elements.Checked
+		}
+	}
+	if item.submenu != nil {
+		node.Expanded = elements.Collapsed
+		if item.submenu.Opened() {
+			node.Expanded = elements.Expanded
 		}
 	}
 	elements.RecordSemantic(gtx, node, dims.Size)

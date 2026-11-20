@@ -121,7 +121,7 @@ func (t *Tabs) tabButton(i int, active, activeText properties.Color) elements.El
 		if i == t.selected {
 			value = "selected"
 		}
-		elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticTab, Label: t.tabs[i].Label, Value: value, Target: tabActor{t, i}}, dims.Size)
+		elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticTab, Label: t.tabs[i].Label, Value: value, Selected: value == "selected", Pos: i + 1, Count: len(t.tabs), Target: tabActor{t, i}}, dims.Size)
 		return dims
 	})
 }

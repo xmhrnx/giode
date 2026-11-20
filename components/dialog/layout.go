@@ -84,7 +84,8 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	pos := image.Pt((win.X-d.size.X)/2, (win.Y-d.size.Y)/2)
 	off := op.Offset(pos).Push(gtx.Ops)
 	pop := elements.PushOffset(pos)
-	dims := kit.LayoutClickable(panelGtx, &d.panel, elements.Box(st, d.content()).Layout)
+	panel := elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticDialog, Label: d.label, Target: d}, elements.Box(st, d.content()))
+	dims := kit.LayoutClickable(panelGtx, &d.panel, panel.Layout)
 	pop()
 	off.Pop()
 	if dims.Size != d.size {

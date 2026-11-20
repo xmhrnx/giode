@@ -35,6 +35,15 @@ type Dialog struct {
 	// size is the panel's size last frame, used to center it before
 	// laying it out (see Layout).
 	size image.Point
+	// label names the dialog to assistive technology.
+	label string
+}
+
+// Label names the dialog for screen readers, which announce it when it
+// opens ("Delete project?"). It returns d for chaining.
+func (d *Dialog) Label(s string) *Dialog {
+	d.label = s
+	return d
 }
 
 // New returns a Dialog bound to open: it is visible whenever *open is

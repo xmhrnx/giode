@@ -168,7 +168,7 @@ func (d *Drawer) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	}
 	panelGtx := gtx
 	panelGtx.Constraints = layout.Exact(image.Pt(width, win.Y))
-	elements.Box(st, d.content()).Layout(panelGtx)
+	elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticDialog, Label: d.label, Target: d}, elements.Box(st, d.content())).Layout(panelGtx)
 	cl.Pop()
 	pop()
 	off.Pop()

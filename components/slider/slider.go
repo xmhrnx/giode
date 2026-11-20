@@ -200,6 +200,7 @@ func (s *Slider) layoutUncached(gtx layout.Context) layout.Dimensions {
 	}
 	elements.RecordSemantic(gtx, elements.SemanticNode{
 		Kind: elements.SemanticSlider, Value: strconv.FormatFloat(float64(s.value), 'f', 3, 32), Target: s,
+		Min: 0, Max: 1, Now: float64(s.value),
 	}, size)
 	return layout.Dimensions{Size: size}
 }

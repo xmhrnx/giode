@@ -39,6 +39,14 @@ type (
 	SemanticKind = base.SemanticKind
 	// SemanticNode describes one meaningful piece of the UI.
 	SemanticNode = base.SemanticNode
+	// SemanticContainer is a container node being laid out
+	// (BeginSemanticGroup).
+	SemanticContainer = base.SemanticContainer
+	// CheckState, ExpandState and LiveMode are accessibility states of
+	// a SemanticNode.
+	CheckState  = base.CheckState
+	ExpandState = base.ExpandState
+	LiveMode    = base.LiveMode
 	// Placement says on which side of its trigger a portal goes.
 	Placement = base.Placement
 	// ChildTracker records what a child registers while it's laid out.
@@ -63,18 +71,55 @@ type (
 
 // Semantic kinds.
 const (
-	SemanticText     = base.SemanticText
-	SemanticButton   = base.SemanticButton
-	SemanticInput    = base.SemanticInput
-	SemanticCheckbox = base.SemanticCheckbox
-	SemanticSlider   = base.SemanticSlider
-	SemanticSelect   = base.SemanticSelect
-	SemanticTab      = base.SemanticTab
-	SemanticMenuItem = base.SemanticMenuItem
-	SemanticLink     = base.SemanticLink
-	SemanticImage    = base.SemanticImage
-	SemanticScroll   = base.SemanticScroll
-	SemanticCustom   = base.SemanticCustom
+	SemanticText         = base.SemanticText
+	SemanticButton       = base.SemanticButton
+	SemanticInput        = base.SemanticInput
+	SemanticCheckbox     = base.SemanticCheckbox
+	SemanticSlider       = base.SemanticSlider
+	SemanticSelect       = base.SemanticSelect
+	SemanticTab          = base.SemanticTab
+	SemanticMenuItem     = base.SemanticMenuItem
+	SemanticLink         = base.SemanticLink
+	SemanticImage        = base.SemanticImage
+	SemanticScroll       = base.SemanticScroll
+	SemanticCustom       = base.SemanticCustom
+	SemanticHeading      = base.SemanticHeading
+	SemanticSwitch       = base.SemanticSwitch
+	SemanticRadio        = base.SemanticRadio
+	SemanticProgress     = base.SemanticProgress
+	SemanticGroup        = base.SemanticGroup
+	SemanticList         = base.SemanticList
+	SemanticListItem     = base.SemanticListItem
+	SemanticTable        = base.SemanticTable
+	SemanticRow          = base.SemanticRow
+	SemanticCell         = base.SemanticCell
+	SemanticColumnHeader = base.SemanticColumnHeader
+	SemanticDialog       = base.SemanticDialog
+	SemanticAlert        = base.SemanticAlert
+	SemanticStatus       = base.SemanticStatus
+	SemanticMenu         = base.SemanticMenu
+	SemanticMenuBar      = base.SemanticMenuBar
+	SemanticTabList      = base.SemanticTabList
+	SemanticTabPanel     = base.SemanticTabPanel
+	SemanticTree         = base.SemanticTree
+	SemanticTreeItem     = base.SemanticTreeItem
+	SemanticComboBox     = base.SemanticComboBox
+	SemanticToolbar      = base.SemanticToolbar
+	SemanticRegion       = base.SemanticRegion
+)
+
+// Accessibility states (SemanticNode.Checked, Expanded, Live).
+const (
+	NotCheckable  = base.NotCheckable
+	Unchecked     = base.Unchecked
+	Checked       = base.Checked
+	Mixed         = base.Mixed
+	NotExpandable = base.NotExpandable
+	Collapsed     = base.Collapsed
+	Expanded      = base.Expanded
+	LiveOff       = base.LiveOff
+	LivePolite    = base.LivePolite
+	LiveAssertive = base.LiveAssertive
 )
 
 // Portal placements.
@@ -133,6 +178,17 @@ var (
 	SemanticsEnabled   = base.SemanticsEnabled
 	RecordSemantic     = base.RecordSemantic
 	PushSemanticScroll = base.PushSemanticScroll
+	// BeginSemanticGroup starts a container node (a list, a table, a
+	// dialog) whose children are the nodes laid out until End.
+	BeginSemanticGroup = base.BeginSemanticGroup
+	// Accessible lays an element out and adjusts the nodes it records
+	// (a text as a heading); AccessibleGroup makes it a container node.
+	Accessible      = base.Accessible
+	AccessibleGroup = base.AccessibleGroup
+	// SetSemanticsWanted records the semantic tree every frame, for
+	// accessibility bridges; SemanticsWanted reports it.
+	SetSemanticsWanted = base.SetSemanticsWanted
+	SemanticsWanted    = base.SemanticsWanted
 )
 
 // Portals and overlays.

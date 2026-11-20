@@ -87,7 +87,11 @@ func (p *Pressable) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if p.onClick != nil || p.onDouble != nil || p.onSecondary != nil || p.onLongPress != nil || p.draggable() {
 		// Only something that reacts to clicks is a button to
 		// automation; a Pressable used just for hover state isn't.
-		base.RecordSemantic(gtx, base.SemanticNode{Kind: base.SemanticButton, Label: p.label, Disabled: p.disabled, Target: p}, dims.Size)
+		n := base.SemanticNode{Kind: base.SemanticButton, Label: p.label, Disabled: p.disabled, Focused: p.focused, Target: p}
+		if p.semantics != nil && base.SemanticsEnabled() {
+			p.semantics(&n)
+		}
+		base.RecordSemantic(gtx, n, dims.Size)
 	}
 	return dims
 }

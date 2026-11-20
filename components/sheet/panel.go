@@ -73,7 +73,8 @@ func (s *Sheet) panelOps(gtx layout.Context, width, maxH, fixedH int, handle boo
 	panelSt := st
 	panelSt.Padding = properties.Inset{}
 	panelSt.Width = -1
-	panel := elements.Stack(panelSt, headerEl, bodyEl, footerEl)
+	panel := elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticDialog, Label: s.title, Target: s},
+		elements.Stack(panelSt, headerEl, bodyEl, footerEl))
 
 	track := elements.TrackChild()
 	macro := op.Record(gtx.Ops)

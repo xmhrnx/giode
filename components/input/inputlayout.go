@@ -51,6 +51,9 @@ func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if st.Width == 0 {
 		st.Width = -1
 	}
+	if i.invalid != "" {
+		st.BorderColor = "theme.danger"
+	}
 
 	dims := elements.Box(st, &editorEl{input: i, st: st}).Layout(gtx)
 	i.fieldSize = dims.Size
@@ -79,7 +82,15 @@ func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if i.editor.Mask != 0 {
 		value = ""
 	}
-	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticInput, Label: label, Value: value, Target: i}, dims.Size)
+	desc := ""
+	if i.label != "" && i.placeholder != "" {
+		desc = i.placeholder
+	}
+	if i.invalid != "" {
+		desc = i.invalid
+	}
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticInput, Label: label, Value: value, Description: desc,
+		Required: i.required, Invalid: i.invalid != "", Focused: i.focused, Target: i}, dims.Size)
 	return dims
 }
 

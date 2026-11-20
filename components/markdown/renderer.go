@@ -62,7 +62,12 @@ func (r *renderer) block(n gast.Node) elements.Element {
 		if st.LineHeight != 0 {
 			st.LineHeight = properties.LineHeight(float32(st.LineHeight) * scale)
 		}
-		return r.paragraph(st, n)
+		level := n.Level
+		return elements.Accessible(r.paragraph(st, n), func(sn *elements.SemanticNode) {
+			if sn.Kind == elements.SemanticText {
+				sn.Kind, sn.Level = elements.SemanticHeading, level
+			}
+		})
 	case *gast.FencedCodeBlock:
 		return r.codeBlock(n, string(n.Language(r.src)))
 	case *gast.CodeBlock:
@@ -70,7 +75,7 @@ func (r *renderer) block(n gast.Node) elements.Element {
 	case *gast.Blockquote:
 		return quote(elements.Box(styles.Styles{Width: -1, Color: "theme.muted"}, r.blocks(n)))
 	case *gast.List:
-		return r.list(n)
+		return elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticList}, r.list(n))
 	case *gast.ThematicBreak:
 		return elements.Divider(styles.Styles{Color: "theme.border"})
 	case *east.Table:

@@ -48,6 +48,7 @@ type Pressable struct {
 	onDragStart, onDragMove        func(DragEvent)
 	onDragEnd                      func(DragEvent)
 	label                          string
+	semantics                      func(n *base.SemanticNode)
 	cursor                         properties.Cursor
 	disabled                       bool
 	focusable                      bool
@@ -193,6 +194,15 @@ func (p *Pressable) Disabled(v bool) *Pressable {
 // returns p for chaining.
 func (p *Pressable) Focusable(v bool) *Pressable {
 	p.focusable = v
+	return p
+}
+
+// Semantics sets a function adjusting the node the Pressable reports to
+// automation and assistive technology: its role (a tree item, a list
+// item, a tab), states (selected, expanded) and description. It
+// returns p for chaining.
+func (p *Pressable) Semantics(fn func(n *base.SemanticNode)) *Pressable {
+	p.semantics = fn
 	return p
 }
 

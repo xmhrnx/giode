@@ -18,10 +18,14 @@ type Input struct {
 	// Contextual gives it a context menu (Context).
 	elements.Contextual
 
-	pass         func(gtx layout.Context) bool
-	editor       widget.Editor
-	placeholder  string
-	label        string
+	pass        func(gtx layout.Context) bool
+	editor      widget.Editor
+	placeholder string
+	label       string
+	// required and invalid mark the field for screen readers; invalid
+	// is the error shown (Required, Invalid).
+	required     bool
+	invalid      string
 	keyboard     Keyboard
 	plain        bool
 	st           styles.Styles
@@ -247,6 +251,22 @@ func (i *Input) MaxLength(n int) *Input {
 // returns i for chaining.
 func (i *Input) Label(label string) *Input {
 	i.label = label
+	return i
+}
+
+// Required marks the field as one that must be filled: screen readers
+// say so. It returns i for chaining.
+func (i *Input) Required(on bool) *Input {
+	i.required = on
+	return i
+}
+
+// Invalid marks the field's value as wrong, with the message why
+// ("Enter an email address"): its border shows in the danger color, and
+// screen readers read the message with the field. "" clears it. It
+// returns i for chaining.
+func (i *Input) Invalid(message string) *Input {
+	i.invalid = message
 	return i
 }
 

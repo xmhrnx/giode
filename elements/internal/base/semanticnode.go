@@ -29,7 +29,75 @@ type SemanticNode struct {
 	// automation can act on it (e.g. call Click). It is not
 	// serialized.
 	Target any `json:"-"`
+
+	// Description is longer help read after the label (a hint, an error).
+	Description string `json:"description,omitempty"`
+	// Level is a heading's level, 1 to 6, or a tree item's depth from 1.
+	Level int `json:"level,omitempty"`
+	// Checked is a checkbox's, switch's or radio button's state.
+	Checked CheckState `json:"checked,omitempty"`
+	// Selected marks a selected tab, list item, row or option.
+	Selected bool `json:"selected,omitempty"`
+	// Expanded is an expandable control's state: a tree item, an
+	// accordion section, a dropdown, a menu button.
+	Expanded ExpandState `json:"expanded,omitempty"`
+	// Required, Invalid and Busy mark a field that must be filled, one
+	// whose value is wrong, and a part of the UI still loading.
+	Required bool `json:"required,omitempty"`
+	Invalid  bool `json:"invalid,omitempty"`
+	Busy     bool `json:"busy,omitempty"`
+	// Focused marks the node with keyboard focus.
+	Focused bool `json:"focused,omitempty"`
+	// Live makes changes to the node's label or value announced:
+	// LivePolite after what's being read, LiveAssertive at once (an
+	// error). Toasts, new chat messages and validation errors use it.
+	Live LiveMode `json:"live,omitempty"`
+	// Min, Max and Now are a slider's or progress bar's range and value.
+	Min, Max, Now float64 `json:"-"`
+	// Parent is the ID of the group, list, table, dialog or other
+	// container the node is in, "" at the top.
+	Parent string `json:"parent,omitempty"`
+	// LabelledBy, DescribedBy and Controls relate the node to others by
+	// ID: the nodes naming it, describing it, and those it controls (a
+	// tab its panel, a combobox its list).
+	LabelledBy  []string `json:"labelledBy,omitempty"`
+	DescribedBy []string `json:"describedBy,omitempty"`
+	Controls    []string `json:"controls,omitempty"`
+	// Pos and Count are an item's place in its list or set, from 1, when
+	// the list shows only some items (virtualized).
+	Pos, Count int `json:"-"`
 }
+
+// CheckState is a checkable control's state.
+type CheckState uint8
+
+const (
+	// NotCheckable is a node that isn't checkable.
+	NotCheckable CheckState = iota
+	Unchecked
+	Checked
+	// Mixed is a checkbox for a partly selected group.
+	Mixed
+)
+
+// ExpandState is an expandable control's state.
+type ExpandState uint8
+
+const (
+	// NotExpandable is a node that doesn't expand.
+	NotExpandable ExpandState = iota
+	Collapsed
+	Expanded
+)
+
+// LiveMode says how changes to a node are announced.
+type LiveMode string
+
+const (
+	LiveOff       LiveMode = ""
+	LivePolite    LiveMode = "polite"
+	LiveAssertive LiveMode = "assertive"
+)
 
 // SemanticKind classifies a node of the semantic tree.
 type SemanticKind string
@@ -47,4 +115,33 @@ const (
 	SemanticImage    SemanticKind = "image"
 	SemanticScroll   SemanticKind = "scroll"
 	SemanticCustom   SemanticKind = "custom"
+
+	SemanticHeading  SemanticKind = "heading"
+	SemanticSwitch   SemanticKind = "switch"
+	SemanticRadio    SemanticKind = "radio"
+	SemanticProgress SemanticKind = "progress"
+	SemanticGroup    SemanticKind = "group"
+	SemanticList     SemanticKind = "list"
+	SemanticListItem SemanticKind = "listitem"
+	SemanticTable    SemanticKind = "table"
+	SemanticRow      SemanticKind = "row"
+	SemanticCell     SemanticKind = "cell"
+	// SemanticColumnHeader is a table's column header cell.
+	SemanticColumnHeader SemanticKind = "columnheader"
+	SemanticDialog       SemanticKind = "dialog"
+	// SemanticAlert is an urgent message: a dialog asking to confirm,
+	// an error banner. Its text is announced when it appears.
+	SemanticAlert    SemanticKind = "alert"
+	SemanticStatus   SemanticKind = "status"
+	SemanticMenu     SemanticKind = "menu"
+	SemanticMenuBar  SemanticKind = "menubar"
+	SemanticTabList  SemanticKind = "tablist"
+	SemanticTabPanel SemanticKind = "tabpanel"
+	SemanticTree     SemanticKind = "tree"
+	SemanticTreeItem SemanticKind = "treeitem"
+	SemanticComboBox SemanticKind = "combobox"
+	SemanticToolbar  SemanticKind = "toolbar"
+	// SemanticRegion is a landmark: a large part of the window a skip
+	// link or a screen reader's landmark list goes to.
+	SemanticRegion SemanticKind = "region"
 )

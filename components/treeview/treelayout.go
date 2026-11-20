@@ -8,6 +8,7 @@ import (
 	"gioui.org/layout"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/components/virtuallist"
+	"github.com/xmhrnx/giode/elements"
 )
 
 // Layout lays out the visible rows.
@@ -36,5 +37,8 @@ func (t *Tree) layoutSelf(gtx layout.Context) layout.Dimensions {
 			t.list.SetFocusedIndex(i)
 		}
 	}
-	return t.list.Layout(gtx)
+	g := elements.BeginSemanticGroup(elements.SemanticNode{Kind: elements.SemanticTree, Target: t})
+	dims := t.list.Layout(gtx)
+	g.End(gtx, dims.Size)
+	return dims
 }

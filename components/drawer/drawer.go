@@ -56,6 +56,8 @@ var defaultBackground = "#1e293b"
 //
 // Create it once with New, outside the view function.
 type Drawer struct {
+	// label names the drawer for screen readers (Label).
+	label   string
 	open    *bool
 	wasOpen bool
 	side    Side
@@ -145,5 +147,12 @@ func (d *Drawer) SwipeToOpen(on bool) *Drawer {
 // for chaining.
 func (d *Drawer) Styles(st styles.Styles) *Drawer {
 	d.st = st
+	return d
+}
+
+// Label names the drawer for screen readers ("Navigation"). It returns
+// d for chaining.
+func (d *Drawer) Label(s string) *Drawer {
+	d.label = s
 	return d
 }

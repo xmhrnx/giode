@@ -80,7 +80,11 @@ func (s *Select) layoutSelf(gtx layout.Context) layout.Dimensions {
 	// Keep the field clickable even inside a frameless window's
 	// whole-window drag area - see button.Layout's identical comment.
 	kit.BlockDrag(gtx, fieldDims.Size)
-	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticSelect, Label: s.Value(), Value: s.Value(), Target: s}, fieldDims.Size)
+	exp := elements.Collapsed
+	if s.open {
+		exp = elements.Expanded
+	}
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticSelect, Label: s.Value(), Value: s.Value(), Expanded: exp, Target: s}, fieldDims.Size)
 
 	if s.open && len(s.options) > 0 {
 		// Back and Escape close the option list.

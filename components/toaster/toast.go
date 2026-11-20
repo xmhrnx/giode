@@ -71,7 +71,14 @@ func (t *Toaster) toastView(ts *toast) elements.Element {
 	}
 	children = append(children,
 		elements.Box(styles.Styles{FlexGrow: 1, Padding: properties.SymmetricInset(12, 10)},
-			elements.Text(ts.msg, styles.Styles{FontSize: st.FontSize})),
+			elements.Accessible(elements.Text(ts.msg, styles.Styles{FontSize: st.FontSize}), func(n *elements.SemanticNode) {
+				// Screen readers announce a new toast: an error at once,
+				// others after what they're reading.
+				n.Kind, n.Live = elements.SemanticStatus, elements.LivePolite
+				if ts.kind == Error {
+					n.Kind, n.Live = elements.SemanticAlert, elements.LiveAssertive
+				}
+			})),
 	)
 	if ts.act != nil {
 		children = append(children, ts.act)
