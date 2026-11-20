@@ -10,6 +10,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 	"image"
 	"runtime"
+	"time"
 )
 
 // SelectAll selects the whole content.
@@ -187,6 +188,9 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 		}
 	}
 	i.applySubmit()
+	if gtx.Source.Enabled() && i.historyKeys(gtx) {
+		changed = true
+	}
 	for {
 		ev, ok := i.editor.Update(gtx)
 		if !ok {
@@ -217,6 +221,13 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 		// which isn't the field losing it.
 		return changed
 	}
+	i.rtl = kit.RTL(gtx)
+	now := gtx.Now
+	if now.IsZero() {
+		now = time.Now()
+	}
+	sa, sb := i.editor.Selection()
+	i.hist.note(i.editor.Text(), sa, sb, now)
 	focused := gtx.Source.Focused(&i.editor)
 	if focused != i.focused {
 		changed = true

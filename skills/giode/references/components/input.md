@@ -78,6 +78,16 @@ composer.OnPaste(func(pasteText func()) {
 
 A read-only field doesn't paste and doesn't call `fn`.
 
+**Editing.** Ctrl+Z (Command+Z) undoes and Ctrl+Shift+Z or Ctrl+Y redoes, a word at a time
+for typing and deleting; `Undo`, `Redo`, `CanUndo` and `CanRedo` do the same from code, and
+the touch edit menu offers them. `SetText` starts the history over. Ctrl+Left and Ctrl+Right
+(Option on Apple systems) move by word, with Shift to select, and Ctrl+Backspace and
+Ctrl+Delete delete a word; words are letters of any script, so Persian, Arabic and CJK text
+step as English does. Input methods work as the platform's own fields: Chinese, Japanese and
+Korean composition, Persian and Arabic keyboards, and Android and iOS predictive text and
+autocorrect replacing the word being typed. Mixed right-to-left and left-to-right text
+moves the caret through every position and selects by logical order.
+
 Styles: `Color` (text), `Background` (fill), `BorderWidth`/`BorderColor`/`BorderRadius`
 (frame, 1px border by default), `Padding` (12x8 by default). Expands to the available
 width; set `Width` to fix it.

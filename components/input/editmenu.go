@@ -198,6 +198,12 @@ func (m *editMenu) do(gtx layout.Context, in *Input, action string) {
 	case "select_all":
 		ed.SetCaret(ed.Len(), 0)
 		// Stay open for Cut or Copy.
+	case "undo":
+		in.Undo()
+		m.close()
+	case "redo":
+		in.Redo()
+		m.close()
 	}
 	kit.RequestFrame(gtx)
 }
@@ -218,6 +224,12 @@ func (m *editMenu) actions(in *Input) []string {
 	}
 	if n := ed.Len(); n > 0 && ed.SelectionLen() < n {
 		out = append(out, "select_all")
+	}
+	if !ed.ReadOnly && in.CanUndo() {
+		out = append(out, "undo")
+	}
+	if !ed.ReadOnly && in.CanRedo() {
+		out = append(out, "redo")
 	}
 	return out
 }

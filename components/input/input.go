@@ -20,6 +20,8 @@ type Input struct {
 
 	pass        func(gtx layout.Context) bool
 	editor      widget.Editor
+	hist        history
+	rtl         bool
 	placeholder string
 	label       string
 	// required and invalid mark the field for screen readers; invalid
@@ -85,6 +87,8 @@ func (i *Input) SetText(s string) {
 	i.editor.SetText(s)
 	n := i.editor.Len()
 	i.editor.SetCaret(n, n)
+	// Text the app sets starts the undo history over.
+	i.hist.reset()
 }
 
 // Submit sets the handler invoked when Enter is pressed in a
