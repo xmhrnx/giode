@@ -21,6 +21,7 @@ import (
 	"github.com/xmhrnx/giode/i18n"
 	"github.com/xmhrnx/giode/internal/platform/a11y"
 	"github.com/xmhrnx/giode/internal/platform/filedrag"
+	"github.com/xmhrnx/giode/internal/platform/giopatch"
 	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/state"
 	"github.com/xmhrnx/giode/styles/properties"
@@ -224,7 +225,7 @@ func New(cfg Config) *App {
 	// Until the first frame, the window shows the app's background
 	// (theme tokens resolved now) rather than the platform's white.
 	if !cfg.Transparent {
-		setNativeBackground(properties.CalcColor(cfg.Background), true)
+		giopatch.SetBackground(properties.CalcColor(cfg.Background), true)
 	}
 	a.window = new(app.Window)
 	a.SetMaxFPS(cfg.MaxFPS)

@@ -30,7 +30,7 @@ func Install(prefix, exe string, actions []Action) error {
 		k.Close()
 		if arg == "%1" {
 			// Files and folders: Explorer drops the whole selection on
-			// the app's COM class (see contextserver_windows.go) rather
+			// the app's COM class (see server_windows.go) rather
 			// than starting a copy per item with the command below,
 			// which stays for programs that only run commands.
 			clsid := CLSID(prefix, id)

@@ -9,7 +9,7 @@ import (
 )
 
 // The macOS bridge's view of a node: what its NSAccessibilityElement
-// answers, as JSON for the Objective-C side (a11y_macos.m). Kept out of
+// answers, as JSON for the Objective-C side (macos.m). Kept out of
 // the cgo file so it's tested everywhere.
 
 type macNode struct {

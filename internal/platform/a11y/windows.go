@@ -17,7 +17,7 @@ import (
 
 // Screen readers on Windows (Narrator, NVDA, JAWS) through UI
 // Automation: the window answers WM_GETOBJECT with a fragment root whose
-// fragments are the accessibility tree's nodes (see a11y_tree.go). Each
+// fragments are the accessibility tree's nodes (see tree.go). Each
 // node is a COM object implementing the provider interfaces and the
 // control patterns its kind takes. UI Automation calls them from its
 // own threads; they read the tree under its lock and run actions on the

@@ -11,7 +11,7 @@ import (
 )
 
 // TalkBack on Android: giode's patched GioView fills its virtual
-// accessibility nodes from the tree (see a11y_tree.go), and runs their
+// accessibility nodes from the tree (see tree.go), and runs their
 // actions here.
 // Install sets the tree up for the platform's bridge.
 func Install(a Host) *Tree {

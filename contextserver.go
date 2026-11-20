@@ -9,7 +9,7 @@ import (
 // Explorer starts a program once per selected file for a command-line
 // verb, so on Windows the context actions on files and folders are
 // DropTarget verbs instead: Explorer hands every selected item to a COM
-// class the running app registers (contextserver_windows.go), starting
+// class the running app registers (internal/platform/ctxmenu), starting
 // the app first - with -Embedding - only when it isn't running. Each
 // action's class ID is derived from the app's prefix and the action's
 // ID, the same way the giode CLI's installer derives it.

@@ -1,6 +1,6 @@
 //go:build giode_gio4
 
-package giode
+package giopatch
 
 import (
 	"gioui.org/app"

@@ -23,7 +23,7 @@ import (
 
 // Screen readers on Linux (Orca) through AT-SPI: the app connects to the
 // accessibility bus, exports an application object, a frame for its
-// window and an object per tree node (a11y_tree.go), and embeds itself
+// window and an object per tree node (tree.go), and embeds itself
 // in the registry. Objects answer the Accessible, Component, Action,
 // Value, Text and EditableText interfaces from the tree; focus, state,
 // value changes and announcements go out as AT-SPI events after each

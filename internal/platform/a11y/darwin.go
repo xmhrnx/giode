@@ -26,7 +26,7 @@ import (
 )
 
 // VoiceOver on macOS and iOS: Giode gives Gio's view accessibility
-// elements (a11y_macos.m, a11y_ios.m) that read the tree (a11y_tree.go)
+// elements (macos.m, ios.m) that read the tree (tree.go)
 // through the exported functions here, on the main thread. The first
 // time VoiceOver or another assistive app asks for them, frames start
 // recording the tree. Views are known by a handle: the NSView on macOS,

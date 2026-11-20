@@ -18,7 +18,7 @@ import (
 // IDropTarget objects. Explorer's DropTarget verb drops the selection on
 // one: Drop runs the action with every selected path, in this process.
 // The objects are built by hand, vtables of Go callbacks, as the
-// window's drop target is (drop_ole_windows.go).
+// window's drop target is (internal/platform/filedrag).
 
 var (
 	ole32                     = windows.NewLazySystemDLL("ole32.dll")
