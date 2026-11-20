@@ -1,13 +1,9 @@
 package giode
 
-import "image"
+import (
+	"image"
 
-// OpenGL enums for reading a frame back.
-const (
-	glFramebufferBinding = 0x8CA6
-	glFramebuffer        = 0x8D40
-	glRGBA               = 0x1908
-	glUnsignedByte       = 0x1401
+	"github.com/xmhrnx/giode/internal/platform/gl"
 )
 
 // readFramebuffer reads an OpenGL target's pixels into an image, top
@@ -18,7 +14,7 @@ func readFramebuffer(t GPUTarget) *image.RGBA {
 		return nil
 	}
 	buf := make([]byte, w*h*4)
-	if !glReadPixels(t.Framebuffer, w, h, buf) {
+	if !gl.ReadPixels(t.Framebuffer, w, h, buf) {
 		return nil
 	}
 	img := image.NewRGBA(image.Rect(0, 0, w, h))

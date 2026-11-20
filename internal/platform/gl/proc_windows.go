@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package gl
 
 import (
 	"syscall"
@@ -17,7 +17,8 @@ var (
 	procEGLGetProcAddress = libEGL.NewProc("eglGetProcAddress")
 )
 
-func glGetProcAddress(name string) unsafe.Pointer {
+// GetProcAddress returns an OpenGL function, or nil.
+func GetProcAddress(name string) unsafe.Pointer {
 	cname, err := windows.BytePtrFromString(name)
 	if err != nil {
 		return nil
@@ -38,10 +39,10 @@ func ptr(addr uintptr) unsafe.Pointer {
 	return *(*unsafe.Pointer)(unsafe.Pointer(&addr))
 }
 
-// glReadPixels reads framebuffer fb's pixels, bottom row first, into
+// ReadPixels reads framebuffer fb's pixels, bottom row first, into
 // out (w*h*4 bytes of RGBA).
-func glReadPixels(fb uint32, w, h int, out []byte) bool {
-	getiv, bind, read := glGetProcAddress("glGetIntegerv"), glGetProcAddress("glBindFramebuffer"), glGetProcAddress("glReadPixels")
+func ReadPixels(fb uint32, w, h int, out []byte) bool {
+	getiv, bind, read := GetProcAddress("glGetIntegerv"), GetProcAddress("glBindFramebuffer"), GetProcAddress("glReadPixels")
 	if getiv == nil || bind == nil || read == nil {
 		return false
 	}

@@ -1,6 +1,6 @@
 //go:build linux || android || freebsd || openbsd || netbsd || darwin
 
-package giode
+package gl
 
 /*
 typedef void (*giode_getiv)(unsigned int, int *);
@@ -19,10 +19,10 @@ import "C"
 
 import "unsafe"
 
-// glReadPixels reads framebuffer fb's pixels, bottom row first, into
+// ReadPixels reads framebuffer fb's pixels, bottom row first, into
 // out (w*h*4 bytes of RGBA).
-func glReadPixels(fb uint32, w, h int, out []byte) bool {
-	getiv, bind, read := glGetProcAddress("glGetIntegerv"), glGetProcAddress("glBindFramebuffer"), glGetProcAddress("glReadPixels")
+func ReadPixels(fb uint32, w, h int, out []byte) bool {
+	getiv, bind, read := GetProcAddress("glGetIntegerv"), GetProcAddress("glBindFramebuffer"), GetProcAddress("glReadPixels")
 	if getiv == nil || bind == nil || read == nil {
 		return false
 	}

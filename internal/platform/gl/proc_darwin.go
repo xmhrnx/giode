@@ -1,6 +1,6 @@
 //go:build darwin
 
-package giode
+package gl
 
 /*
 #include <dlfcn.h>
@@ -30,7 +30,8 @@ import (
 
 var glOpen sync.Once
 
-func glGetProcAddress(name string) unsafe.Pointer {
+// GetProcAddress returns an OpenGL function, or nil.
+func GetProcAddress(name string) unsafe.Pointer {
 	glOpen.Do(func() { C.giode_gl_open() })
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))

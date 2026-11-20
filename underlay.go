@@ -4,6 +4,8 @@ import (
 	"errors"
 	"image"
 	"unsafe"
+
+	"github.com/xmhrnx/giode/internal/platform/gl"
 )
 
 // GPUAPI is the graphics API of a window's GPU context.
@@ -41,7 +43,7 @@ type GPUTarget struct {
 func gpuTarget(api int, fb uint32, handle uintptr, w, h int) GPUTarget {
 	t := GPUTarget{API: GPUAPI(api), Framebuffer: fb, Texture: handle, Size: image.Pt(w, h)}
 	if t.API == GPUOpenGL {
-		t.GetProcAddress = glGetProcAddress
+		t.GetProcAddress = gl.GetProcAddress
 	}
 	return t
 }
