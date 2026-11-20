@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package window
 
 import (
 	"image"
@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	user32                 = windows.NewLazySystemDLL("user32.dll")
 	gdi32                  = windows.NewLazySystemDLL("gdi32.dll")
 	procCreateIconIndirect = user32.NewProc("CreateIconIndirect")
 	procPostMessageW       = user32.NewProc("PostMessageW")
@@ -56,26 +55,18 @@ type bitmapInfo struct {
 	colors [1]uint32
 }
 
-// platformView applies the configured icon and file drop once the
-// platform window handle is known.
-func (a *App) platformView(ev appViewEvent) {
-	if !ev.Valid() {
-		return
-	}
-	wev, ok := ev.(win32ViewEvent)
+// SetIcon converts img to an icon and assigns it to the window with
+// WM_SETICON, reporting whether it could.
+func SetIcon(view app.ViewEvent, img image.Image) bool {
+	wev, ok := view.(app.Win32ViewEvent)
 	if !ok || wev.HWND == 0 {
-		return
+		return false
 	}
-	if a.icon != nil && !a.iconApplied {
-		applyWindowIcon(wev.HWND, a.icon)
-		a.iconApplied = true
-	}
-	a.enableFileDrop(wev.HWND)
+	setIcon(wev.HWND, img)
+	return true
 }
 
-// applyWindowIcon converts img to an icon and assigns it to the
-// window with WM_SETICON.
-func applyWindowIcon(hwnd uintptr, img image.Image) {
+func setIcon(hwnd uintptr, img image.Image) {
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
 	if w <= 0 || h <= 0 || w > 256 || h > 256 {

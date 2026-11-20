@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package ctxmenu
 
 import (
 	"os"
@@ -12,6 +12,8 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
+	"github.com/xmhrnx/giode/internal/winrt"
 	"golang.org/x/sys/windows"
 )
 
@@ -38,12 +40,9 @@ func TestContextActionServer(t *testing.T) {
 		paths []string
 	}
 	got := make(chan drop, 2)
-	contextDropHook = func(id string, p []string) { got <- drop{id, p} }
-	defer func() { contextDropHook = nil }()
-
-	a := &App{cfg: Config{ContextActions: []ContextAction{{ID: "send", Label: "Send"}}}}
-	a.serveContextActions()
-	defer a.stopContextActions()
+	const prefix = "giode-test-server"
+	Serve(prefix, []string{"send"}, func(id string, p []string) { got <- drop{id, p} }, t.Logf)
+	defer StopServing()
 	time.Sleep(300 * time.Millisecond) // the registrations run on their own thread
 
 	runtime.LockOSThread()
@@ -52,23 +51,23 @@ func TestContextActionServer(t *testing.T) {
 	defer windows.CoUninitialize()
 
 	var clsid windows.GUID
-	s, _ := windows.UTF16PtrFromString(ContextActionCLSID(a.contextActionPrefix(), "send"))
+	s, _ := windows.UTF16PtrFromString(CLSID(prefix, "send"))
 	procCLSIDFromString.Call(uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&clsid)))
 	var target unsafe.Pointer
 	if hr, _, _ := procCoCreateInstance2.Call(uintptr(unsafe.Pointer(&clsid)), 0, clsctxLocalServer,
-		uintptr(unsafe.Pointer(&iidIDropTarget)), uintptr(unsafe.Pointer(&target))); hr != sOK {
+		uintptr(unsafe.Pointer(&filedrag.IIDDropTarget)), uintptr(unsafe.Pointer(&target))); hr != filedrag.SOK {
 		t.Fatalf("CoCreateInstance: 0x%x", hr)
 	}
-	defer comCall(target, 2)
+	defer winrt.ComCall(target, 2)
 
 	// A data object carrying the two files as CF_HDROP, as Explorer's
 	// does (Wine has no SHCreateDataObject to build one).
 	data := newTestDataObject(paths)
 
-	effect := uint32(dropEffectCopy)
+	effect := uint32(filedrag.DropEffectCopy)
 	const mkLButton = 1
-	comCall(target, 3, uintptr(data), mkLButton, 0, uintptr(unsafe.Pointer(&effect))) // DragEnter
-	if hr := comCall(target, 6, uintptr(data), mkLButton, 0, uintptr(unsafe.Pointer(&effect))); hr != sOK {
+	winrt.ComCall(target, 3, uintptr(data), mkLButton, 0, uintptr(unsafe.Pointer(&effect))) // DragEnter
+	if hr := winrt.ComCall(target, 6, uintptr(data), mkLButton, 0, uintptr(unsafe.Pointer(&effect))); hr != filedrag.SOK {
 		t.Fatalf("Drop: 0x%x", hr)
 	}
 	select {
@@ -107,7 +106,7 @@ func newTestDataObject(paths []string) unsafe.Pointer {
 			windows.NewCallback(func(this *testDataObject, riid *windows.GUID, out *unsafe.Pointer) uintptr {
 				if *riid == iidIUnknown || *riid == iidIDataObject {
 					*out = unsafe.Pointer(this)
-					return sOK
+					return filedrag.SOK
 				}
 				*out = nil
 				return eNoInterface
@@ -118,7 +117,7 @@ func newTestDataObject(paths []string) unsafe.Pointer {
 			notImpl3, // GetDataHere
 			windows.NewCallback(func(this uintptr, f *formatEtc) uintptr {
 				if f.format == cfHDROP {
-					return sOK
+					return filedrag.SOK
 				}
 				return 0x80040064 // DV_E_FORMATETC
 			}),
@@ -157,5 +156,29 @@ func testDataGetData(this *testDataObject, f *formatEtc, m *stgMedium) uintptr {
 	copy(buf[header:], unsafe.Slice((*byte)(unsafe.Pointer(&list[0])), 2*len(list)))
 	procGlobalUnlock.Call(h)
 	m.tymed, m.handle, m.release = tymedHGlobal, h, 0
-	return sOK
+	return filedrag.SOK
 }
+
+// The OLE types and constants the test data object needs.
+type formatEtc struct {
+	format uint16
+	ptd    uintptr
+	aspect uint32
+	index  int32
+	tymed  uint32
+}
+
+type stgMedium struct {
+	tymed   uint32
+	handle  uintptr
+	release uintptr
+}
+
+const (
+	cfHDROP      = 15
+	tymedHGlobal = 1
+	gmemMoveable = 0x0002
+	eNoInterface = 0x80004002
+)
+
+var iidIUnknown = windows.GUID{Data1: 0x00000000, Data4: [8]byte{0xC0, 0, 0, 0, 0, 0, 0, 0x46}}

@@ -1,6 +1,6 @@
 //go:build darwin && !ios
 
-package giode
+package filedrag
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
@@ -21,6 +21,7 @@ import (
 	"gioui.org/app"
 
 	"github.com/xmhrnx/giode/elements/dnd"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // Dragging out of the window on macOS (Draggable.Export): an
@@ -32,14 +33,16 @@ var (
 	exportDone func(bool)
 )
 
-func installExporter(a *App) {
+// InstallExporter lets Draggable.Export drag out of the window; done
+// runs through post, on the UI goroutine.
+func InstallExporter(h platform.Host) {
 	dnd.SetExporter(func(data dnd.ExportData, done func(bool)) bool {
-		v, ok := a.NativeView().(app.AppKitViewEvent)
+		v, ok := h.NativeView().(app.AppKitViewEvent)
 		if !ok || v.View == 0 {
 			return false
 		}
 		exportMu.Lock()
-		exportDone = func(dropped bool) { a.Post(func() { done(dropped) }) }
+		exportDone = func(dropped bool) { h.Post(func() { done(dropped) }) }
 		exportMu.Unlock()
 		files := C.CString(strings.Join(data.Files, "\n"))
 		text := C.CString(data.Text)

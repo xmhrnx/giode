@@ -1106,3 +1106,17 @@ func fromCursor(this unsafe.Pointer, out *unsafe.Pointer) uintptr {
 	*out = o.b.fromScreen(pt[0], pt[1])
 	return sOK
 }
+
+// COM results and interfaces the UI Automation providers use.
+const (
+	sOK          = 0
+	eNoInterface = 0x80004002
+	eFail        = 0x80004005
+)
+
+var iidIUnknown = windows.GUID{Data1: 0x00000000, Data4: [8]byte{0xC0, 0, 0, 0, 0, 0, 0, 0x46}}
+
+var (
+	procGetCursorPos   = user32.NewProc("GetCursorPos")
+	procScreenToClient = user32.NewProc("ScreenToClient")
+)

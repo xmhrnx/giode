@@ -6,6 +6,10 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+
+	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
+	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
 // decodeIcon parses PNG or JPEG icon bytes into an image.
@@ -27,4 +31,36 @@ func (a *App) setIconBytes(data []byte) {
 		return
 	}
 	a.icon = img
+}
+
+// platformView handles the native window once it exists: the icon
+// (Windows; elsewhere it comes from the application bundle), the
+// window procedure (Windows) and file drops.
+func (a *App) platformView(ev app.ViewEvent) {
+	if !ev.Valid() {
+		return
+	}
+	if a.icon != nil && !a.iconApplied && window.SetIcon(ev, a.icon) {
+		a.iconApplied = true
+	}
+	if viewHook != nil {
+		viewHook(a, ev)
+	}
+	if a.fileDragWanted() {
+		if why := filedrag.ViewReady(ev); why != "" {
+			a.warnNoFileDrop(why)
+		}
+	}
+}
+
+// viewHook, where set, runs as the native window appears (Windows
+// subclasses it).
+var viewHook func(*App, app.ViewEvent)
+
+// warnNoFileDrop logs, once, that file drops won't arrive.
+func (a *App) warnNoFileDrop(why string) {
+	if !a.dropWarned {
+		a.dropWarned = true
+		a.logf(LogLevelWarning, "giode: Config.OnFileDrop and OnFileDrag %s", why)
+	}
 }

@@ -1,14 +1,13 @@
 package giode
 
 import (
-	"net/url"
-	"strings"
 	"sync"
 
 	"gioui.org/f32"
 
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/elements/dnd"
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
 )
 
 // FileDragKind is the stage of a FileDrag.
@@ -125,22 +124,15 @@ func (a *App) deliverFileDrop(paths []string, pos f32.Point) {
 	})
 }
 
-// parseURIList reads the local paths of a text/uri-list, the format
-// of X11 and Wayland drops.
-func parseURIList(list string) []string {
-	var paths []string
-	for _, line := range strings.Split(list, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		u, err := url.Parse(line)
-		if err != nil || u.Scheme != "file" || (u.Host != "" && u.Host != "localhost") {
-			continue
-		}
-		if u.Path != "" {
-			paths = append(paths, u.Path)
+func init() {
+	filedrag.Handler.Drag = func(kind filedrag.Kind, x, y float32) {
+		if a := currentApp.Load(); a != nil {
+			a.deliverFileDrag(FileDragKind(kind), f32.Pt(x, y))
 		}
 	}
-	return paths
+	filedrag.Handler.Drop = func(paths []string, x, y float32) {
+		if a := currentApp.Load(); a != nil {
+			a.deliverFileDrop(paths, f32.Pt(x, y))
+		}
+	}
 }

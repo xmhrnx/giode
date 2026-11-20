@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package ctxmenu
 
 import (
 	"runtime"
@@ -9,6 +9,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"golang.org/x/sys/windows"
 )
 
@@ -20,6 +21,7 @@ import (
 // window's drop target is (drop_ole_windows.go).
 
 var (
+	ole32                     = windows.NewLazySystemDLL("ole32.dll")
 	procCoRegisterClassObject = ole32.NewProc("CoRegisterClassObject")
 	procCoRevokeClassObject   = ole32.NewProc("CoRevokeClassObject")
 	procCLSIDFromString       = ole32.NewProc("CLSIDFromString")
@@ -41,14 +43,14 @@ var iidIClassFactory = windows.GUID{Data1: 0x00000001, Data4: [8]byte{0xC0, 0, 0
 // comFactory is an IClassFactory for one action.
 type comFactory struct {
 	vtbl *[5]uintptr
-	app  *App
+	run  func(id string, paths []string)
 	id   string
 }
 
 // comTarget is an IDropTarget for one drop.
 type comTarget struct {
 	vtbl *[contextServerVtblSize]uintptr
-	app  *App
+	run  func(id string, paths []string)
 	id   string
 	refs atomic.Int32
 }
@@ -69,7 +71,6 @@ var (
 )
 
 // contextDropHook, set by tests, takes drops instead of the app.
-var contextDropHook func(id string, paths []string)
 
 func initCOMVtables() {
 	factoryVtbl = &[5]uintptr{
@@ -102,34 +103,24 @@ func dropCOM(p unsafe.Pointer) {
 	comObjectsMu.Unlock()
 }
 
-// serveContextActions registers the class objects of the app's context
-// actions on files and folders, for the app's lifetime, so Explorer
-// hands a whole selection to this instance. Only the first instance
-// serves them.
-func (a *App) serveContextActions() {
+// Serve registers the class objects of the context actions ids on
+// files and folders, for the app's lifetime, so Explorer hands a whole
+// selection to this instance: run gets each drop. Only the first
+// instance serves them.
+func Serve(prefix string, ids []string, run func(id string, paths []string), logf func(format string, args ...any)) {
 	// POINTL arrives by value, in one register on 64-bit systems only.
-	if unsafe.Sizeof(uintptr(0)) != 8 {
-		return
-	}
-	var ids []string
-	for _, c := range a.ContextActions() {
-		if c.onFiles() || c.Folders {
-			ids = append(ids, c.ID)
-		}
-	}
-	if len(ids) == 0 {
+	if unsafe.Sizeof(uintptr(0)) != 8 || len(ids) == 0 {
 		return
 	}
 	contextServer.Do(func() {
 		comOnce.Do(initCOMVtables)
-		prefix := a.contextActionPrefix()
 		contextServerStarted.Store(true)
 		go func() {
 			// An apartment-free (multithreaded) server: COM calls the
 			// objects on its own threads, with no message loop to run.
 			runtime.LockOSThread()
 			if err := windows.CoInitializeEx(0, coinitMultithreaded|coinitDisableOLE1DDE); err != nil {
-				a.logf(LogLevelWarning, "giode: context actions' COM server: %v", err)
+				logf("giode: context actions' COM server: %v", err)
 				return
 			}
 			defer close(contextServerDone)
@@ -137,17 +128,17 @@ func (a *App) serveContextActions() {
 			var cookies []uint32
 			for _, id := range ids {
 				var clsid windows.GUID
-				s, _ := windows.UTF16PtrFromString(ContextActionCLSID(prefix, id))
-				if hr, _, _ := procCLSIDFromString.Call(uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&clsid))); hr != sOK {
+				s, _ := windows.UTF16PtrFromString(CLSID(prefix, id))
+				if hr, _, _ := procCLSIDFromString.Call(uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&clsid))); hr != filedrag.SOK {
 					continue
 				}
-				f := &comFactory{vtbl: factoryVtbl, app: a, id: id}
+				f := &comFactory{vtbl: factoryVtbl, run: run, id: id}
 				keepCOM(unsafe.Pointer(f), f)
 				var cookie uint32
 				hr, _, _ := procCoRegisterClassObject.Call(uintptr(unsafe.Pointer(&clsid)), uintptr(unsafe.Pointer(f)),
 					clsctxLocalServer, regclsMultipleUse, uintptr(unsafe.Pointer(&cookie)))
-				if hr != sOK {
-					a.logf(LogLevelWarning, "giode: registering context action %q with COM failed (0x%x)", id, hr)
+				if hr != filedrag.SOK {
+					logf("giode: registering context action %q with COM failed (0x%x)", id, hr)
 					continue
 				}
 				cookies = append(cookies, cookie)
@@ -160,11 +151,11 @@ func (a *App) serveContextActions() {
 	})
 }
 
-// stopContextActions revokes the context actions' COM classes, when
+// StopServing revokes the context actions' COM classes, when
 // they were registered. The app calls it as it exits.
-func (a *App) stopContextActions() {
+func StopServing() {
 	contextServerStopped.Do(func() {
-		contextServer.Do(func() {}) // a later serveContextActions does nothing
+		contextServer.Do(func() {}) // a later Serve does nothing
 		close(contextServerStop)
 		if contextServerStarted.Load() {
 			select {
@@ -176,12 +167,12 @@ func (a *App) stopContextActions() {
 }
 
 func factoryQueryInterface(this *comFactory, riid *windows.GUID, out *unsafe.Pointer) uintptr {
-	if *riid == iidIUnknown || *riid == iidIClassFactory {
+	if *riid == filedrag.IIDUnknown || *riid == iidIClassFactory {
 		*out = unsafe.Pointer(this)
-		return sOK
+		return filedrag.SOK
 	}
 	*out = nil
-	return eNoInterface
+	return filedrag.ENoInterface
 }
 
 // The factories live as long as the process.
@@ -193,26 +184,26 @@ func factoryCreateInstance(this *comFactory, outer unsafe.Pointer, riid *windows
 	if outer != nil {
 		return classENoAggregation
 	}
-	if *riid != iidIUnknown && *riid != iidIDropTarget {
-		return eNoInterface
+	if *riid != filedrag.IIDUnknown && *riid != filedrag.IIDDropTarget {
+		return filedrag.ENoInterface
 	}
-	t := &comTarget{vtbl: targetVtbl, app: this.app, id: this.id}
+	t := &comTarget{vtbl: targetVtbl, run: this.run, id: this.id}
 	t.refs.Store(1)
 	keepCOM(unsafe.Pointer(t), t)
 	*out = unsafe.Pointer(t)
-	return sOK
+	return filedrag.SOK
 }
 
-func factoryLockServer(this *comFactory, lock uintptr) uintptr { return sOK }
+func factoryLockServer(this *comFactory, lock uintptr) uintptr { return filedrag.SOK }
 
 func targetQueryInterface(this *comTarget, riid *windows.GUID, out *unsafe.Pointer) uintptr {
-	if *riid == iidIUnknown || *riid == iidIDropTarget {
+	if *riid == filedrag.IIDUnknown || *riid == filedrag.IIDDropTarget {
 		this.refs.Add(1)
 		*out = unsafe.Pointer(this)
-		return sOK
+		return filedrag.SOK
 	}
 	*out = nil
-	return eNoInterface
+	return filedrag.ENoInterface
 }
 
 func targetAddRef(this *comTarget) uintptr { return uintptr(this.refs.Add(1)) }
@@ -227,40 +218,24 @@ func targetRelease(this *comTarget) uintptr {
 }
 
 func targetDragEnter(this *comTarget, data unsafe.Pointer, keys, pt uintptr, effect *uint32) uintptr {
-	*effect = dropEffectCopy
-	return sOK
+	*effect = filedrag.DropEffectCopy
+	return filedrag.SOK
 }
 
 func targetDragOver(this *comTarget, keys, pt uintptr, effect *uint32) uintptr {
-	*effect = dropEffectCopy
-	return sOK
+	*effect = filedrag.DropEffectCopy
+	return filedrag.SOK
 }
 
-func targetDragLeave(this *comTarget) uintptr { return sOK }
+func targetDragLeave(this *comTarget) uintptr { return filedrag.SOK }
 
 // targetDrop runs the action with the dropped selection and brings the
 // window to the front.
 func targetDrop(this *comTarget, data unsafe.Pointer, keys, pt uintptr, effect *uint32) uintptr {
-	var paths []string
-	if data != nil {
-		f := hdropFormat()
-		var m stgMedium
-		if comCall(data, dataObjGetData, uintptr(unsafe.Pointer(&f)), uintptr(unsafe.Pointer(&m))) == sOK {
-			if m.tymed == tymedHGlobal && m.handle != 0 {
-				paths = readDrop(m.handle)
-			}
-			procReleaseStgMedium.Call(uintptr(unsafe.Pointer(&m)))
-		}
+	paths := filedrag.DataObjectPaths(data)
+	*effect = filedrag.DropEffectCopy
+	if len(paths) > 0 {
+		this.run(this.id, paths)
 	}
-	*effect = dropEffectCopy
-	if len(paths) == 0 {
-		return sOK
-	}
-	if contextDropHook != nil {
-		contextDropHook(this.id, paths)
-		return sOK
-	}
-	this.app.runContextAction(append([]string{contextActionFlag + this.id}, paths...))
-	this.app.showFromLaunch()
-	return sOK
+	return filedrag.SOK
 }

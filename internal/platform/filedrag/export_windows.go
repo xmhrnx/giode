@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package filedrag
 
 import (
 	"sync"
@@ -10,6 +10,8 @@ import (
 	"golang.org/x/sys/windows"
 
 	"github.com/xmhrnx/giode/elements/dnd"
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/winrt"
 )
 
 // Dragging out of the window on Windows (Draggable.Export): the shell's
@@ -30,7 +32,6 @@ var (
 )
 
 const (
-	wmStartDrag    = wmRegisterOLE + 1
 	wmLButtonUp    = 0x0202
 	cfUnicodeText  = 13
 	gmemMoveable   = 0x0002
@@ -53,26 +54,28 @@ var (
 	exportJobs = map[uintptr]*exportJob{}
 )
 
-func installExporter(a *App) {
+// Subclassed reports whether the app's window procedure handles
+// WMStartDrag for hwnd.
+var Subclassed func(hwnd uintptr) bool
+
+// InstallExporter lets Draggable.Export drag out of the window.
+func InstallExporter(h platform.Host) {
 	dnd.SetExporter(func(data dnd.ExportData, done func(bool)) bool {
-		hwnd := a.NativeHandle()
-		dropMu.Lock()
-		_, subclassed := dropWindows[hwnd]
-		dropMu.Unlock()
-		if hwnd == 0 || !subclassed {
+		hwnd := h.NativeHandle()
+		if hwnd == 0 || Subclassed == nil || !Subclassed(hwnd) {
 			return false
 		}
 		exportMu.Lock()
 		exportJobs[hwnd] = &exportJob{data: data, done: done}
 		exportMu.Unlock()
-		r, _, _ := procPostMessageW.Call(hwnd, wmStartDrag, 0, 0)
+		r, _, _ := procPostMessageW.Call(hwnd, WMStartDrag, 0, 0)
 		return r != 0
 	})
 }
 
-// runExport runs the drag waiting for hwnd, on its thread. It returns
-// when the drag ends.
-func runExport(a *App, hwnd uintptr) {
+// RunExport runs the drag waiting for hwnd, on its thread (WMStartDrag).
+// It returns when the drag ends.
+func RunExport(h platform.Host, hwnd uintptr) {
 	exportMu.Lock()
 	job := exportJobs[hwnd]
 	delete(exportJobs, hwnd)
@@ -88,15 +91,15 @@ func runExport(a *App, hwnd uintptr) {
 		procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
 		procScreenToClient.Call(hwnd, uintptr(unsafe.Pointer(&pt)))
 		procPostMessageW.Call(hwnd, wmLButtonUp, 0, uintptr(uint16(pt[0]))|uintptr(uint16(pt[1]))<<16)
-		a.Post(func() { job.done(dropped) })
+		h.Post(func() { job.done(dropped) })
 	}()
 	procOleInitialize.Call(0)
 	var obj unsafe.Pointer
 	if hr, _, _ := procSHCreateDataObject.Call(0, 0, 0, 0, uintptr(unsafe.Pointer(&iidDataObjectExport)), uintptr(unsafe.Pointer(&obj))); hr != sOK || obj == nil {
-		a.logf(LogLevelWarning, "giode: drag out unavailable: SHCreateDataObject failed (0x%x)", hr)
+		h.Logf(platform.Warning, "giode: drag out unavailable: SHCreateDataObject failed (0x%x)", hr)
 		return
 	}
-	defer comCall(obj, unknownRelease)
+	defer winrt.ComCall(obj, unknownRelease)
 	if len(job.data.Files) > 0 {
 		setGlobal(obj, cfHDROP, dropFiles(job.data.Files))
 	}
@@ -123,7 +126,7 @@ func setGlobal(obj unsafe.Pointer, format uint16, data []byte) {
 	procGlobalUnlockExport.Call(h)
 	fe := formatEtc{format: format, aspect: dvaspectContent, index: -1, tymed: tymedHGlobal}
 	med := stgMedium{tymed: tymedHGlobal, handle: h}
-	if hr := comCall(obj, dataObjSetData, uintptr(unsafe.Pointer(&fe)), uintptr(unsafe.Pointer(&med)), 1); hr != sOK {
+	if hr := winrt.ComCall(obj, dataObjSetData, uintptr(unsafe.Pointer(&fe)), uintptr(unsafe.Pointer(&med)), 1); hr != sOK {
 		procGlobalFreeExport.Call(h)
 	}
 }

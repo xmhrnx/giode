@@ -1,7 +1,6 @@
 package giode
 
 import (
-	"github.com/xmhrnx/giode/fonts"
 	"image"
 	"image/color"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/xmhrnx/giode/fonts"
 
 	"gioui.org/app"
 	"gioui.org/io/system"
@@ -18,6 +19,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/host"
 	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/internal/textrender"
 	"github.com/xmhrnx/giode/state"
 	"github.com/xmhrnx/giode/styles/properties"
@@ -213,8 +215,10 @@ func New(cfg Config) *App {
 		a.secondInstance = a.instance.Running()
 	}
 	a.rendererErr = setupRenderer(cfg)
-	installFileDrag(a)
-	installExporter(a)
+	if a.fileDragWanted() {
+		filedrag.Install()
+	}
+	filedrag.InstallExporter(a.host())
 	installA11y(a)
 	// Until the first frame, the window shows the app's background
 	// (theme tokens resolved now) rather than the platform's white.

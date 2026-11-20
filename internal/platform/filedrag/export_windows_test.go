@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package filedrag
 
 import (
 	"encoding/binary"

@@ -1,6 +1,6 @@
 //go:build darwin && !ios
 
-package giode
+package filedrag
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
@@ -17,33 +17,30 @@ import (
 	"sync"
 
 	"gioui.org/app"
-	"gioui.org/f32"
 )
 
 var fileDropOnce sync.Once
 
-func installFileDrag(a *App) {}
+func Install() {}
 
-func (a *App) fileDropView(ev app.ViewEvent) {
+// ViewReady makes Gio's view a dragging destination.
+func ViewReady(ev app.ViewEvent) string {
 	if v, ok := ev.(app.AppKitViewEvent); ok && v.View != 0 {
 		fileDropOnce.Do(func() { C.giodeEnableFileDrop(C.uintptr_t(v.View)) })
 	}
+	return ""
 }
 
 //export giodeFileDragEvent
 func giodeFileDragEvent(kind C.int, x, y C.double) {
-	if a := currentApp.Load(); a != nil {
-		a.deliverFileDrag(FileDragKind(kind), f32.Pt(float32(x), float32(y)))
-	}
+	drag(Kind(kind), float32(x), float32(y))
 }
 
 //export giodeFileDrop
 func giodeFileDrop(paths *C.char, x, y C.double) {
-	if a := currentApp.Load(); a != nil {
-		list := strings.Split(strings.TrimSuffix(C.GoString(paths), "\n"), "\n")
-		if len(list) == 1 && list[0] == "" {
-			list = nil
-		}
-		a.deliverFileDrop(list, f32.Pt(float32(x), float32(y)))
+	list := strings.Split(strings.TrimSuffix(C.GoString(paths), "\n"), "\n")
+	if len(list) == 1 && list[0] == "" {
+		list = nil
 	}
+	drop(list, float32(x), float32(y))
 }

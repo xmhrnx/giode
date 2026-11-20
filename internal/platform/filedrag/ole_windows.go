@@ -1,13 +1,12 @@
 //go:build windows
 
-package giode
+package filedrag
 
 import (
 	"sync"
-	"syscall"
 	"unsafe"
 
-	"gioui.org/f32"
+	"github.com/xmhrnx/giode/internal/winrt"
 	"golang.org/x/sys/windows"
 )
 
@@ -22,6 +21,13 @@ var (
 	procRevokeDragDrop   = ole32.NewProc("RevokeDragDrop")
 	procReleaseStgMedium = ole32.NewProc("ReleaseStgMedium")
 	procScreenToClient   = user32.NewProc("ScreenToClient")
+	user32               = windows.NewLazySystemDLL("user32.dll")
+	shell32              = windows.NewLazySystemDLL("shell32.dll")
+	procDragAcceptFiles  = shell32.NewProc("DragAcceptFiles")
+	procDragQueryFileW   = shell32.NewProc("DragQueryFileW")
+	procDragFinish       = shell32.NewProc("DragFinish")
+	procDragQueryPoint   = shell32.NewProc("DragQueryPoint")
+	procPostMessageW     = user32.NewProc("PostMessageW")
 )
 
 const (
@@ -60,7 +66,6 @@ type stgMedium struct {
 type oleDropTarget struct {
 	vtbl  *[7]uintptr
 	hwnd  uintptr
-	app   *App
 	files bool // the drag carries files
 }
 
@@ -70,8 +75,9 @@ var (
 	oleTargets = map[uintptr]*oleDropTarget{} // keeps them alive
 )
 
-// registerOLEDrop runs on the window's thread.
-func registerOLEDrop(a *App, hwnd uintptr) {
+// RegisterOLE registers the window's IDropTarget, for drag enter, over
+// and leave; on the window's thread (WMRegisterOLE).
+func RegisterOLE(hwnd uintptr, logf func(format string, args ...any)) {
 	// POINTL arrives by value: one register on 64-bit systems, which
 	// the callbacks rely on.
 	if unsafe.Sizeof(uintptr(0)) != 8 {
@@ -90,18 +96,19 @@ func registerOLEDrop(a *App, hwnd uintptr) {
 			windows.NewCallback(oleDrop),
 		}
 	}
-	t := &oleDropTarget{vtbl: oleVtbl, hwnd: hwnd, app: a}
+	t := &oleDropTarget{vtbl: oleVtbl, hwnd: hwnd}
 	oleTargets[hwnd] = t
 	oleVtblMu.Unlock()
 	if hr, _, _ := procRegisterDragDrop.Call(hwnd, uintptr(unsafe.Pointer(t))); hr != sOK {
-		a.logf(LogLevelWarning, "giode: drag events unavailable: RegisterDragDrop failed (0x%x)", hr)
+		logf("giode: drag events unavailable: RegisterDragDrop failed (0x%x)", hr)
 		oleVtblMu.Lock()
 		delete(oleTargets, hwnd)
 		oleVtblMu.Unlock()
 	}
 }
 
-func revokeOLEDrop(hwnd uintptr) {
+// RevokeOLE revokes the window's IDropTarget as it goes away.
+func RevokeOLE(hwnd uintptr) {
 	oleVtblMu.Lock()
 	_, ok := oleTargets[hwnd]
 	delete(oleTargets, hwnd)
@@ -126,22 +133,14 @@ func oleAddRef(this *oleDropTarget) uintptr  { return 1 }
 func oleRelease(this *oleDropTarget) uintptr { return 1 }
 
 // clientPos converts a POINTL in screen pixels to window pixels.
-func (t *oleDropTarget) clientPos(pt uintptr) f32.Point {
+func (t *oleDropTarget) clientPos(pt uintptr) (x, y float32) {
 	p := [2]int32{int32(uint32(pt)), int32(uint32(pt >> 32))}
 	procScreenToClient.Call(t.hwnd, uintptr(unsafe.Pointer(&p)))
-	return f32.Pt(float32(p[0]), float32(p[1]))
+	return float32(p[0]), float32(p[1])
 }
 
 func hdropFormat() formatEtc {
 	return formatEtc{format: cfHDROP, aspect: dvaspectContent, index: -1, tymed: tymedHGlobal}
-}
-
-// comCall calls method slot of a COM object.
-func comCall(obj unsafe.Pointer, slot int, args ...uintptr) uintptr {
-	vtbl := *(*unsafe.Pointer)(obj)
-	fn := *(*uintptr)(unsafe.Add(vtbl, uintptr(slot)*unsafe.Sizeof(uintptr(0))))
-	r, _, _ := syscall.SyscallN(fn, append([]uintptr{uintptr(obj)}, args...)...)
-	return r
 }
 
 func (t *oleDropTarget) effect(out *uint32) uintptr {
@@ -154,16 +153,18 @@ func (t *oleDropTarget) effect(out *uint32) uintptr {
 
 func oleDragEnter(t *oleDropTarget, data unsafe.Pointer, keys, pt uintptr, effect *uint32) uintptr {
 	f := hdropFormat()
-	t.files = data != nil && comCall(data, dataObjQueryData, uintptr(unsafe.Pointer(&f))) == sOK
+	t.files = data != nil && winrt.ComCall(data, dataObjQueryData, uintptr(unsafe.Pointer(&f))) == sOK
 	if t.files {
-		t.app.deliverFileDrag(FileDragEnter, t.clientPos(pt))
+		x, y := t.clientPos(pt)
+		drag(Enter, x, y)
 	}
 	return t.effect(effect)
 }
 
 func oleDragOver(t *oleDropTarget, keys, pt uintptr, effect *uint32) uintptr {
 	if t.files {
-		t.app.deliverFileDrag(FileDragOver, t.clientPos(pt))
+		x, y := t.clientPos(pt)
+		drag(Over, x, y)
 	}
 	return t.effect(effect)
 }
@@ -171,7 +172,7 @@ func oleDragOver(t *oleDropTarget, keys, pt uintptr, effect *uint32) uintptr {
 func oleDragLeave(t *oleDropTarget) uintptr {
 	if t.files {
 		t.files = false
-		t.app.deliverFileDrag(FileDragLeave, f32.Point{})
+		drag(Leave, 0, 0)
 	}
 	return sOK
 }
@@ -181,17 +182,78 @@ func oleDrop(t *oleDropTarget, data unsafe.Pointer, keys, pt uintptr, effect *ui
 		return t.effect(effect)
 	}
 	t.files = false
-	pos := t.clientPos(pt)
-	f := hdropFormat()
-	var m stgMedium
-	var paths []string
-	if comCall(data, dataObjGetData, uintptr(unsafe.Pointer(&f)), uintptr(unsafe.Pointer(&m))) == sOK {
-		if m.tymed == tymedHGlobal && m.handle != 0 {
-			paths = readDrop(m.handle)
-		}
-		procReleaseStgMedium.Call(uintptr(unsafe.Pointer(&m)))
-	}
-	t.app.deliverFileDrop(paths, pos)
+	x, y := t.clientPos(pt)
+	drop(DataObjectPaths(data), x, y)
 	*effect = dropEffectCopy
 	return sOK
 }
+
+// DataObjectPaths reads the files an IDataObject carries (CF_HDROP).
+func DataObjectPaths(data unsafe.Pointer) []string {
+	if data == nil {
+		return nil
+	}
+	f := hdropFormat()
+	var m stgMedium
+	var paths []string
+	if winrt.ComCall(data, dataObjGetData, uintptr(unsafe.Pointer(&f)), uintptr(unsafe.Pointer(&m))) == sOK {
+		if m.tymed == tymedHGlobal && m.handle != 0 {
+			paths = ReadDrop(m.handle)
+		}
+		procReleaseStgMedium.Call(uintptr(unsafe.Pointer(&m)))
+	}
+	return paths
+}
+
+const (
+	maxDropFiles  = 10000
+	maxPathLength = 32768
+)
+
+// ReadDrop reads the paths of a drop handle (an HDROP).
+func ReadDrop(hdrop uintptr) []string {
+	n, _, _ := procDragQueryFileW.Call(hdrop, 0xFFFFFFFF, 0, 0)
+	n = min(n, maxDropFiles)
+	paths := make([]string, 0, n)
+	for i := uintptr(0); i < n; i++ {
+		l, _, _ := procDragQueryFileW.Call(hdrop, i, 0, 0)
+		if l == 0 || l > maxPathLength {
+			continue
+		}
+		buf := make([]uint16, l+1)
+		procDragQueryFileW.Call(hdrop, i, uintptr(unsafe.Pointer(&buf[0])), l+1)
+		paths = append(paths, windows.UTF16ToString(buf))
+	}
+	return paths
+}
+
+// AcceptFiles makes Explorer send the window WM_DROPFILES.
+func AcceptFiles(hwnd uintptr) { procDragAcceptFiles.Call(hwnd, 1) }
+
+// DropFiles handles WM_DROPFILES: it reads the drop and hands it on.
+func DropFiles(hdrop uintptr) {
+	var pt [2]int32
+	procDragQueryPoint.Call(hdrop, uintptr(unsafe.Pointer(&pt)))
+	paths := ReadDrop(hdrop)
+	procDragFinish.Call(hdrop)
+	drop(paths, float32(pt[0]), float32(pt[1]))
+}
+
+// Window messages the app's window procedure hands here, on the
+// window's thread.
+const (
+	WMRegisterOLE = 0x8000 + 0x4744 // WM_APP + "GD": register the IDropTarget
+	WMStartDrag   = WMRegisterOLE + 1
+)
+
+// The IDataObject and COM constants ctxmenu's DropTarget server shares.
+const (
+	SOK            = sOK
+	ENoInterface   = eNoInterface
+	DropEffectCopy = dropEffectCopy
+)
+
+var (
+	IIDUnknown    = iidIUnknown
+	IIDDropTarget = iidIDropTarget
+)

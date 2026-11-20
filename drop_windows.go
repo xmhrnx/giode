@@ -4,9 +4,9 @@ package giode
 
 import (
 	"sync"
-	"unsafe"
 
-	"gioui.org/f32"
+	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/internal/platform/shell"
 	"github.com/xmhrnx/giode/internal/platform/window"
 	"golang.org/x/sys/windows"
@@ -20,11 +20,8 @@ import (
 // message goes on to Gio's original procedure.
 
 var (
-	shell32                         = windows.NewLazySystemDLL("shell32.dll")
-	procDragAcceptFiles             = shell32.NewProc("DragAcceptFiles")
-	procDragQueryFileW              = shell32.NewProc("DragQueryFileW")
-	procDragFinish                  = shell32.NewProc("DragFinish")
-	procDragQueryPoint              = shell32.NewProc("DragQueryPoint")
+	user32                          = windows.NewLazySystemDLL("user32.dll")
+	procPostMessageW                = user32.NewProc("PostMessageW")
 	procSetWindowLongPtrW           = user32.NewProc("SetWindowLongPtrW")
 	procGetWindowLongPtrW           = user32.NewProc("GetWindowLongPtrW")
 	procDefWindowProcW              = user32.NewProc("DefWindowProcW")
@@ -33,15 +30,12 @@ var (
 )
 
 const (
-	wmDropFiles   = 0x0233
-	wmCopyData    = 0x004A
-	wmCopyGlobal  = 0x0049
-	wmNCDestroy   = 0x0082
-	wmRegisterOLE = 0x8000 + 0x4744 // WM_APP + "GD": register the IDropTarget on the window's thread
-	gwlpWndProc   = ^uintptr(3)     // -4
-	msgfltAllow   = 1
-	maxDropFiles  = 10000
-	maxPathLength = 32768
+	wmDropFiles  = 0x0233
+	wmCopyData   = 0x004A
+	wmCopyGlobal = 0x0049
+	wmNCDestroy  = 0x0082
+	gwlpWndProc  = ^uintptr(3) // -4
+	msgfltAllow  = 1
 )
 
 // dropWindows maps subclassed windows to their app and original
@@ -102,7 +96,7 @@ func (a *App) enableFileDrop(hwnd uintptr) {
 			return
 		}
 		if a.fileDragWanted() {
-			procDragAcceptFiles.Call(hwnd, 1)
+			filedrag.AcceptFiles(hwnd)
 			a.logf(LogLevelDebug, "giode: file drop enabled")
 		}
 		if a.cfg.OnFileDrag != nil || a.cfg.FileDropTargets {
@@ -110,7 +104,7 @@ func (a *App) enableFileDrop(hwnd uintptr) {
 			// over drops from apps at the same integrity level; from an
 			// unelevated Explorer to an elevated app WM_DROPFILES still
 			// delivers the drop.
-			procPostMessageW.Call(hwnd, wmRegisterOLE, 0, 0)
+			procPostMessageW.Call(hwnd, filedrag.WMRegisterOLE, 0, 0)
 		}
 	}()
 }
@@ -124,7 +118,7 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		delete(dropWindows, hwnd)
 		if t != nil {
 			procSetWindowLongPtrW.Call(hwnd, gwlpWndProc, t.oldProc)
-			revokeOLEDrop(hwnd)
+			filedrag.RevokeOLE(hwnd)
 			uiaWindowGone(hwnd)
 		}
 	}
@@ -138,17 +132,14 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 	}
 	switch msg {
 	case wmDropFiles:
-		var pt [2]int32
-		procDragQueryPoint.Call(wparam, uintptr(unsafe.Pointer(&pt)))
-		paths := readDrop(wparam)
-		procDragFinish.Call(wparam)
-		t.app.deliverFileDrop(paths, f32.Pt(float32(pt[0]), float32(pt[1])))
+		filedrag.DropFiles(wparam)
 		return 0
-	case wmRegisterOLE:
-		registerOLEDrop(t.app, hwnd)
+	case filedrag.WMRegisterOLE:
+		a := t.app
+		filedrag.RegisterOLE(hwnd, func(format string, args ...any) { a.logf(LogLevelWarning, format, args...) })
 		return 0
-	case wmStartDrag:
-		runExport(t.app, hwnd)
+	case filedrag.WMStartDrag:
+		filedrag.RunExport(t.app.host(), hwnd)
 		return 0
 	case shell.WMShare:
 		shell.RunShare(hwnd)
@@ -165,27 +156,6 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 	r, _, _ := procCallWindowProcW.Call(t.oldProc, hwnd, msg, wparam, lparam)
 	return r
 }
-
-// readDrop reads the paths of a drop handle (an HDROP).
-func readDrop(hdrop uintptr) []string {
-	n, _, _ := procDragQueryFileW.Call(hdrop, 0xFFFFFFFF, 0, 0)
-	n = min(n, maxDropFiles)
-	paths := make([]string, 0, n)
-	for i := uintptr(0); i < n; i++ {
-		l, _, _ := procDragQueryFileW.Call(hdrop, i, 0, 0)
-		if l == 0 || l > maxPathLength {
-			continue
-		}
-		buf := make([]uint16, l+1)
-		procDragQueryFileW.Call(hdrop, i, uintptr(unsafe.Pointer(&buf[0])), l+1)
-		paths = append(paths, windows.UTF16ToString(buf))
-	}
-	return paths
-}
-
-// installFileDrag has nothing to do before the window exists on
-// Windows: enableFileDrop sets drops up with the window handle.
-func installFileDrag(a *App) {}
 
 // trayWndProc handles the window messages the tray changes: closing and
 // minimizing hide the window instead. It reports whether it handled msg.
@@ -212,6 +182,17 @@ const (
 )
 
 func init() {
+	viewHook = func(a *App, ev app.ViewEvent) {
+		if w, ok := ev.(app.Win32ViewEvent); ok && w.HWND != 0 {
+			a.enableFileDrop(w.HWND)
+		}
+	}
+	filedrag.Subclassed = func(hwnd uintptr) bool {
+		dropMu.Lock()
+		defer dropMu.Unlock()
+		_, ok := dropWindows[hwnd]
+		return ok
+	}
 	// A tray option turned on subclasses the window, if it isn't yet.
 	windowHook = func(a *App) {
 		if hwnd := a.NativeHandle(); hwnd != 0 {

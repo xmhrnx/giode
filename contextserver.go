@@ -35,3 +35,23 @@ func withoutEmbedding(args []string) []string {
 	}
 	return out
 }
+
+// serveContextActions serves the app's context actions on files and
+// folders to Explorer's DropTarget verbs (Windows), for the app's
+// lifetime: a whole selection reaches this instance.
+func (a *App) serveContextActions() {
+	var ids []string
+	for _, c := range a.ContextActions() {
+		if c.onFiles() || c.Folders {
+			ids = append(ids, c.ID)
+		}
+	}
+	ctxmenu.Serve(a.contextActionPrefix(), ids, func(id string, paths []string) {
+		a.runContextAction(append([]string{contextActionFlag + id}, paths...))
+		a.showFromLaunch()
+	}, func(format string, args ...any) { a.logf(LogLevelWarning, format, args...) })
+}
+
+// stopContextActions revokes the context actions' COM classes, when
+// they were registered. The app calls it as it exits.
+func (a *App) stopContextActions() { ctxmenu.StopServing() }

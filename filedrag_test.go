@@ -1,20 +1,10 @@
 package giode
 
 import (
-	"reflect"
 	"testing"
 
 	"gioui.org/f32"
 )
-
-func TestParseURIList(t *testing.T) {
-	list := "# a comment\r\nfile:///home/me/My%20Video.mkv\r\nfile://localhost/tmp/a.txt\r\nhttps://example.com/x\r\nfile://otherhost/share/b\r\n\r\n"
-	got := parseURIList(list)
-	want := []string{"/home/me/My Video.mkv", "/tmp/a.txt"}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("parseURIList = %q, want %q", got, want)
-	}
-}
 
 func TestFileDragState(t *testing.T) {
 	a := &App{}
