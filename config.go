@@ -58,6 +58,23 @@ type Config struct {
 	// motion, Giode's transitions, keyframes, drawers, sheets and
 	// switches finish at once (see ReducedMotion).
 	Motion MotionPreference
+	// Contrast chooses high contrast: PreferenceSystem (the default)
+	// follows the system's setting (High Contrast on Windows, Increase
+	// Contrast on macOS and iOS, the desktop's high contrast on Linux);
+	// PreferenceOff and PreferenceOn override it. With high contrast,
+	// "theme.*" colors resolve against a high-contrast palette: on
+	// Windows, the user's own high-contrast colors.
+	Contrast Preference
+	// BoldText chooses bold text: PreferenceSystem follows the system's
+	// Bold Text setting (iOS); with it, every font weight is two steps
+	// heavier.
+	BoldText Preference
+	// TextScale scales text: 0 (the default) follows the system's text
+	// size (Text size on Windows, Dynamic Type on iOS, the text scaling
+	// factor on X11 desktops; Android and Wayland scale text
+	// themselves). Any other value replaces it: 1.5 is half again as
+	// large.
+	TextScale float32
 	// FollowSystemTheme sets the theme mode (SetMode) from the
 	// platform's light or dark appearance at startup and whenever it
 	// changes. See SystemDarkMode for the platforms that report it.

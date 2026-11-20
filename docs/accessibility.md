@@ -136,6 +136,26 @@ without a `Click` is activated with a tap at its middle.
 | `HasCaret`, `Caret`, `Anchor` | A text field's caret and the other end of its selection, in runes. |
 | `Parent`, `LabelledBy`, `DescribedBy`, `Controls` | Relations to other nodes, by ID. |
 
+## Contrast, text size and bold text
+
+The app follows the system's accessibility settings as they change, like its light or dark
+appearance:
+
+| Setting | Where it's read | What changes |
+| --- | --- | --- |
+| High contrast | High Contrast on Windows (with the user's own colors), Increase Contrast on macOS and iOS, the desktop's contrast setting on Linux (portal, GNOME), `prefers-contrast` and forced colors on the web | `"theme.*"` colors resolve against a high-contrast palette: black on white or white on black, no muted grey, status colors at 7:1 or more |
+| Text size | Text size on Windows, Dynamic Type on iOS, the text scaling factor on X11 desktops | `sp` sizes grow by the factor; Android and Wayland already scale text themselves |
+| Bold text | Bold Text on iOS | every font weight is two steps heavier |
+
+`Config.Contrast`, `Config.BoldText` (`PreferenceSystem`, `PreferenceOff`, `PreferenceOn`) and
+`Config.TextScale` (0 follows the system) override them, as do `App.SetContrast`,
+`SetBoldText` and `SetTextScale` while the app runs. `giode.HighContrast()` and
+`giode.BoldText()` report the current state for custom drawing, and
+`properties.SetHighContrastPalette` replaces the high-contrast palette with the app's own.
+
+Sizes given in `sp` follow the text size; sizes in `dp` don't. Layouts that hold text should
+let it wrap or grow rather than fix its height.
+
 ## Motion
 
 The system's reduce-motion setting is followed; see [styles.md](styles.md#animation).

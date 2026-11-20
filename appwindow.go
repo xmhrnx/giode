@@ -73,6 +73,12 @@ type App struct {
 	// motionCheck asks the reduced-motion watcher to check now.
 	motionCheck chan struct{}
 	motion      atomic.Int32
+	// contrast, boldText and textScale are the accessibility
+	// preferences (a11ypref.go); prefCheck asks their watcher to check.
+	contrast, boldText atomic.Int32
+	textScale          atomic.Uint32
+	textScaleSet       atomic.Uint32
+	prefCheck          chan struct{}
 	// a11y is the tree a screen reader bridge reads, nil without one.
 	a11y *a11yTree
 
@@ -161,7 +167,7 @@ func New(cfg Config) *App {
 	if cfg.Orientation != OrientationAny {
 		opts = append(opts, cfg.Orientation.option())
 	}
-	a := &App{cfg: cfg, themeCheck: make(chan struct{}, 1), motionCheck: make(chan struct{}, 1)}
+	a := &App{cfg: cfg, themeCheck: make(chan struct{}, 1), motionCheck: make(chan struct{}, 1), prefCheck: make(chan struct{}, 1)}
 	a.closeToTray.Store(cfg.CloseToTray)
 	a.minimizeToTray.Store(cfg.MinimizeToTray)
 	a.topMost.Store(cfg.AlwaysOnTop)

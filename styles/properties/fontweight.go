@@ -20,6 +20,10 @@ const (
 // Weight maps the value to a font weight, defaulting to normal. The
 // CSS numbers "100" to "900" work too.
 func (w FontWeight) Weight() font.Weight {
+	return emboldened(w.weight())
+}
+
+func (w FontWeight) weight() font.Weight {
 	switch w {
 	case FontWeightThin, "100":
 		return font.Thin

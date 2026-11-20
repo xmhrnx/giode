@@ -82,4 +82,8 @@ func (a *App) checkSystemTheme() {
 	case a.motionCheck <- struct{}{}:
 	default:
 	}
+	select {
+	case a.prefCheck <- struct{}{}:
+	default:
+	}
 }

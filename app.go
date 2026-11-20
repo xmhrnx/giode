@@ -68,6 +68,7 @@ func (a *App) Run(view func() Element) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	a.watchSystemTheme(ctx.Done())
 	a.watchMotion(ctx.Done())
+	a.watchA11yPrefs(ctx.Done())
 	if a.mcp != nil {
 		a.mcp.start(ctx, a)
 	}

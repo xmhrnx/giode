@@ -46,6 +46,10 @@ func SafeArea() properties.Inset {
 // area, or over the whole window with EdgeToEdge. It records the
 // insets for SafeArea.
 func (a *App) frameContext(ops *op.Ops, e app.FrameEvent) layout.Context {
+	// Text follows the text size setting where Gio doesn't apply it.
+	if s := a.appliedTextScale(); s != 1 {
+		e.Metric.PxPerSp *= s
+	}
 	in := properties.Inset{
 		Top: int(e.Insets.Top), Right: int(e.Insets.Right),
 		Bottom: int(e.Insets.Bottom), Left: int(e.Insets.Left),

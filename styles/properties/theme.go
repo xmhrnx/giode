@@ -180,6 +180,9 @@ func currentPaletteLocked() Palette {
 // the built-in default palette when the field is empty. ok is false
 // for anything that isn't a recognized token.
 func themeToken(c string) (Color, bool) {
+	if highContrast.Load() {
+		return highContrastToken(c)
+	}
 	themeMu.RLock()
 	p := currentPaletteLocked()
 	mode := currentMode
