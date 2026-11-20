@@ -28,7 +28,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `gallery.Save` | Pictures (Android 10+) | Photos, Info.plist key | ~/Pictures | Pictures | XDG Pictures | – |
 | `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | Media Foundation | Video4Linux | – |
 | `audio` package (streams) | AudioRecord, AudioTrack | audio units, Info.plist key | audio units | WASAPI | PulseAudio, PipeWire | – |
-| `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
+| `ocr` package | ML Kit (CLI builds) | Vision | Vision | Windows.Media.Ocr | Tesseract (installed) | – |
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
 | `dictate.Start` | ✓ | Info.plist keys | – | – | – | – |
@@ -478,8 +478,12 @@ Recognition runs on the device. iOS and macOS use Vision (accurate by default, `
 camera frames), which reads many scripts; `Languages` lists the ones to expect. Android
 uses ML Kit with its Latin-script model bundled into the app (about 4 MB per architecture),
 so it works offline and without Google Play services; it needs the giode CLI, which adds
-ML Kit from the package's `android_dependencies.txt`. `RecognizeData` takes JPEG or PNG
-bytes. Elsewhere it returns `ErrNotSupported`.
+ML Kit from the package's `android_dependencies.txt`. Windows uses Windows.Media.Ocr, in
+the languages whose OCR pack is installed (Settings, Time & language, Language), falling back
+to the user's languages. Linux uses Tesseract, loaded when the app runs: the user installs
+`tesseract-ocr` and a language's data (`tesseract-ocr-deu`...); a language that isn't installed
+reads as English, and without Tesseract `Supported()` is false. `RecognizeData` takes JPEG or
+PNG bytes. On the web it returns `ErrNotSupported`.
 
 ## Biometric unlock
 

@@ -14,8 +14,11 @@
 // Kit text recognition, bundled into the app (about 4 MB per CPU
 // architecture), so it works offline and without Google Play services.
 // ML Kit's bundled model reads Latin scripts; Vision also reads Chinese,
-// Japanese, Korean, Cyrillic and more (see Options.Languages). Elsewhere
-// Recognize returns giode.ErrNotSupported.
+// Japanese, Korean, Cyrillic and more (see Options.Languages). Windows
+// uses Windows.Media.Ocr, in the languages whose OCR packs are
+// installed; Linux uses Tesseract, loaded at run time with the user's
+// installed languages (the tesseract-ocr packages), Supported reporting
+// whether it's there. Elsewhere Recognize returns giode.ErrNotSupported.
 //
 // Android builds need the giode CLI, which adds ML Kit to the app from
 // this package's android_dependencies.txt.
