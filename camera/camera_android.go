@@ -173,3 +173,5 @@ func Java_org_giode_camera_camera_1android_onError(env *C.JNIEnv, cls C.jclass, 
 	}
 	c.reportError(errors.New("camera: " + bridge.GoString(unsafe.Pointer(env), uintptr(errStr))))
 }
+
+func devices(context.Context) ([]Device, error) { return nil, nil }

@@ -2,6 +2,7 @@
 
 #include <TargetConditionals.h>
 #import <Foundation/Foundation.h>
+#include <string.h>
 #import <AVFoundation/AVFoundation.h>
 #import <CoreVideo/CoreVideo.h>
 #import <Accelerate/Accelerate.h>
@@ -196,9 +197,36 @@ static GiodeCamera *giodeCamera(int cid) {
 	}
 }
 
-const char *giodeCameraOpen(int cid, int front, int maxSide) {
+// giodeCameraDevices lists the computer's cameras as "id\tname\n"
+// lines; the caller frees it. Phones choose by position instead.
+char *giodeCameraDevices(void) {
+#if TARGET_OS_IPHONE
+	return strdup("");
+#else
+	NSMutableArray *types = [NSMutableArray arrayWithObject:AVCaptureDeviceTypeBuiltInWideAngleCamera];
+	if (@available(macOS 14.0, *)) {
+		[types addObject:AVCaptureDeviceTypeExternal];
+		[types addObject:AVCaptureDeviceTypeContinuityCamera];
+	}
+	AVCaptureDeviceDiscoverySession *ds = [AVCaptureDeviceDiscoverySession discoverySessionWithDeviceTypes:types
+		mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionUnspecified];
+	NSMutableString *out = [NSMutableString string];
+	for (AVCaptureDevice *d in ds.devices) {
+		[out appendFormat:@"%@\t%@\n", d.uniqueID, d.localizedName];
+	}
+	return strdup(out.UTF8String);
+#endif
+}
+
+const char *giodeCameraOpen(int cid, int front, int maxSide, const char *uid) {
 	AVCaptureDevicePosition pos = front ? AVCaptureDevicePositionFront : AVCaptureDevicePositionBack;
-	AVCaptureDevice *dev = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:pos];
+	AVCaptureDevice *dev = nil;
+	if (uid && uid[0]) {
+		dev = [AVCaptureDevice deviceWithUniqueID:@(uid)];
+	}
+	if (dev == nil) {
+		dev = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:pos];
+	}
 	if (dev == nil) {
 		dev = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
 	}

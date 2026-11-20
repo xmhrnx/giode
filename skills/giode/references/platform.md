@@ -26,7 +26,8 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `PickPhotos` (several) | ✓ | ✓ (iOS 14+) | files | files | files | – |
 | `PickMedia` (originals) | ✓ (Photo Picker) | ✓ (iOS 14+) | files | files | files | – |
 | `gallery.Save` | Pictures (Android 10+) | Photos, Info.plist key | ~/Pictures | Pictures | XDG Pictures | – |
-| `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | – | – | – |
+| `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | Media Foundation | Video4Linux | – |
+| `audio` package (streams) | AudioRecord, AudioTrack | audio units, Info.plist key | audio units | WASAPI | PulseAudio, PipeWire | – |
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | – | – | – |
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
@@ -436,7 +437,10 @@ drawn by Giode, so anything can be laid over it. `Options` sets the camera
 (another app took the camera). On Android it uses Camera2 and closes the camera while the
 app is in the background, reopening it on return; the package adds the camera permission
 to the manifest. On iOS and macOS it uses AVFoundation; iOS needs `ios.usage.camera`.
-Windows and Linux return `ErrNotSupported`.
+Windows uses Media Foundation (Settings, Privacy, Camera must allow desktop apps) and Linux
+Video4Linux (the user must be able to read `/dev/video*`, usually through the `video`
+group); there `Capture` encodes the latest frame, as webcams stream at their full size.
+On computers `camera.Devices(ctx)` lists the cameras and `Options.Device` picks one.
 
 ## Text recognition
 

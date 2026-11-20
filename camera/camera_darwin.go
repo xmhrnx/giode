@@ -10,7 +10,8 @@ package camera
 
 int giodeCameraAuthorized(void);
 void giodeCameraRequestAccess(int req);
-const char *giodeCameraOpen(int id, int front, int maxSide);
+const char *giodeCameraOpen(int id, int front, int maxSide, const char *uid);
+char *giodeCameraDevices(void);
 void giodeCameraClose(int id);
 void giodeCameraCapture(int id, int req);
 int giodeCameraHasTorch(int id);
@@ -22,6 +23,7 @@ import "C"
 import (
 	"context"
 	"errors"
+	"strings"
 	"unsafe"
 
 	"gioui.org/f32"
@@ -77,7 +79,9 @@ func (c *Camera) open(ctx context.Context) error {
 	if c.opts.Facing == Front {
 		front = 1
 	}
-	if err := cerr(C.giodeCameraOpen(C.int(id), C.int(front), maxPreview)); err != nil {
+	uid := C.CString(c.opts.Device)
+	defer C.free(unsafe.Pointer(uid))
+	if err := cerr(C.giodeCameraOpen(C.int(id), C.int(front), maxPreview, uid)); err != nil {
 		unregister(c)
 		return err
 	}
@@ -143,4 +147,16 @@ func giodeCameraOnError(id C.int, msg *C.char) {
 	if c := lookup(int(id)); c != nil {
 		c.reportError(errors.New("camera: " + C.GoString(msg)))
 	}
+}
+
+func devices(context.Context) ([]Device, error) {
+	cs := C.giodeCameraDevices()
+	defer C.free(unsafe.Pointer(cs))
+	var out []Device
+	for _, line := range strings.Split(C.GoString(cs), "\n") {
+		if id, name, ok := strings.Cut(line, "\t"); ok {
+			out = append(out, Device{ID: id, Name: name})
+		}
+	}
+	return out, nil
 }

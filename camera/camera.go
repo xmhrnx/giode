@@ -18,8 +18,9 @@
 // OnFrame receives small grey frames for analysis (edge detection,
 // barcode reading) on its own goroutine.
 //
-// Android (Camera2) and iOS and macOS (AVFoundation) are supported;
-// elsewhere Open returns giode.ErrNotSupported. The app needs the
+// Android (Camera2), iOS and macOS (AVFoundation), Windows (Media
+// Foundation) and Linux (Video4Linux) are supported; elsewhere Open
+// returns giode.ErrNotSupported. The app needs the
 // camera permission: on Android the package adds it to the manifest;
 // on iOS set ios.usage.camera in giode.toml (NSCameraUsageDescription).
 package camera
@@ -62,8 +63,11 @@ const (
 
 // Options configure Open.
 type Options struct {
-	// Facing selects the back (default) or front camera.
+	// Facing selects the back (default) or front camera on phones.
 	Facing Facing
+	// Device selects a camera by its ID from Devices, on computers; the
+	// first one when empty.
+	Device string
 	// AnalysisSize is the long side, in pixels, of the frames OnFrame
 	// receives: 640 by default.
 	AnalysisSize int
@@ -127,6 +131,15 @@ type rawFrame struct {
 	bgra   []byte
 	stride int
 }
+
+// Device is a camera, on computers.
+type Device struct {
+	ID, Name string
+}
+
+// Devices lists the cameras on computers (Windows, Linux, macOS); on
+// phones, choose by Facing instead.
+func Devices(ctx context.Context) ([]Device, error) { return devices(ctx) }
 
 // Supported reports whether this platform has a camera Open can use.
 func Supported() bool { return supported }

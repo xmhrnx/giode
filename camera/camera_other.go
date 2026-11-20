@@ -1,4 +1,4 @@
-//go:build !android && !darwin
+//go:build !linux && !darwin && !windows
 
 package camera
 
@@ -25,3 +25,5 @@ func (platformCamera) capture(context.Context) ([]byte, error) { return nil, gio
 func (platformCamera) hasTorch() bool                          { return false }
 func (platformCamera) setTorch(bool) error                     { return giode.ErrNotSupported }
 func (platformCamera) focus(f32.Point) error                   { return giode.ErrNotSupported }
+
+func devices(context.Context) ([]Device, error) { return nil, giode.ErrNotSupported }
