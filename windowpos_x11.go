@@ -190,3 +190,16 @@ func x11SetAbove(ev app.ViewEvent, on bool) {
 func pxRect(x, y, w, h int, s float32) Rect {
 	return Rect{X: float32(x) / s, Y: float32(y) / s, Width: float32(w) / s, Height: float32(h) / s}
 }
+
+// x11ClientOrigin returns the window's client area origin in root
+// pixels, for screen readers asking for screen coordinates.
+func x11ClientOrigin(ev app.ViewEvent) (x, y int, ok bool) {
+	dpy, win, ok := x11Window(ev)
+	if !ok {
+		return 0, 0, false
+	}
+	var cx, cy C.int
+	var child C.Window
+	C.XTranslateCoordinates(dpy, win, C.XDefaultRootWindow(dpy), 0, 0, &cx, &cy, &child)
+	return int(cx), int(cy), true
+}

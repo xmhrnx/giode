@@ -247,6 +247,13 @@ func (t *a11yTree) readingOrder() []int32 {
 	return out
 }
 
+// number returns the number of the node with ID id, 0 when none.
+func (t *a11yTree) number(id string) int32 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.num[id]
+}
+
 // isFocusable is focusable, taking the lock.
 func (t *a11yTree) isFocusable(n elements.SemanticNode, k int32) bool {
 	t.mu.Lock()

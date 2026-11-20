@@ -1,4 +1,4 @@
-//go:build !(android && giode_gio6) && !windows && !darwin
+//go:build !(android && giode_gio6) && !windows && !darwin && !(linux && !android)
 
 package giode
 

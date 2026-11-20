@@ -10,7 +10,7 @@ it's in - and hands it to the platform's screen reader. The same tree serves aut
 | Windows | Narrator, NVDA, JAWS (UI Automation) | Every node, its patterns (invoke, toggle, value, range, expand and collapse, selection), focus changes and announcements. Asked for a point, it answers for the mouse cursor's. Not yet checked with a screen reader. |
 | macOS | VoiceOver (NSAccessibility) | Every node as an accessibility element with its role, label, value, state and frame; press, increment and decrement, setting text, focus; focus and value changes and announcements. The first request from VoiceOver or another assistive app turns the tree on. Not yet checked with VoiceOver. |
 | iOS | VoiceOver, Switch Control (UIAccessibility) | The nodes a screen reader stops on, in reading order, with labels, values, hints and traits; activate, adjust (sliders); focus moves and announcements. Recorded while VoiceOver or Switch Control runs. Not yet checked on a device. |
-| Linux | Orca (AT-SPI) | Not yet. |
+| Linux | Orca (AT-SPI) | The application, its window and every node on the accessibility bus, with roles, states, names, descriptions, relations, text (entries and labels), values (sliders, progress), actions and extents (screen coordinates on X11, window coordinates on Wayland); focus, state, value and text changes and announcements as events. Checked against the AT-SPI registry with pyatspi; not yet with Orca. Set `NO_AT_BRIDGE=1` to turn it off. |
 
 ## What components report
 
