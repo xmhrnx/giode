@@ -28,6 +28,7 @@ in this conversation; the API is alpha and changes. Map:
 | Dates, calendars, time zones, date pickers | `references/datetime.md`, `references/components/datepicker.md`, `references/components/calendar.md` |
 | Sign-in with Google, Microsoft, Okta, any OpenID provider; passkeys | `references/auth.md` |
 | Rich text editing, chat composers, mentions, Markdown in and out | `references/components/richeditor.md` |
+| Charts: line, bar, pie, funnel, gauge, heatmap, sparklines | `references/components/charts.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |

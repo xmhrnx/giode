@@ -10,6 +10,7 @@ import (
 	"github.com/xmhrnx/giode/components/badge"
 	"github.com/xmhrnx/giode/components/button"
 	"github.com/xmhrnx/giode/components/calendarview"
+	"github.com/xmhrnx/giode/components/chart"
 	"github.com/xmhrnx/giode/components/checkbox"
 	"github.com/xmhrnx/giode/components/chip"
 	"github.com/xmhrnx/giode/components/colorpicker"
@@ -703,6 +704,51 @@ type CalendarMode = calendarview.Mode
 
 // CalendarViewElement is CalendarView's type.
 type CalendarViewElement = calendarview.CalendarView
+
+// Chart creates a chart of a kind; see chart.Chart.
+var Chart = chart.New
+
+// Sparkline draws a small line of values without axes.
+var Sparkline = chart.Sparkline
+
+// ChartTimeX converts a time to a ChartPoint X on a time axis.
+var ChartTimeX = chart.TimeX
+
+// FormatNumber writes a number compactly: 1.2k, 3.4M.
+var FormatNumber = chart.FormatNumber
+
+// Chart types.
+type (
+	ChartElement = chart.Chart
+	ChartKind    = chart.Kind
+	ChartSeries  = chart.Series
+	ChartPoint   = chart.Point
+	ChartAxis    = chart.Axis
+	ChartBand    = chart.Band
+	ChartLegend  = chart.LegendPos
+)
+
+// Chart kinds.
+const (
+	ChartLine          = chart.Line
+	ChartArea          = chart.Area
+	ChartBar           = chart.Bar
+	ChartHorizontalBar = chart.HorizontalBar
+	ChartScatter       = chart.Scatter
+	ChartPie           = chart.Pie
+	ChartDonut         = chart.Donut
+	ChartFunnel        = chart.Funnel
+	ChartGauge         = chart.Gauge
+	ChartHeatmap       = chart.Heatmap
+)
+
+// Chart legend positions.
+const (
+	ChartLegendAuto   = chart.LegendAuto
+	ChartLegendNone   = chart.LegendNone
+	ChartLegendTop    = chart.LegendTop
+	ChartLegendBottom = chart.LegendBottom
+)
 
 // RichEditor creates a rich text editor; see richedit.RichEditor. Its
 // document model is package richdoc.

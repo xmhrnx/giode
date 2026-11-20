@@ -42,6 +42,12 @@ type Palette struct {
 	Warning Color
 	Danger  Color
 	Info    Color
+
+	// Chart is the series colors of charts, "theme.chart1" and on,
+	// repeating past the last; empty takes the default's. They're
+	// chosen to tell apart side by side, and the dark ones to stand
+	// out on a dark background.
+	Chart []Color
 }
 
 // DefaultLightPalette and DefaultDarkPalette are the built-in
@@ -61,6 +67,7 @@ var (
 		Warning:    "#d97706",
 		Danger:     "#dc2626",
 		Info:       "#0284c7",
+		Chart:      []Color{"#2563eb", "#f59e0b", "#10b981", "#e11d48", "#8b5cf6", "#0891b2", "#db2777", "#65a30d"},
 	}
 	DefaultDarkPalette = Palette{
 		Primary:    "#3b82f6",
@@ -76,6 +83,7 @@ var (
 		Warning:    "#f59e0b",
 		Danger:     "#ef4444",
 		Info:       "#38bdf8",
+		Chart:      []Color{"#60a5fa", "#fbbf24", "#34d399", "#fb7185", "#a78bfa", "#22d3ee", "#f472b6", "#a3e635"},
 	}
 )
 
@@ -231,6 +239,19 @@ func paletteField(p Palette, field string) (Color, bool) {
 	case "info":
 		return p.Info, true
 	default:
+		if n, ok := strings.CutPrefix(field, "chart"); ok && n != "" {
+			i := 0
+			for _, r := range n {
+				if r < '0' || r > '9' {
+					return "", false
+				}
+				i = i*10 + int(r-'0')
+			}
+			if len(p.Chart) == 0 || i < 1 {
+				return "", true
+			}
+			return p.Chart[(i-1)%len(p.Chart)], true
+		}
 		return "", false
 	}
 }

@@ -624,6 +624,51 @@ type CalendarMode = ui.CalendarMode
 // CalendarViewElement is CalendarView's type.
 type CalendarViewElement = ui.CalendarViewElement
 
+// Chart creates a chart of a kind; see chart.Chart.
+var Chart = ui.Chart
+
+// Sparkline draws a small line of values without axes.
+var Sparkline = ui.Sparkline
+
+// ChartTimeX converts a time to a ChartPoint X on a time axis.
+var ChartTimeX = ui.ChartTimeX
+
+// FormatNumber writes a number compactly: 1.2k, 3.4M.
+var FormatNumber = ui.FormatNumber
+
+// Chart types.
+type (
+	ChartElement = ui.ChartElement
+	ChartKind    = ui.ChartKind
+	ChartSeries  = ui.ChartSeries
+	ChartPoint   = ui.ChartPoint
+	ChartAxis    = ui.ChartAxis
+	ChartBand    = ui.ChartBand
+	ChartLegend  = ui.ChartLegend
+)
+
+// Chart kinds.
+const (
+	ChartLine          = ui.ChartLine
+	ChartArea          = ui.ChartArea
+	ChartBar           = ui.ChartBar
+	ChartHorizontalBar = ui.ChartHorizontalBar
+	ChartScatter       = ui.ChartScatter
+	ChartPie           = ui.ChartPie
+	ChartDonut         = ui.ChartDonut
+	ChartFunnel        = ui.ChartFunnel
+	ChartGauge         = ui.ChartGauge
+	ChartHeatmap       = ui.ChartHeatmap
+)
+
+// Chart legend positions.
+const (
+	ChartLegendAuto   = ui.ChartLegendAuto
+	ChartLegendNone   = ui.ChartLegendNone
+	ChartLegendTop    = ui.ChartLegendTop
+	ChartLegendBottom = ui.ChartLegendBottom
+)
+
 // RichEditor creates a rich text editor; see richedit.RichEditor. Its
 // document model is package richdoc.
 var RichEditor = ui.RichEditor

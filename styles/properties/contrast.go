@@ -37,6 +37,7 @@ var (
 		Warning:    "#7a3d00",
 		Danger:     "#a00000",
 		Info:       "#004a6e",
+		Chart:      []Color{"#0033cc", "#a14a00", "#006b3c", "#b0002a", "#5b21b6", "#005f73", "#9d174d", "#3f6212"},
 	}
 	DefaultHighContrastDarkPalette = Palette{
 		Primary:    "#ffd700",
@@ -52,6 +53,7 @@ var (
 		Warning:    "#ffb000",
 		Danger:     "#ff8080",
 		Info:       "#7fdcff",
+		Chart:      []Color{"#8ab4ff", "#ffc966", "#5ef2b0", "#ff8fa3", "#c8b6ff", "#5ce1ff", "#ff9ed2", "#c6f57a"},
 	}
 )
 
