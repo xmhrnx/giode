@@ -106,7 +106,7 @@ type blockView struct {
 	chips map[int]*textrender.RichLaid
 	src   []int
 	// Tables: the cells' text and boxes.
-	cells [][]cellView
+	cells   [][]cellView
 	cellPad int
 	// Images: the picture's size.
 	img image.Point
