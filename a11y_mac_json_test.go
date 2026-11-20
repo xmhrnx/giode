@@ -52,3 +52,19 @@ func TestMacNodes(t *testing.T) {
 		t.Error("macAction")
 	}
 }
+
+func TestReadingOrder(t *testing.T) {
+	tree := newA11yTree()
+	tree.update([]elements.SemanticNode{
+		{ID: "list", Kind: elements.SemanticList, Bounds: image.Rect(0, 0, 100, 100)},
+		{ID: "a", Kind: elements.SemanticButton, Label: "A", Parent: "list", Bounds: image.Rect(0, 0, 100, 20)},
+		{ID: "a.text", Kind: elements.SemanticText, Label: "A", Bounds: image.Rect(5, 5, 50, 15)},
+		{ID: "b", Kind: elements.SemanticButton, Label: "B", Parent: "list", Bounds: image.Rect(0, 30, 100, 50)},
+		{ID: "note", Kind: elements.SemanticText, Label: "Note", Bounds: image.Rect(0, 120, 100, 140)},
+	})
+	got := tree.readingOrder()
+	want := []int32{tree.num["a"], tree.num["b"], tree.num["note"]}
+	if !slices.Equal(got, want) {
+		t.Errorf("reading order = %v, want %v (the list is a container, the button's text part of it)", got, want)
+	}
+}

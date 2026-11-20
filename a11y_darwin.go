@@ -1,10 +1,11 @@
-//go:build darwin && !ios
+//go:build darwin
 
 package giode
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
-#cgo LDFLAGS: -framework AppKit
+#cgo !ios LDFLAGS: -framework AppKit
+#cgo ios LDFLAGS: -framework UIKit
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -15,21 +16,21 @@ void giodeAXChanged(uintptr_t view, int32_t focus, int32_t *changed, int n, char
 import "C"
 
 import (
+	"encoding/json"
 	"image"
 	"sync"
 	"sync/atomic"
 	"unsafe"
 
-	"gioui.org/app"
-
 	"github.com/xmhrnx/giode/elements"
 )
 
-// VoiceOver on macOS: Giode adds accessibility methods to Gio's view
-// (a11y_macos.m) whose elements read the tree (a11y_tree.go) through the
-// exported functions here, on the main thread. The first time VoiceOver
-// or another assistive app asks the view for its elements, frames start
-// recording the tree.
+// VoiceOver on macOS and iOS: Giode gives Gio's view accessibility
+// elements (a11y_macos.m, a11y_ios.m) that read the tree (a11y_tree.go)
+// through the exported functions here, on the main thread. The first
+// time VoiceOver or another assistive app asks for them, frames start
+// recording the tree. Views are known by a handle: the NSView on macOS,
+// the view controller on iOS.
 
 var (
 	axMu    sync.Mutex
@@ -96,17 +97,17 @@ func installA11y(a *App) {
 	}
 }
 
-// a11yView gives Gio's view its accessibility methods.
-func (a *App) a11yView(ev app.ViewEvent) {
-	v, ok := ev.(app.AppKitViewEvent)
-	if !ok || v.View == 0 || a.a11y == nil {
+// a11yInstall gives the view with handle view its accessibility
+// elements.
+func (a *App) a11yInstall(view uintptr) {
+	if view == 0 || a.a11y == nil {
 		return
 	}
 	axMu.Lock()
-	axApps[v.View] = a
-	axViews[a] = v.View
+	axApps[view] = a
+	axViews[a] = view
 	axMu.Unlock()
-	C.giodeAXInstall(C.uintptr_t(v.View))
+	C.giodeAXInstall(C.uintptr_t(view))
 }
 
 func axTree(view C.uintptr_t) (*App, *a11yTree) {
@@ -145,6 +146,19 @@ func giodeAXNode(view C.uintptr_t, id C.int32_t) *C.char {
 		return nil
 	}
 	return C.CString(s)
+}
+
+// giodeAXOrder returns the nodes a screen reader stops on, in reading
+// order, as a JSON array for the caller to free.
+//
+//export giodeAXOrder
+func giodeAXOrder(view C.uintptr_t) *C.char {
+	_, t := axTree(view)
+	if t == nil {
+		return C.CString("[]")
+	}
+	b, _ := json.Marshal(t.readingOrder())
+	return C.CString(string(b))
 }
 
 //export giodeAXAt

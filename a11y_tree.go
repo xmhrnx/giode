@@ -225,6 +225,28 @@ func (t *a11yTree) focusedNode() int32 {
 	return 0
 }
 
+// readingOrder returns the nodes a screen reader stops on, depth first
+// from the root: for platforms that take a flat list (iOS).
+func (t *a11yTree) readingOrder() []int32 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	out := []int32{}
+	var walk func(k int32, depth int)
+	walk = func(k int32, depth int) {
+		if depth > 64 {
+			return
+		}
+		for _, c := range t.children[k] {
+			if i, ok := t.index[c]; ok && t.focusable(t.nodes[i], c) {
+				out = append(out, c)
+			}
+			walk(c, depth+1)
+		}
+	}
+	walk(0, 0)
+	return out
+}
+
 // isFocusable is focusable, taking the lock.
 func (t *a11yTree) isFocusable(n elements.SemanticNode, k int32) bool {
 	t.mu.Lock()
