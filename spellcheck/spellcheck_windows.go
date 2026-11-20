@@ -56,22 +56,43 @@ var state struct {
 	checkers map[string]*comObj
 }
 
-// onCOM runs fn on a thread in the multithreaded apartment.
+var (
+	comOnce  sync.Once
+	comCalls chan func()
+)
+
+// onCOM runs fn on the package's COM thread, which stays in the
+// multithreaded apartment for the process's life: leaving it would tear
+// the apartment down, and the checkers made in it with it.
 func onCOM(fn func()) {
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		runtime.LockOSThread()
-		defer runtime.UnlockOSThread()
-		switch err := windows.CoInitializeEx(0, windows.COINIT_MULTITHREADED); err {
-		case nil, syscall.Errno(1):
-			defer windows.CoUninitialize()
-		case syscall.Errno(0x80010106):
-		default:
-			return
+	comOnce.Do(func() {
+		comCalls = make(chan func())
+		ready := make(chan bool)
+		go func() {
+			runtime.LockOSThread()
+			switch err := windows.CoInitializeEx(0, windows.COINIT_MULTITHREADED); err {
+			case nil, syscall.Errno(1), syscall.Errno(0x80010106):
+			default:
+				ready <- false
+				return
+			}
+			ready <- true
+			for f := range comCalls {
+				f()
+			}
+		}()
+		if !<-ready {
+			comCalls = nil
 		}
+	})
+	if comCalls == nil {
+		return
+	}
+	done := make(chan struct{})
+	comCalls <- func() {
+		defer close(done)
 		fn()
-	}()
+	}
 	<-done
 }
 

@@ -12,7 +12,7 @@
 
 // Ranges are UTF-16 offsets, as "start,length;" pairs.
 
-static char *dup(NSString *s) { return strdup(s.UTF8String); }
+static char *giodeSpellDup(NSString *s) { return strdup(s.UTF8String); }
 
 #if TARGET_OS_IPHONE
 // language picks one of UITextChecker's languages for a BCP 47 tag, or
@@ -52,7 +52,7 @@ int giodeSpellAvailable(const char *tag) {
 char *giodeSpellCheck(const char *text, const char *tag) {
 	@autoreleasepool {
 		NSString *lang = language(tag);
-		if (!lang) return dup(@"");
+		if (!lang) return giodeSpellDup(@"");
 		NSString *s = [NSString stringWithUTF8String:text];
 		NSMutableString *out = [NSMutableString string];
 		NSUInteger at = 0;
@@ -73,21 +73,21 @@ char *giodeSpellCheck(const char *text, const char *tag) {
 			at = r.location + r.length;
 		}
 #endif
-		return dup(out);
+		return giodeSpellDup(out);
 	}
 }
 
 char *giodeSpellSuggest(const char *word, const char *tag) {
 	@autoreleasepool {
 		NSString *lang = language(tag);
-		if (!lang) return dup(@"");
+		if (!lang) return giodeSpellDup(@"");
 		NSString *w = [NSString stringWithUTF8String:word];
 #if TARGET_OS_IPHONE
 		NSArray<NSString *> *g = [[UITextChecker new] guessesForWordRange:NSMakeRange(0, w.length) inString:w language:lang];
 #else
 		NSArray<NSString *> *g = [[NSSpellChecker sharedSpellChecker] guessesForWordRange:NSMakeRange(0, w.length) inString:w language:lang inSpellDocumentWithTag:0];
 #endif
-		return dup([g ?: @[] componentsJoinedByString:@"\n"]);
+		return giodeSpellDup([g ?: @[] componentsJoinedByString:@"\n"]);
 	}
 }
 
