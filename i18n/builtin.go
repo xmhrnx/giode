@@ -68,3 +68,27 @@ var builtin = func() map[string]map[string]message {
 	out["no"] = out["nb"]
 	return out
 }()
+
+// AddBuiltin adds messages to giode's own strings for a locale, like
+// Add, but below the app's messages and without making the locale one
+// of the app's (Locales). Giode's packages use it for their strings
+// (dates, relative times); apps use Add or Load.
+func AddBuiltin(loc string, messages map[string]any) {
+	loc = normalize(loc)
+	mu.Lock()
+	c := builtin[loc]
+	if c == nil {
+		c = map[string]message{}
+		builtin[loc] = c
+	}
+	for k, v := range messages {
+		switch v := v.(type) {
+		case string:
+			c[k] = message{text: v}
+		case map[string]string:
+			c[k] = message{forms: v}
+		}
+	}
+	mu.Unlock()
+	changed()
+}
