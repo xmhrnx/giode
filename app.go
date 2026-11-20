@@ -55,6 +55,9 @@ func (a *App) Run(view func() Element) error {
 		a.cfg.OnStartup()
 	}
 	a.logf(LogLevelInfo, "giode: app started")
+	if len(a.cfg.MenuBar) > 0 {
+		a.SetMenuBar(a.cfg.MenuBar...)
+	}
 	a.warnTrayLimits()
 	if a.instance != nil {
 		a.instance.Serve(a.handleLaunch)

@@ -96,6 +96,8 @@ type App struct {
 	trayOnce     sync.Once
 	windowHidden atomic.Bool
 	quitting     atomic.Bool
+	// menuBarJSON is the native menu bar's latest spec (macOS).
+	menuBarJSON atomic.Value
 	// closeAsked is set while OnCloseRequest decides on a close.
 	closeAsked atomic.Bool
 	// The tray options, from Config and the setters.

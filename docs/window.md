@@ -344,6 +344,34 @@ The single-instance lock now also passes any second launch's arguments to the ru
 instance: `SingleInstanceLock.OnLaunchArgs` receives them (a file opened with the app,
 say), and the window comes to the front.
 
+## Application menus (macOS)
+
+`Config.MenuBar` (or `App.SetMenuBar` while the app runs) fills the macOS menu bar: the app
+menu Giode adds (About, Services, Hide, Hide Others, Show All, Quit), then the app's menus.
+
+```go
+giode.New(giode.Config{
+	MenuBar: []giode.MenuBarMenu{
+		{Title: "File", Items: []giode.MenuBarItem{
+			{Label: "New", Shortcut: "Mod+N", OnClick: newDoc},
+			{Label: "Open…", Shortcut: "Mod+O", OnClick: openDoc},
+			{Separator: true},
+			{Label: "Export", Items: []giode.MenuBarItem{{Label: "PDF", OnClick: exportPDF}}},
+		}},
+		giode.EditMenu(),   // Undo, Redo, Cut, Copy, Paste, Select All
+		{Title: "View", Items: []giode.MenuBarItem{{Label: "Sidebar", Checked: showSidebar, OnClick: toggleSidebar}}},
+		giode.WindowMenu(), // Minimize, Zoom, Enter Full Screen
+	},
+})
+```
+
+`OnClick` runs on the UI goroutine. Call `SetMenuBar` again to update check marks and
+disabled items. The Edit menu's items act on the focused text field as their keys do (they
+need `giode build`'s Gio patches; a plain build leaves their keys to the field and shows the
+items without shortcuts). Quit asks `OnCloseRequest` first. A menu titled "Window" becomes
+the system's window menu and one titled "Help" its help menu. Windows and Linux apps keep
+their menus in the window (TitleBar's menus); there `SetMenuBar` does nothing.
+
 ## Closing, window buttons and transparency
 
 `Config.OnCloseRequest` decides on a close the user asked for: the window's close button,

@@ -21,6 +21,9 @@ func (a *App) handleViewEvent(ev app.ViewEvent) {
 	a.placementView(ev)
 	a.startInTray(ev)
 	a.a11yView(ev)
+	if ev.Valid() {
+		a.menuBarView()
+	}
 	if a.cfg.Transparent && ev.Valid() {
 		a.transparentView()
 	}

@@ -228,6 +228,9 @@ type Config struct {
 	// shows with ShowWindow, from the tray icon. It needs a tray icon
 	// (App.Tray) and is ignored where TraySupported is false.
 	StartInTray StartInTray
+	// MenuBar is the application's native menu bar (macOS); see
+	// App.SetMenuBar to change it while the app runs.
+	MenuBar []MenuBarMenu
 	// MenuBarApp makes a macOS app live in the menu bar: no Dock icon
 	// and no app menu, as menu bar utilities do. Pair it with App.Tray.
 	// Other platforms ignore it.
