@@ -76,6 +76,8 @@ func (a *App) showNativeWindow() {
 // minimizing hide the window instead. It reports whether it handled msg.
 func trayWndProc(a *App, hwnd, msg, wparam uintptr) bool {
 	switch {
+	case msg == wmClose && a.vetoClose():
+		return true
 	case msg == wmClose && a.closesToTray():
 		procShowWindowAsync.Call(hwnd, swHide)
 		a.windowHiddenNatively()

@@ -93,6 +93,9 @@ void giodeShowWindow(uintptr_t view) {
 }
 
 static BOOL giodeWindowShouldClose(id self, SEL _cmd, NSWindow *sender) {
+	if (giodeVetoClose()) {
+		return NO;
+	}
 	if (giodeShouldHideOnClose()) {
 		giodeHidden = YES;
 		[sender orderOut:nil];
@@ -103,7 +106,8 @@ static BOOL giodeWindowShouldClose(id self, SEL _cmd, NSWindow *sender) {
 }
 
 // giodeInterceptClose gives Gio's window delegate a windowShouldClose:
-// that hides the window instead, for CloseToTray.
+// that asks Config.OnCloseRequest, and hides the window instead for
+// CloseToTray.
 void giodeInterceptClose(uintptr_t view) {
 	dispatch_async(dispatch_get_main_queue(), ^{
 		id del = windowOf(view).delegate;

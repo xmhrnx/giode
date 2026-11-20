@@ -95,7 +95,7 @@ func (a *App) trayView(app.ViewEvent) {
 	if v == 0 {
 		return
 	}
-	if a.closeToTray.Load() {
+	if a.closeToTray.Load() || a.cfg.OnCloseRequest != nil || a.cfg.NoClose {
 		C.giodeInterceptClose(C.uintptr_t(v))
 	}
 	C.giodeHandleReopen()
@@ -113,6 +113,14 @@ func (a *App) applyTrayOptions() {
 //export giodeShouldHideOnClose
 func giodeShouldHideOnClose() C.int {
 	if a := currentApp.Load(); a != nil && a.closesToTray() {
+		return 1
+	}
+	return 0
+}
+
+//export giodeVetoClose
+func giodeVetoClose() C.int {
+	if a := currentApp.Load(); a != nil && a.vetoClose() {
 		return 1
 	}
 	return 0

@@ -46,18 +46,26 @@ func (a *App) RunOnUI(ctx context.Context, fn func()) error {
 // minimized window), so tray menus and other callers still reach the
 // UI goroutine.
 func (a *App) runUICalls() bool {
-	a.uiMu.Lock()
-	calls := a.uiCalls
-	a.uiCalls = nil
-	a.uiMu.Unlock()
-	if len(calls) == 0 {
-		return false
+	ran := false
+	// Calls posted by these calls run too: their Invalidate can fall
+	// within the wakeup being handled and be lost.
+	for round := 0; round < 16; round++ {
+		a.uiMu.Lock()
+		calls := a.uiCalls
+		a.uiCalls = nil
+		a.uiMu.Unlock()
+		if len(calls) == 0 {
+			break
+		}
+		ran = true
+		for _, fn := range calls {
+			fn()
+		}
 	}
-	for _, fn := range calls {
-		fn()
+	if ran {
+		// Calls usually drive components programmatically; make sure
+		// cached subtrees pick that up.
+		elements.InvalidateCaches()
 	}
-	// Calls usually drive components programmatically; make sure
-	// cached subtrees pick that up.
-	elements.InvalidateCaches()
-	return true
+	return ran
 }

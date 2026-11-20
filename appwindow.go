@@ -96,6 +96,8 @@ type App struct {
 	trayOnce     sync.Once
 	windowHidden atomic.Bool
 	quitting     atomic.Bool
+	// closeAsked is set while OnCloseRequest decides on a close.
+	closeAsked atomic.Bool
 	// The tray options, from Config and the setters.
 	closeToTray    atomic.Bool
 	minimizeToTray atomic.Bool
@@ -214,7 +216,9 @@ func New(cfg Config) *App {
 	installA11y(a)
 	// Until the first frame, the window shows the app's background
 	// (theme tokens resolved now) rather than the platform's white.
-	setNativeBackground(properties.CalcColor(cfg.Background), true)
+	if !cfg.Transparent {
+		setNativeBackground(properties.CalcColor(cfg.Background), true)
+	}
 	a.window = new(app.Window)
 	a.SetMaxFPS(cfg.MaxFPS)
 	a.window.Option(opts...)
@@ -336,10 +340,13 @@ func (a *App) Close() {
 }
 
 // RequestClose closes the window as the system's close button does:
-// with CloseToTray it hides the window to the tray, otherwise it ends
-// the app, as Close does. TitleBar's close button calls it. It may be
+// asking OnCloseRequest first, then with CloseToTray it hides the window
+// to the tray, otherwise it ends the app, as Close does. TitleBar's close button calls it. It may be
 // called from any goroutine.
 func (a *App) RequestClose() {
+	if a.vetoClose() {
+		return
+	}
 	if a.closesToTray() {
 		a.HideWindow()
 		return

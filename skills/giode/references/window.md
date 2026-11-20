@@ -238,10 +238,12 @@ comes back; `HideWindow`, `ShowWindow` and `Quit` may be called from any gorouti
 the tray's setters (`SetMenu`, `SetTitle`, `SetIcon`...), from a menu item's callback too:
 they never wait for the tray, which shows the change a moment later.
 
-Platform notes: on Linux, hiding works under X11. Wayland can't hide a window, nor bring a
-minimized one back, so there `HideWindow` and `StartInTray` leave the window on screen, and
-`CloseToTray` isn't available (closing quits). Android, iOS and the
-web have no tray: `TraySupported()` reports false and the calls do nothing.
+Platform notes: on Linux, hiding works under X11, and under Wayland with `giode build`'s
+Gio patches: the window is unmapped, and shown again as a new toplevel. `ShowWindow` raises it
+with xdg-activation where the compositor has it (KDE, GNOME, Sway), using the token the app
+was launched with the first time; compositors may only flash it in the taskbar otherwise.
+`CloseToTray` on Linux needs the patches too: plain Gio closes the window directly. Android,
+iOS and the web have no tray: `TraySupported()` reports false and the calls do nothing.
 
 `SetCloseToTray(on)` and `SetMinimizeToTray(on)` change those options while the app runs,
 from a settings screen say, and `CloseToTray()` and `MinimizeToTray()` read them back.
@@ -342,11 +344,50 @@ The single-instance lock now also passes any second launch's arguments to the ru
 instance: `SingleInstanceLock.OnLaunchArgs` receives them (a file opened with the app,
 say), and the window comes to the front.
 
-## Not supported
+## Closing, window buttons and transparency
 
-A few common window features are deliberately absent because Gio does not expose them:
-closable/minimizable/maximizable flags, window transparency,
-native application menus and power-state callbacks (suspend/resume).
+`Config.OnCloseRequest` decides on a close the user asked for: the window's close button,
+Alt+F4 or Cmd+W, and the TitleBar's close button (`App.RequestClose`). Return true to close
+(or hide to the tray with `CloseToTray`), false to keep the window open, to ask about unsaved
+work first, say:
+
+```go
+var app *giode.App
+app = giode.New(giode.Config{
+	OnCloseRequest: func() bool {
+		if !doc.Dirty() {
+			return true
+		}
+		saveDialog.Open() // its buttons save or discard, then call app.Close()
+		return false
+	},
+})
+```
+
+It runs on the UI goroutine. `App.Close` and `App.Quit` don't ask. On Linux it needs
+`giode build`'s Gio patches, which pass the window manager's close (X11's
+`WM_DELETE_WINDOW`, Wayland's toplevel close) to it.
+
+`NoMinimize`, `NoMaximize` and `NoClose` take those buttons away: window styles and the
+system menu on Windows, the window's style mask and zoom button on macOS, Motif hints on
+X11, which KWin, Mutter, Xfwm and Openbox read. `NoClose` also refuses keyboard closes;
+`App.Close` still works. Wayland leaves the buttons to the compositor.
+
+`Transparent` lets the desktop show through where the app draws nothing, for rounded or
+shaped windows and overlays. Leave `Background` empty (or transparent) and draw the shape:
+
+```go
+giode.New(giode.Config{Transparent: true, Background: "", Frameless: true})
+// ...
+giode.Box(giode.Styles{Width: -1, Height: -1, Background: "theme.surface", BorderRadius: 16})
+```
+
+Windows uses DWM's blending of the window's alpha, macOS a non-opaque window and layer, and
+Linux under Wayland (with `giode build`'s Gio patches) a surface without an opaque region and
+an EGL configuration with alpha. X11 keeps an opaque background.
+
+Power callbacks (sleep and wake) are `Config.OnSuspend` and `OnResume`; see
+[platform services](platform.md#sleep-and-wake).
 
 ## Clipboard
 

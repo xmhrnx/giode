@@ -23,8 +23,11 @@ func (a *App) hideNativeWindow() bool {
 	if hideX11Window(a.NativeView()) {
 		return true
 	}
+	if a.waylandSetHidden(true) {
+		return true
+	}
 	if !trayWaylandWarned.Swap(true) {
-		a.logf(LogLevelWarning, "giode: Wayland can't hide windows; the window stays on screen")
+		a.logf(LogLevelWarning, "giode: hiding Wayland windows needs giode build's Gio patches; the window stays on screen")
 	}
 	return false
 }
@@ -33,20 +36,25 @@ var trayWaylandWarned atomic.Bool
 
 func (a *App) showNativeWindow() {
 	showX11Window(a.NativeView())
+	a.waylandSetHidden(false)
 	// Gio's Perform must run on the UI goroutine; ShowWindow may not.
-	a.Post(func() { a.window.Perform(system.ActionRaise) })
+	a.Post(func() {
+		if !a.waylandActivate() {
+			a.window.Perform(system.ActionRaise)
+		}
+	})
 }
 
 // trayCloseWarned limits the CloseToTray warning to once.
 var trayCloseWarned atomic.Bool
 
 func (a *App) warnTrayLimits() {
-	if a.closeToTray.Load() && trayCloseWarned.CompareAndSwap(false, true) {
-		a.logf(LogLevelWarning, "giode: CloseToTray isn't supported on Linux; closing the window quits")
+	if a.closeToTray.Load() && !linuxWindowPatched && trayCloseWarned.CompareAndSwap(false, true) {
+		a.logf(LogLevelWarning, "giode: CloseToTray on Linux needs giode build's Gio patches; closing the window quits")
 	}
 }
 
-func (a *App) platformInit()          {}
+func (a *App) platformInit()          { a.linuxWindowInit() }
 func (a *App) trayView(app.ViewEvent) {}
 func (a *App) applyTrayOptions()      { a.warnTrayLimits() }
 

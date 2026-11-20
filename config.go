@@ -144,6 +144,25 @@ type Config struct {
 	// OnBeforeClose runs when a window close is requested. It cannot
 	// veto the close.
 	OnBeforeClose func()
+	// OnCloseRequest runs on the UI goroutine when the user asks to
+	// close the window (its close button, Alt+F4, Cmd+W, the TitleBar's
+	// close button) and decides: true closes it (or hides it to the tray
+	// with CloseToTray), false keeps it open - to ask about unsaved work,
+	// say, and call App.Close later. App.Close and App.Quit don't ask.
+	// Linux needs giode build's Gio patches.
+	OnCloseRequest func() bool
+	// NoMinimize, NoMaximize and NoClose take the window's minimize,
+	// maximize (zoom) and close buttons away or disable them (Windows,
+	// macOS, X11 window managers that read Motif hints). NoClose also
+	// keeps keyboard closes (Alt+F4, Cmd+W) from closing the window;
+	// App.Close still does. Wayland leaves the buttons to the compositor.
+	NoMinimize, NoMaximize, NoClose bool
+	// Transparent makes the window's background transparent where the
+	// app's Background and drawing leave it so (with Background "" or a
+	// transparent color): rounded or shaped windows, overlays. Windows,
+	// macOS, and Linux on Wayland with giode build's Gio patches; X11
+	// keeps an opaque background.
+	Transparent bool
 	// OnKey receives the keys nothing in the UI took - app-wide
 	// shortcuts - after the focused field, dialogs, menus and the
 	// Escape and Back handlers have had theirs; see giode.OnKey. It

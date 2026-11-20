@@ -21,6 +21,12 @@ func (a *App) handleViewEvent(ev app.ViewEvent) {
 	a.placementView(ev)
 	a.startInTray(ev)
 	a.a11yView(ev)
+	if a.cfg.Transparent && ev.Valid() {
+		a.transparentView()
+	}
+	if (a.cfg.NoMinimize || a.cfg.NoMaximize || a.cfg.NoClose) && ev.Valid() {
+		a.windowButtonsView()
+	}
 	if pending && a.windowHidden.Load() {
 		a.hideNow()
 	}
