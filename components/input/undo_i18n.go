@@ -22,4 +22,15 @@ func init() {
 	} {
 		i18n.AddBuiltin(loc, map[string]any{"giode.undo": t[0], "giode.redo": t[1]})
 	}
+	for loc, t := range map[string]string{
+		"en": "Add to dictionary", "de": "Zum Wörterbuch hinzufügen", "fr": "Ajouter au dictionnaire",
+		"es": "Añadir al diccionario", "it": "Aggiungi al dizionario", "pt": "Adicionar ao dicionário",
+		"nl": "Toevoegen aan woordenboek", "sv": "Lägg till i ordlistan", "pl": "Dodaj do słownika",
+		"ru": "Добавить в словарь", "uk": "Додати до словника", "tr": "Sözlüğe ekle",
+		"fa": "افزودن به واژه‌نامه", "ar": "إضافة إلى القاموس", "he": "הוספה למילון", "hi": "शब्दकोश में जोड़ें",
+		"ja": "辞書に追加", "ko": "사전에 추가", "zh": "添加到词典", "zh-tw": "加入字典", "zh-hk": "加入字典",
+		"id": "Tambahkan ke kamus", "vi": "Thêm vào từ điển", "th": "เพิ่มลงในพจนานุกรม",
+	} {
+		i18n.AddBuiltin(loc, map[string]any{"giode.learn": t})
+	}
 }

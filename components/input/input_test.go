@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/gpu/headless"
@@ -28,9 +29,11 @@ type harness struct {
 	max image.Point
 }
 
-func (h *harness) frame() layout.Dimensions {
+func (h *harness) frame() layout.Dimensions { return h.frameAt(time.Time{}) }
+
+func (h *harness) frameAt(now time.Time) layout.Dimensions {
 	var ops op.Ops
-	gtx := layout.Context{Ops: &ops, Source: h.r.Source(), Constraints: layout.Constraints{Max: h.max}}
+	gtx := layout.Context{Ops: &ops, Now: now, Source: h.r.Source(), Constraints: layout.Constraints{Max: h.max}}
 	dims := h.in.Layout(gtx)
 	h.r.Frame(&ops)
 	return dims

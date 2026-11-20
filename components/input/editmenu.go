@@ -2,6 +2,7 @@ package input
 
 import (
 	"image"
+	"strings"
 	"time"
 
 	"gioui.org/f32"
@@ -37,8 +38,12 @@ type editMenu struct {
 
 	// outside observes presses anywhere, to close the menu.
 	outside int
-	buttons map[string]*elements.Pressable
-	action  string
+
+	// sugg are the corrections offered for suggWord.
+	suggWord string
+	sugg     []string
+	buttons  map[string]*elements.Pressable
+	action   string
 
 	start, end handle
 }
@@ -204,6 +209,14 @@ func (m *editMenu) do(gtx layout.Context, in *Input, action string) {
 	case "redo":
 		in.Redo()
 		m.close()
+	case "learn":
+		m.learn(in)
+		m.close()
+	default:
+		if fix, ok := strings.CutPrefix(action, "fix:"); ok {
+			m.fix(in, fix)
+			m.close()
+		}
 	}
 	kit.RequestFrame(gtx)
 }
@@ -211,7 +224,7 @@ func (m *editMenu) do(gtx layout.Context, in *Input, action string) {
 // actions returns the menu's actions for the field's state.
 func (m *editMenu) actions(in *Input) []string {
 	ed := &in.editor
-	var out []string
+	out := m.spellActions(in)
 	sel := ed.SelectionLen() > 0
 	if sel && !ed.ReadOnly && ed.Mask == 0 {
 		out = append(out, "cut")

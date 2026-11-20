@@ -37,6 +37,9 @@ func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 		if kit.SetReturnKeyDone != nil {
 			kit.SetReturnKeyDone(i.editor.SingleLine && i.editor.Submit)
 		}
+		if kit.SetAutofill != nil {
+			kit.SetAutofill(int(i.autofillKind()))
+		}
 	}
 	// Where the field is, for a tap outside it to dismiss the keyboard.
 	elements.TrackPosition(&i.fieldOrigin)

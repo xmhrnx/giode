@@ -228,6 +228,7 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 	}
 	sa, sb := i.editor.Selection()
 	i.hist.note(i.editor.Text(), sa, sb, now)
+	i.updateSpell(gtx)
 	focused := gtx.Source.Focused(&i.editor)
 	if focused != i.focused {
 		changed = true

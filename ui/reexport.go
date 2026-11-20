@@ -1345,3 +1345,21 @@ type ComboSource = combobox.Source
 
 // PaletteCommand is a CommandPalette command.
 type PaletteCommand = palette.Command
+
+// AutofillKind is what a text field holds, for password managers and
+// AutoFill: Input.Autofill.
+type AutofillKind = input.AutofillKind
+
+// What a text field holds; see Input.Autofill.
+const (
+	AutofillNone        = input.AutofillNone
+	AutofillUsername    = input.AutofillUsername
+	AutofillPassword    = input.AutofillPassword
+	AutofillNewPassword = input.AutofillNewPassword
+	AutofillEmail       = input.AutofillEmail
+	AutofillOneTimeCode = input.AutofillOneTimeCode
+	AutofillName        = input.AutofillName
+	AutofillPhone       = input.AutofillPhone
+	AutofillAddress     = input.AutofillAddress
+	AutofillPostalCode  = input.AutofillPostalCode
+)

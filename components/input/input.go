@@ -22,6 +22,8 @@ type Input struct {
 	editor      widget.Editor
 	hist        history
 	rtl         bool
+	spell       spellState
+	autofill    AutofillKind
 	placeholder string
 	label       string
 	// required and invalid mark the field for screen readers; invalid

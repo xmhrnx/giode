@@ -2,11 +2,15 @@ package input
 
 import (
 	"image"
+	"slices"
+	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/io/key"
 
 	"github.com/xmhrnx/giode/fonts"
+	"github.com/xmhrnx/giode/spellcheck"
 )
 
 func newFocused(t *testing.T) (*Input, *harness) {
@@ -181,5 +185,42 @@ func TestInput_WordEditsAndHistory(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("menu actions %v lack undo", acts)
+	}
+}
+
+func TestInput_SpellCheck(t *testing.T) {
+	if !spellcheck.Available("en-US") {
+		t.Skip("no English spell checker here")
+	}
+	in, h := newFocused(t)
+	in.SpellCheck(true).SpellLanguage("en-US")
+	h.edit(0, 0, "Teh brwn fox")
+	// The check runs once typing pauses, off the UI goroutine.
+	deadline := time.Now().Add(3 * time.Second)
+	for len(in.Misspellings()) < 2 && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+		h.frameAt(time.Now().Add(time.Second))
+	}
+	ms := in.Misspellings()
+	if len(ms) != 2 || ms[0].Word != "Teh" || ms[1].Word != "brwn" {
+		t.Fatalf("misspellings %+v", ms)
+	}
+	// With the caret in "brwn", the menu offers corrections first.
+	in.SetSelection(5, 5)
+	acts := in.menu.actions(in)
+	if len(acts) == 0 || !strings.HasPrefix(acts[0], "fix:") || !slices.Contains(acts, "fix:brown") || !slices.Contains(acts, "learn") {
+		t.Fatalf("actions %v", acts)
+	}
+	in.menu.fix(in, "brown")
+	if in.Text() != "Teh brown fox" {
+		t.Errorf("fixed: %q", in.Text())
+	}
+	// Learning a word drops its underline.
+	in.SetSelection(1, 1)
+	in.menu.learn(in)
+	for _, m := range in.Misspellings() {
+		if m.Word == "Teh" {
+			t.Error("learned word still underlined")
+		}
 	}
 }

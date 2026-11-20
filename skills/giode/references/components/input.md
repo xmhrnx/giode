@@ -88,6 +88,24 @@ Korean composition, Persian and Arabic keyboards, and Android and iOS predictive
 autocorrect replacing the word being typed. Mixed right-to-left and left-to-right text
 moves the caret through every position and selects by logical order.
 
+**Spell checking.** `SpellCheck(true)` underlines misspelled words in red once typing pauses,
+and the edit menu (right-click, or a long press) offers corrections and Add to dictionary.
+It uses the platform's checker: NSSpellChecker on macOS, UITextChecker on iOS, the Windows
+spell checker, Android's spell checker service and Hunspell on Linux, with the dictionaries
+installed (`hunspell-en-us` and the like). `SpellLanguage("fa")` picks the language, the
+user's by default; `Misspellings()` lists what's found. Package `spellcheck` offers the same
+checks for your own text (`Check`, `Suggest`, `Learn`, `Ignore`). On phones the keyboard's own
+corrections and predictions work too: text fields get them, numbers, addresses, passwords and
+`Autocorrect(false)` fields don't.
+
+**Autofill.** `Autofill(giode.AutofillUsername)`, `AutofillPassword`, `AutofillNewPassword`,
+`AutofillEmail`, `AutofillOneTimeCode`, `AutofillName`, `AutofillPhone`, `AutofillAddress` or
+`AutofillPostalCode` tells password managers and the keyboard what the field holds: iOS offers
+saved passwords, strong new ones and codes from messages above the keyboard, and Android's
+autofill service (Google Password Manager, 1Password, Bitwarden) fills the focused field. A
+`Password` field is `AutofillPassword` unless set otherwise. Builds made with the Giode CLI
+have it.
+
 Styles: `Color` (text), `Background` (fill), `BorderWidth`/`BorderColor`/`BorderRadius`
 (frame, 1px border by default), `Padding` (12x8 by default). Expands to the available
 width; set `Width` to fix it.

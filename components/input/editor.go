@@ -89,6 +89,7 @@ func (e *editorEl) Layout(gtx layout.Context) layout.Dimensions {
 	e.input.textOrigin = elements.AbsolutePosition()
 	e.input.lineHeight = gtx.Sp(size)
 	dims := e.input.editor.Layout(gtx, fonts.Shaper(), face, size, textColor, selColor)
+	e.input.drawSpelling(gtx)
 	// Long-press (or right-click) for Cut, Copy, Paste and Select all.
 	e.input.menu.layout(gtx, e.input, dims.Size)
 	return dims

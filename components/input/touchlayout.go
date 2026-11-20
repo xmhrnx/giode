@@ -2,6 +2,7 @@ package input
 
 import (
 	"image"
+	"strings"
 
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
@@ -107,8 +108,8 @@ func (m *editMenu) layoutBar(gtx layout.Context, acts []string, sel image.Rectan
 					bg = "#374151"
 				}
 				return elements.Box(styles.Styles{Background: properties.Color(bg), BorderRadius: 6, Padding: properties.SymmetricInset(12, 8)},
-					elements.Text(i18n.T("giode."+action), styles.Styles{Color: "#f9fafb", FontSize: 14}))
-			}).Label(i18n.T("giode." + a)).OnClick(func(elements.ClickEvent) { m.action = action })
+					elements.Text(actionLabel(action), styles.Styles{Color: "#f9fafb", FontSize: 14, FontWeight: actionWeight(action)}))
+			}).Label(actionLabel(a)).OnClick(func(elements.ClickEvent) { m.action = action })
 			m.buttons[a] = btn
 		}
 		items = append(items, btn)
@@ -137,4 +138,21 @@ func (m *editMenu) layoutBar(gtx layout.Context, acts []string, sel image.Rectan
 	track.Place(pos)
 	defer op.Offset(pos).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
+}
+
+// actionLabel is a menu action's text: a correction as it's spelled,
+// the rest translated.
+func actionLabel(action string) string {
+	if fix, ok := strings.CutPrefix(action, "fix:"); ok {
+		return fix
+	}
+	return i18n.T("giode." + action)
+}
+
+// actionWeight shows corrections in bold, as the platforms do.
+func actionWeight(action string) properties.FontWeight {
+	if strings.HasPrefix(action, "fix:") {
+		return properties.FontWeightBold
+	}
+	return ""
 }
