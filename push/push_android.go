@@ -105,3 +105,4 @@ func Java_org_giode_push_push_1android_onTokenResult(env *C.JNIEnv, cls C.jclass
 func Java_org_giode_push_push_1android_onPermission(env *C.JNIEnv, cls C.jclass, id C.jint, granted C.jboolean) {
 	permissions.Done(int(id), granted != 0)
 }
+func keys() (WebPushKeys, error) { return WebPushKeys{}, giode.ErrNotSupported }

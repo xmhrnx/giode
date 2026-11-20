@@ -1,4 +1,4 @@
-//go:build !android && !darwin
+//go:build !android && !darwin && !linux && !windows
 
 package push
 
@@ -14,4 +14,5 @@ func token(ctx context.Context) (string, error) { return "", giode.ErrNotSupport
 
 func requestPermission(ctx context.Context, a *giode.App) (bool, error) { return true, nil }
 
-func unregister() error { return giode.ErrNotSupported }
+func unregister() error          { return giode.ErrNotSupported }
+func keys() (WebPushKeys, error) { return WebPushKeys{}, giode.ErrNotSupported }

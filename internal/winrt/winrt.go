@@ -107,3 +107,7 @@ func NameGUID(name string) GUID {
 	b[8] = b[8]&0x3f | 0x80
 	return guidFromBytes(b)
 }
+
+// ToastCLSID is the COM class of an app's toast activator, from its ID;
+// giode build declares the same in the app's MSIX manifest.
+func ToastCLSID(appID string) GUID { return NameGUID("toast:" + appID) }

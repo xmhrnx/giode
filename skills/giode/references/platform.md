@@ -677,7 +677,7 @@ recorded.
 ## Push notifications
 
 The `push` package receives remote notifications: Firebase Cloud Messaging on Android,
-APNs on iOS and macOS.
+APNs on iOS and macOS, WNS on Windows and UnifiedPush on Linux.
 
 ```go
 import "github.com/xmhrnx/giode/push"
@@ -711,6 +711,22 @@ Setup in `giode.toml`:
 - iOS: `ios.push = "production"` (or `"development"`), with push enabled for the app id
   and in its provisioning profile. Silent pushes (`content-available`) wake the app.
 - macOS: `macos.push`, which needs `macos.profile`, a provisioning profile.
+- Windows: an MSIX build (`giode build -target msix`) associated with the app's
+  Microsoft Store listing. `Token` is the WNS channel URI; the server sends to it with
+  the listing's credentials. Toasts arriving while the app isn't running are shown by
+  Windows, and a click starts the app and calls `Open` with the toast's `launch`
+  arguments in `Data["launch"]`. Raw notifications arrive while the app runs. Channels
+  expire after 30 days: get the token at each start and send it when it changed.
+- Linux: a UnifiedPush distributor on the user's desktop (KDE's KUnifiedPush, ntfy's
+  desktop client, NextPush). `Token` is the app's endpoint URL, or `push.ErrNoDistributor`
+  when there's none; the server POSTs messages to it. Encrypt them as Web Push does
+  (RFC 8291, aes128gcm) with `push.Keys()`, the device's `p256dh` and `auth`: any Web Push
+  library does it, and the package decrypts them. A message is JSON with `title`, `body`
+  and `data` (as on the other systems), a flat JSON object (all data), or text
+  (`Data["message"]`). A message for an app that isn't running starts it through D-Bus
+  activation: giode build's packages install the service file, and an app run otherwise
+  writes one under `~/.local/share/dbus-1/services` the first time. Nothing is shown on
+  its own: show it with [notifications](notifications.md) from `Message`.
 
 On Android, a tap on a notification while the app is still running in the background
 brings it forward without calling `Open`; only launches carry the message.

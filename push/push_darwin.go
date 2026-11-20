@@ -106,3 +106,4 @@ func giodePushMessage(js *C.char, opened C.int) {
 func giodePushPermission(id, granted C.int) {
 	permissions.Done(int(id), granted != 0)
 }
+func keys() (WebPushKeys, error) { return WebPushKeys{}, giode.ErrNotSupported }

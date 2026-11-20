@@ -70,7 +70,7 @@ func appID() string {
 
 // ActivatorCLSID is the COM class of an app's toast activator, derived
 // from its ID: giode build puts the same in the MSIX manifest.
-func activatorCLSID() winrt.GUID { return winrt.NameGUID("toast:" + appID()) }
+func activatorCLSID() winrt.GUID { return winrt.ToastCLSID(appID()) }
 
 // packagedAUMID returns the AppUserModelID of a packaged app, or "".
 func packagedAUMID() string {

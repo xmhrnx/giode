@@ -1,6 +1,7 @@
 // Package push receives remote push notifications: Firebase Cloud
 // Messaging (FCM) on Android, the Apple Push Notification service
-// (APNs) on iOS and macOS. Elsewhere its functions return
+// (APNs) on iOS and macOS, the Windows Push Notification Services (WNS)
+// on Windows, and UnifiedPush on Linux. Elsewhere its functions return
 // giode.ErrNotSupported.
 //
 // The app hands Token's result to its server, which sends messages to
@@ -19,6 +20,17 @@
 //     account, and ios.push (or macos.push) set to "development" or
 //     "production" in giode.toml, which adds the aps-environment
 //     entitlement. The server sends to APNs with the app's key.
+//   - Windows: the app packaged as MSIX (giode build -target msix) and
+//     associated with its Microsoft Store listing; Token is the WNS
+//     channel URI, and the server sends to it with the listing's
+//     credentials. Toasts arriving while the app isn't running are shown
+//     by Windows.
+//   - Linux: a UnifiedPush distributor on the user's desktop (KDE's
+//     KUnifiedPush, ntfy...). Token is the app's endpoint URL; the server
+//     posts messages to it, encrypted with Keys (Web Push, RFC 8291).
+//     Messages for an app that isn't running start it (the package
+//     installs a D-Bus service file for that); the app shows what it
+//     wants with giode/notification.
 package push
 
 import (
@@ -94,7 +106,8 @@ func Listen(a *giode.App, h Handlers) error {
 }
 
 // Token returns the device's push token: the FCM registration token on
-// Android, the APNs device token (hex) on iOS and macOS. It registers
+// Android, the APNs device token (hex) on iOS and macOS, the WNS channel
+// URI on Windows, the UnifiedPush endpoint URL on Linux. It registers
 // the device with the push service the first time, which needs a
 // network connection.
 func Token(ctx context.Context) (string, error) {
@@ -106,6 +119,14 @@ func Token(ctx context.Context) (string, error) {
 // reports true. It reports whether they're allowed.
 func RequestPermission(ctx context.Context, a *giode.App) (bool, error) {
 	return requestPermission(ctx, a)
+}
+
+// Keys returns the device's Web Push keys (Linux), which the server
+// encrypts messages with; the package decrypts them. Messages that
+// aren't encrypted arrive as they are. Elsewhere it returns
+// giode.ErrNotSupported.
+func Keys() (WebPushKeys, error) {
+	return keys()
 }
 
 // Unregister deletes the device's token, so the server's messages no
@@ -176,4 +197,43 @@ func received(js string, opened bool) {
 		kind = evOpen
 	}
 	deliver(event{kind: kind, msg: m})
+}
+
+// parseRaw reads a message's bytes: JSON with title, body and data (as
+// FCM and APNs messages come), a flat JSON object as data, or anything
+// else as Data["message"].
+func parseRaw(b []byte) Message {
+	if m, err := parseMessage(string(b)); err == nil && (m.Title != "" || m.Body != "" || len(m.Data) > 0) {
+		if len(m.Data) == 0 {
+			var flat map[string]json.RawMessage
+			if json.Unmarshal(b, &flat) == nil {
+				for k, v := range flat {
+					if k == "title" || k == "body" || k == "id" {
+						continue
+					}
+					var s string
+					if json.Unmarshal(v, &s) == nil {
+						m.Data[k] = s
+					} else {
+						m.Data[k] = string(v)
+					}
+				}
+			}
+		}
+		return m
+	}
+	var flat map[string]json.RawMessage
+	if json.Unmarshal(b, &flat) == nil {
+		m := Message{Data: map[string]string{}}
+		for k, v := range flat {
+			var s string
+			if json.Unmarshal(v, &s) == nil {
+				m.Data[k] = s
+			} else {
+				m.Data[k] = string(v)
+			}
+		}
+		return m
+	}
+	return Message{Data: map[string]string{"message": string(b)}}
 }
