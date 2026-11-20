@@ -13,6 +13,7 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/image v0.26.0
+	golang.org/x/net v0.48.0
 	golang.org/x/sys v0.39.0
 )
 
@@ -23,6 +24,5 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
-	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 )
