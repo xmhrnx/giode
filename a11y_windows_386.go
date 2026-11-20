@@ -20,3 +20,11 @@ func elementFromPointCallback() uintptr {
 		return sOK
 	})
 }
+
+// uiaRangeFromPointCallback is ITextProvider.RangeFromPoint, whose
+// UiaPoint 32-bit Windows passes on the stack: four words.
+func uiaRangeFromPointCallback(f func(this unsafe.Pointer, out *unsafe.Pointer) uintptr) uintptr {
+	return windows.NewCallback(func(this unsafe.Pointer, x0, x1, y0, y1 uintptr, out *unsafe.Pointer) uintptr {
+		return f(this, out)
+	})
+}

@@ -75,7 +75,8 @@ Landmarks are regions to screen readers too, which list them by name to jump bet
 
 A text field reports its caret and selection with its text (not a password field's), so a
 screen reader reads the character, word or selection the caret moves over and can move
-the caret itself: Orca through AT-SPI's Text interface, VoiceOver on macOS through the
+the caret itself: Narrator and NVDA through UI Automation's Text pattern (ranges by
+character, word and line), Orca through AT-SPI's Text interface, VoiceOver on macOS through the
 selected text range, TalkBack through the node's text selection (giode CLI patches,
 revision 21 on). A custom field reports them with `HasCaret`, `Caret` and `Anchor` on its
 node, and takes them back through a `SetSelection(start, end int)` method on its `Target`.

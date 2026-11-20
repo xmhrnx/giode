@@ -121,3 +121,62 @@ func TestUIAProviders(t *testing.T) {
 		t.Error("no runtime ID")
 	}
 }
+
+// TestUIATextPattern reads a field's text, selection and words through
+// ITextProvider and ITextRangeProvider, as Narrator does.
+func TestUIATextPattern(t *testing.T) {
+	uiaOnce.Do(initUIAVtables)
+	tree := newA11yTree()
+	tree.update([]elements.SemanticNode{
+		{ID: "name", Kind: elements.SemanticInput, Label: "Name", Value: "Ada Lovelace", Bounds: image.Rect(0, 0, 120, 30),
+			Focused: true, HasCaret: true, Caret: 12, Anchor: 4},
+	})
+	b := &uiaBridge{t: tree, objs: map[int32]*uiaNode{}}
+	field := b.provider(tree.number("name"), offSimple)
+	var text unsafe.Pointer
+	if hr := comCall(field, 4, patText, uintptr(unsafe.Pointer(&text))); hr != sOK || text == nil {
+		t.Fatalf("GetPatternProvider(text) = 0x%x", hr)
+	}
+	getText := func(r unsafe.Pointer) string {
+		var s *uint16
+		if hr := comCall(r, 12, ^uintptr(0), uintptr(unsafe.Pointer(&s))); hr != sOK {
+			t.Fatalf("GetText = 0x%x", hr)
+		}
+		return windows.UTF16PtrToString(s)
+	}
+	var doc unsafe.Pointer
+	comCall(text, 7, uintptr(unsafe.Pointer(&doc)))
+	if got := getText(doc); got != "Ada Lovelace" {
+		t.Errorf("document = %q", got)
+	}
+	// The selection: one range, "Lovelace".
+	var sa uintptr
+	comCall(text, 3, uintptr(unsafe.Pointer(&sa)))
+	var sel unsafe.Pointer
+	idx := int32(0)
+	if hr, _, _ := windows.NewLazySystemDLL("oleaut32.dll").NewProc("SafeArrayGetElement").Call(sa, uintptr(unsafe.Pointer(&idx)), uintptr(unsafe.Pointer(&sel))); hr != sOK || sel == nil {
+		t.Fatalf("selection array: 0x%x", hr)
+	}
+	if got := getText(sel); got != "Lovelace" {
+		t.Errorf("selection = %q", got)
+	}
+	// A degenerate range at the start, expanded to its word, moved one
+	// word on.
+	var r unsafe.Pointer
+	comCall(doc, 3, uintptr(unsafe.Pointer(&r)))
+	var moved int32
+	comCall(r, 14, 1, uintptr(unitDocument), ^uintptr(0), uintptr(unsafe.Pointer(&moved))) // end to the start
+	comCall(r, 6, uintptr(unitWord))
+	if got := getText(r); got != "Ada " {
+		t.Errorf("first word = %q", got)
+	}
+	comCall(r, 13, uintptr(unitWord), 1, uintptr(unsafe.Pointer(&moved)))
+	if got := getText(r); got != "Lovelace" || moved != 1 {
+		t.Errorf("next word = %q (moved %d)", got, moved)
+	}
+	var cmp int32
+	comCall(r, 4, uintptr(sel), uintptr(unsafe.Pointer(&cmp)))
+	if cmp == 0 {
+		t.Error("the moved word doesn't compare equal to the selection")
+	}
+}

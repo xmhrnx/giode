@@ -68,6 +68,7 @@ const (
 	patExpandCollapse = 10005
 	patSelectionItem  = 10010
 	patToggle         = 10015
+	patText           = 10014
 
 	propProcessID            = 30002
 	propControlType          = 30003
@@ -101,6 +102,8 @@ const (
 
 	evFocusChanged      = 20005
 	evLiveRegionChanged = 20024
+	evTextSelection     = 20014
+	evTextChanged       = 20015
 
 	landmarkCustom = 80000
 	headingLevel1  = 80051
@@ -168,6 +171,7 @@ type uiaNode struct {
 	rangeV   *[10]uintptr
 	expand   *[6]uintptr
 	selItem  *[8]uintptr
+	text     *[9]uintptr
 
 	refs atomic.Int32
 	b    *uiaBridge
@@ -185,6 +189,7 @@ var (
 	offRange    = unsafe.Offsetof(uiaNode{}.rangeV)
 	offExpand   = unsafe.Offsetof(uiaNode{}.expand)
 	offSelItem  = unsafe.Offsetof(uiaNode{}.selItem)
+	offText     = unsafe.Offsetof(uiaNode{}.text)
 )
 
 // nodeOf returns the object whose slot at off this is.
@@ -209,6 +214,12 @@ type uiaBridge struct {
 	// notify is set where UiaRaiseNotificationEvent exists (Windows 10
 	// 1709 on).
 	notify bool
+	// ranges keeps the text ranges clients hold from the collector.
+	ranges map[*uiaRange]struct{}
+	// caret and text are the focused field's last frame, to report
+	// changes.
+	caret [3]int
+	text  string
 }
 
 var (
@@ -222,6 +233,8 @@ var (
 	vtRange    *[10]uintptr
 	vtExpand   *[6]uintptr
 	vtSelItem  *[8]uintptr
+	vtText     *[9]uintptr
+	vtTextRng  *[21]uintptr
 	uiaMu      sync.Mutex
 	uiaBridges = map[*App]*uiaBridge{}
 )
@@ -356,8 +369,10 @@ func initUIAVtables() {
 	}
 	rangeV := &[10]uintptr{u[0], u[1], u[2],
 		// SetValue takes a double, in a floating-point register a Go
-		// callback can't read: the slider's keys change it instead.
-		windows.NewCallback(func(this unsafe.Pointer) uintptr { return eNotImpl }),
+		// callback can't read: the slider's keys change it instead. It
+		// declares two words for it, as 32-bit Windows passes it on the
+		// stack and the callee pops it.
+		windows.NewCallback(func(this unsafe.Pointer, _, _ uintptr) uintptr { return eNotImpl }),
 		rangeGet(func(n elements.SemanticNode) float64 { return n.Now }),
 		windows.NewCallback(func(this unsafe.Pointer, out *int32) uintptr {
 			n, ok := nodeOf(this, offRange).node()
@@ -417,6 +432,7 @@ func initUIAVtables() {
 	}
 	vtSimple, vtFragment, vtRoot, vtInvoke, vtToggle = simple, fragment, root, invoke, toggle
 	vtValue, vtRange, vtExpand, vtSelItem = value, rangeV, expand, selItem
+	initUIATextVtables()
 }
 
 // installA11y sets up the tree; the bridge starts when a screen reader
@@ -478,6 +494,7 @@ func (b *uiaBridge) obj(k int32) *uiaNode {
 		o = &uiaNode{b: b, k: k}
 		o.simple, o.fragment, o.root, o.invoke, o.toggle = vtSimple, vtFragment, vtRoot, vtInvoke, vtToggle
 		o.value, o.rangeV, o.expand, o.selItem = vtValue, vtRange, vtExpand, vtSelItem
+		o.text = vtText
 		b.objs[k] = o
 	}
 	return o
@@ -553,6 +570,8 @@ func patternOfIID(iid windows.GUID) (int32, bool) {
 		return patExpandCollapse, true
 	case iidSelectionItem:
 		return patSelectionItem, true
+	case iidTextProvider:
+		return patText, true
 	}
 	return 0, false
 }
@@ -571,6 +590,8 @@ func patternOffset(pat int32) uintptr {
 		return offExpand
 	case patSelectionItem:
 		return offSelItem
+	case patText:
+		return offText
 	}
 	return 0
 }
@@ -589,6 +610,8 @@ func uiaHasPattern(n elements.SemanticNode, pat int32) bool {
 	switch pat {
 	case patToggle:
 		return n.Checked != elements.NotCheckable
+	case patText:
+		return n.HasCaret || textual(n)
 	case patSelectionItem:
 		switch n.Kind {
 		case elements.SemanticRadio, elements.SemanticTab, elements.SemanticTreeItem, elements.SemanticListItem:
@@ -1008,6 +1031,7 @@ func (b *uiaBridge) events() {
 		}
 		if n.Focused {
 			b.raiseState(k, n)
+			b.raiseText(k, n)
 		}
 		if !b.notify && (n.Live != elements.LiveOff || n.Kind == elements.SemanticAlert) {
 			b.raise(k, evLiveRegionChanged)

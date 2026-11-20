@@ -18,3 +18,11 @@ func elementFromPointCallback() uintptr {
 		return fromCursor(this, out)
 	})
 }
+
+// uiaRangeFromPointCallback is ITextProvider.RangeFromPoint, whose
+// UiaPoint arm64 passes in two floating-point registers.
+func uiaRangeFromPointCallback(f func(this unsafe.Pointer, out *unsafe.Pointer) uintptr) uintptr {
+	return windows.NewCallback(func(this unsafe.Pointer, out *unsafe.Pointer) uintptr {
+		return f(this, out)
+	})
+}
