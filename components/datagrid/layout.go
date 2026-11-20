@@ -23,8 +23,11 @@ import (
 
 // frameLayout is where the last frame put things, in px.
 type frameLayout struct {
-	size            image.Point
+	size image.Point
+	// headerH is the header's height: the titles (titleH) and the filter
+	// row under them (filterH, 0 without one).
 	headerH, rowH   int
+	titleH, filterH int
 	checkW, frozenW int
 	// colX are the display columns' left edges in the content, before
 	// scrolling (frozen ones never scroll); colX[len] is the content's
@@ -90,6 +93,7 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 		g.edit.refocus = false
 		gtx.Execute(key.FocusCmd{Tag: g})
 	}
+	g.filtersDue(gtx)
 	if g.groupBy != "" && g.view == nil {
 		g.rebuildView()
 	}
@@ -142,12 +146,13 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 
 	g.paintFooter(gtx, pal)
 	g.paintHeader(gtx, pal)
+	g.layoutFilters(gtx, pal)
 	g.paintScrollbars(gtx)
 	g.paintStatus(gtx, pal)
 
 	// The column menu opens over the header, the row menu over the
 	// body.
-	g.headCtx.AnchorContext(gtx, image.Pt(size.X, l.headerH))
+	g.headCtx.AnchorContext(gtx, image.Pt(size.X, l.titleH))
 	if g.rowMenu != nil {
 		off := op.Offset(body.Min).Push(gtx.Ops)
 		pop := elements.PushOffset(body.Min)
@@ -167,7 +172,12 @@ func (g *DataGrid) computeLayout(gtx layout.Context, size image.Point) {
 	if l.pxPerDp == 0 {
 		l.pxPerDp = 1
 	}
-	l.headerH, l.rowH = gtx.Dp(unit.Dp(g.headerH)), max(gtx.Dp(unit.Dp(g.rowH)), 1)
+	l.titleH, l.rowH = gtx.Dp(unit.Dp(g.headerH)), max(gtx.Dp(unit.Dp(g.rowH)), 1)
+	l.filterH = 0
+	if g.filterRow {
+		l.filterH = l.rowH + gtx.Dp(4)
+	}
+	l.headerH = l.titleH + l.filterH
 	l.checkW = 0
 	if g.checks {
 		l.checkW = gtx.Dp(40)
@@ -371,18 +381,18 @@ func (g *DataGrid) paintHeader(gtx layout.Context, pal palette) {
 				continue
 			}
 			col := g.cols[g.order[c]]
-			r := image.Rect(x, 0, x+w, l.headerH)
+			r := image.Rect(x, 0, x+w, l.titleH)
 			g.paintHeaderCell(gtx, pal, r, col)
-			paint.FillShape(gtx.Ops, pal.border, clip.Rect(image.Rect(r.Max.X-line, r.Min.Y+l.headerH/4, r.Max.X, r.Max.Y-l.headerH/4)).Op())
+			paint.FillShape(gtx.Ops, pal.border, clip.Rect(image.Rect(r.Max.X-line, r.Min.Y+l.titleH/4, r.Max.X, r.Max.Y-l.titleH/4)).Op())
 			// The resize handle: a strip at the column's right edge.
 			hw := gtx.Dp(6)
-			ha := clip.Rect(image.Rect(r.Max.X-hw/2-line, 0, r.Max.X+hw/2, l.headerH)).Push(gtx.Ops)
+			ha := clip.Rect(image.Rect(r.Max.X-hw/2-line, 0, r.Max.X+hw/2, l.titleH)).Push(gtx.Ops)
 			pointer.CursorColResize.Add(gtx.Ops)
 			ha.Pop()
 		}
 		if frozen && l.checkW > 0 {
 			all := g.sel.count(g.src.Len())
-			g.paintCheck(gtx, pal, image.Rect(0, 0, l.checkW, l.headerH), all > 0 && all == g.src.Len(), all > 0 && all < g.src.Len())
+			g.paintCheck(gtx, pal, image.Rect(0, 0, l.checkW, l.titleH), all > 0 && all == g.src.Len(), all > 0 && all < g.src.Len())
 		}
 		cl.Pop()
 	}
@@ -415,7 +425,12 @@ func (g *DataGrid) paintHeaderCell(gtx layout.Context, pal palette, r image.Rect
 	if inner.Dx() > 0 {
 		cgtx := gtx
 		cgtx.Constraints = layout.Constraints{Max: inner.Size()}
-		el := elements.Text(col.Title, styles.Styles{FontSize: g.fontSize(), FontWeight: properties.FontWeightSemiBold, Color: properties.CalcColorReverse(pal.text), MaxLines: 1, TextOverflow: properties.TextOverflowEllipsis, TextAlign: col.Align, Width: -1})
+		tc := pal.text
+		if g.filtered(col.Key) {
+			// A filtered column's title in the accent color.
+			tc = pal.focus
+		}
+		el := elements.Text(col.Title, styles.Styles{FontSize: g.fontSize(), FontWeight: properties.FontWeightSemiBold, Color: properties.CalcColorReverse(tc), MaxLines: 1, TextOverflow: properties.TextOverflowEllipsis, TextAlign: col.Align, Width: -1})
 		rec := op.Record(gtx.Ops)
 		pop := elements.PushOffset(inner.Min)
 		dims := kit.Unselectable(el.Layout)(cgtx)

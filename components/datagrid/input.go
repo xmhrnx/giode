@@ -30,6 +30,11 @@ const doubleClick = 400 * time.Millisecond
 // grid must be laid out again.
 func (g *DataGrid) update(gtx layout.Context) bool {
 	changed := false
+	if g.copyNext != "" {
+		// A menu's Copy item: the clipboard needs the frame.
+		kit.WriteClipboard(gtx, g.copyNext)
+		g.copyNext = ""
+	}
 	filters := []event.Filter{
 		pointer.Filter{Target: g, Kinds: pointer.Press | pointer.Release | pointer.Drag | pointer.Move | pointer.Leave | pointer.Cancel},
 		key.FocusFilter{Target: g},
@@ -110,7 +115,11 @@ func (g *DataGrid) hitTest(gtx layout.Context, p image.Point) hit {
 	if !p.In(image.Rectangle{Max: l.size}) {
 		return h
 	}
-	h.header = p.Y < l.headerH
+	h.header = p.Y < l.titleH
+	if p.Y >= l.titleH && p.Y < l.headerH {
+		// The filter row: its fields take their own input.
+		return h
+	}
 	if !h.header {
 		row := (p.Y - l.headerH + int(g.offY)) / l.rowH
 		if row < g.count() && p.Y < l.headerH+l.bodyH {
@@ -208,7 +217,7 @@ func (g *DataGrid) onPointer(gtx layout.Context, e pointer.Event) {
 			if g.dragging {
 				// Moved past the middle of a neighbour: swap with it,
 				// within the frozen columns or within the others.
-				h := g.hitTest(gtx, image.Pt(p.X, g.lay.headerH/2))
+				h := g.hitTest(gtx, image.Pt(p.X, g.lay.titleH/2))
 				if h.col >= 0 && h.col != g.dragCol && (h.col < g.lay.frozenCols) == (g.dragCol < g.lay.frozenCols) {
 					g.moveShown(g.dragCol, h.col)
 					g.dragCol = h.col
@@ -430,7 +439,9 @@ func (g *DataGrid) onKey(gtx layout.Context, e key.Event) {
 		}
 		return
 	case "C":
-		if mod {
+		if mod && e.Modifiers.Contain(key.ModShift) {
+			kit.WriteClipboard(gtx, g.CopyCSV())
+		} else if mod {
 			kit.WriteClipboard(gtx, g.CopyText())
 		}
 		return
@@ -458,10 +469,7 @@ func (g *DataGrid) onKey(gtx layout.Context, e key.Event) {
 // selected - as tab-separated text, a line per row, with the visible
 // columns' text: what Ctrl+C copies, for pasting into a spreadsheet.
 func (g *DataGrid) CopyText() string {
-	rows := g.SelectedRows()
-	if src, _ := g.at(g.focus.row); len(rows) == 0 && src >= 0 && src < g.src.Len() {
-		rows = []int{src}
-	}
+	rows := g.copyRows()
 	var b strings.Builder
 	for i, r := range rows {
 		if i > 0 {

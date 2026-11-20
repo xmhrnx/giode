@@ -238,6 +238,9 @@ const (
 
 type DataGridSortKey = ui.DataGridSortKey
 
+// DataGridFilter is a filter on a DataGrid column (SetFilter, OnFilter).
+type DataGridFilter = ui.DataGridFilter
+
 type DocTabsElement = ui.DocTabsElement
 
 // MenuElement is a Menu: a context menu, a menu bar's menu, or a

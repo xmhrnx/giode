@@ -47,6 +47,7 @@ type SliceSource[T any] struct {
 	rows  []int // indices into all, filtered and sorted
 	value func(T, string) any
 	keep  func(T) bool
+	cols  []ColumnFilter
 	sort  []SortKey
 }
 
@@ -70,6 +71,29 @@ func (s *SliceSource[T]) Filter(keep func(T) bool) {
 	s.refresh()
 }
 
+// SetFilters keeps the rows whose text (as the grid shows values without
+// a Column.Format) contains each filter's text in its column, ignoring
+// case, along with Filter's predicate. The grid calls it (Filterer).
+func (s *SliceSource[T]) SetFilters(filters []ColumnFilter) {
+	s.cols = s.cols[:0]
+	for _, f := range filters {
+		if f.Text != "" {
+			s.cols = append(s.cols, ColumnFilter{Key: f.Key, Text: strings.ToLower(f.Text)})
+		}
+	}
+	s.refresh()
+}
+
+// matches reports whether r passes the column filters.
+func (s *SliceSource[T]) matches(r T) bool {
+	for _, f := range s.cols {
+		if !strings.Contains(strings.ToLower(text(s.value(r, f.Key))), f.Text) {
+			return false
+		}
+	}
+	return true
+}
+
 // Row returns the item shown at row.
 func (s *SliceSource[T]) Row(row int) T { return s.all[s.rows[row]] }
 
@@ -91,7 +115,7 @@ func (s *SliceSource[T]) Sort(keys []SortKey) {
 func (s *SliceSource[T]) refresh() {
 	s.rows = s.rows[:0]
 	for i, r := range s.all {
-		if s.keep == nil || s.keep(r) {
+		if (s.keep == nil || s.keep(r)) && s.matches(r) {
 			s.rows = append(s.rows, i)
 		}
 	}

@@ -12,10 +12,12 @@ package datagrid
 import (
 	"image"
 	"slices"
+	"time"
 
 	"gioui.org/gesture"
 	"gioui.org/layout"
 
+	"github.com/xmhrnx/giode/components/input"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/components/menu"
 	"github.com/xmhrnx/giode/elements"
@@ -37,6 +39,8 @@ type Column struct {
 	Align properties.TextAlign
 	// Sortable lets a click on the header sort by the column.
 	Sortable bool
+	// Filterable gives the column a field in the filter row (FilterRow).
+	Filterable bool
 	// Hidden leaves the column out.
 	Hidden bool
 	// Format turns a value into the cell's text, for showing and
@@ -157,6 +161,18 @@ type DataGrid struct {
 	rowCtx  elements.Contextual
 	menuRow int
 	menuCol string
+	// copyNext is text a menu's Copy item put on the clipboard next
+	// frame.
+	copyNext string
+
+	// Filtering (see filter.go).
+	filterRow bool
+	filters   map[string]string
+	filterIn  map[string]*input.Input
+	filterDue time.Time
+	// frameNow is the last frame's time, for the filter row's delay.
+	frameNow time.Time
+	onFilter func([]ColumnFilter)
 }
 
 // cell is a position in the grid: a row, and a column in display
@@ -254,12 +270,13 @@ func (g *DataGrid) MoveColumn(key string, to int) {
 }
 
 // GridLayout is what the user changed about a grid - column order,
-// widths and visibility, the sort, the grouping - to save (it encodes
+// widths and visibility, the sort, the grouping, the filters - to save (it encodes
 // as JSON) and restore with RestoreLayout.
 type GridLayout struct {
 	Columns []ColumnLayout `json:"columns"`
 	Sort    []SortKey      `json:"sort,omitempty"`
 	GroupBy string         `json:"groupBy,omitempty"`
+	Filters []ColumnFilter `json:"filters,omitempty"`
 }
 
 // ColumnLayout is a column's place in a GridLayout.
@@ -276,7 +293,7 @@ func (g *DataGrid) SaveLayout() GridLayout {
 		c := g.cols[ci]
 		l.Columns = append(l.Columns, ColumnLayout{Key: c.Key, Width: int(g.widths[ci] + 0.5), Hidden: c.Hidden})
 	}
-	l.Sort, l.GroupBy = g.SortKeys(), g.groupBy
+	l.Sort, l.GroupBy, l.Filters = g.SortKeys(), g.groupBy, g.Filters()
 	return l
 }
 
@@ -308,6 +325,17 @@ func (g *DataGrid) RestoreLayout(l GridLayout) {
 	g.Sort(l.Sort...)
 	g.groupBy = l.GroupBy
 	g.collapsed = map[any]bool{}
+	if len(l.Filters) > 0 || len(g.filters) > 0 {
+		clear(g.filters)
+		for _, f := range l.Filters {
+			g.setFilterText(f.Key, f.Text)
+			if in := g.filterIn[f.Key]; in != nil {
+				in.SetText(f.Text)
+			}
+		}
+		g.applyFilters()
+		return
+	}
 	g.Refresh()
 }
 

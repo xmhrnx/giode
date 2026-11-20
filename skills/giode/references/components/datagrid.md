@@ -63,10 +63,47 @@ giode.Stack(giode.Styles{Width: -1, Height: -1}, toolbar, grid)
     row. Page Up and Page Down move a screenful.
   - Space toggles the row; Enter calls `OnActivate`, as a double click does; Ctrl/Cmd+A
     selects all.
-  - Ctrl/Cmd+C copies the selected rows as tab-separated text (`CopyText`), for pasting
-    into a spreadsheet.
+  - Ctrl/Cmd+C copies the selected rows (or the focused one) as tab-separated text
+    (`CopyText`), for pasting into a spreadsheet; Ctrl/Cmd+Shift+C copies them as CSV
+    (`CopyCSV`).
 - **Row menu.** `RowMenu(func(row int, col string, m *giode.MenuElement))` fills the menu a
-  right-click or long-press on a row opens.
+  right-click or long-press on a row opens; `col` is the column under the pointer, for
+  cell actions. `grid.CopyItems(m)` adds "Copy" and "Copy as CSV" to it.
+
+## Filtering
+
+`FilterRow(true)` shows a row of text fields under the header, one for each column with
+`Filterable: true`. Typing filters the rows a quarter of a second after the last key: the
+rows whose text in the column contains what's typed, ignoring case. A filtered column's
+title shows in the accent color.
+
+```go
+grid := giode.DataGrid(src, []giode.DataGridColumn{
+	{Key: "name", Title: "Name", Filterable: true, Sortable: true},
+	{Key: "city", Title: "City", Filterable: true},
+}).FilterRow(true)
+```
+
+The filters go to the source when it's a `datagrid.Filterer` (`SetFilters(filters
+[]ColumnFilter)`): `SliceSource` filters in memory, and a server-side source sends them
+with its query and reloads. `OnFilter(func([]ColumnFilter))` reports every change, for a
+source that isn't a `Filterer` (filter it, then `Refresh`). `SetFilter(key, text)`,
+`ClearFilters()` and `Filters()` work without the filter row too, for filters of your own
+UI. The filters are part of the saved layout (`SaveLayout`).
+
+## Export
+
+`Export(w, datagrid.CSV)` writes every row, in the grid's sort and filter, as CSV with a
+header line of the shown columns' titles; `datagrid.TSV` writes tab-separated values.
+Cells are written as they show (`Format`). `ExportRows(w, format, rows, header)` writes
+chosen rows, such as `SelectedRows()`. Rows a `Loader` hasn't loaded are written empty, so
+export a server-side grid from the server.
+
+```go
+f, _ := os.Create(path)
+defer f.Close()
+grid.Export(f, datagrid.CSV)
+```
 
 ## Sources
 
@@ -78,16 +115,19 @@ the rest:
 | `Keyer` | `Key(row) any` | A row's identity, so the selection follows it. |
 | `Sorter` | `Sort(keys []SortKey)` | Sorting when a header is clicked. |
 | `Loader` | `Loaded(row) bool`, `Load(from, to int)`, `Status() (loading bool, err error)` | Server-side paging: rows not loaded show placeholders. The grid asks for the rows on screen and a page around them, shows a bar while loading, and shows an error over the rows. |
+| `Filterer` | `SetFilters(filters []ColumnFilter)` | Filtering by column, in memory or on a server (see Filtering). |
 
 `datagrid.NewSliceSource(rows, value)` is a source over a slice. It sorts in memory with
 `datagrid.Compare`: numbers by value, times by time, and text case-insensitively with
-numbers in it by value ("item 2" before "item 10"). `Filter(keep)` hides rows, `SetRows`
-replaces them, and `Row(i)` returns the item at a row.
+numbers in it by value ("item 2" before "item 10"). It's a `Filterer`, and `Filter(keep)`
+hides rows by a predicate of your own besides. `SetRows` replaces the rows, and `Row(i)`
+returns the item at a row.
 
 ## Performance
 
 At 100 000 rows, a frame of smooth scrolling takes about 0.15 ms of layout on a desktop
-CPU, and a jump to an unseen part about 1.5 ms (`BenchmarkScroll100k`).
+CPU, and a jump to an unseen part about 1.5 ms (`BenchmarkScroll100k`). It hasn't been
+measured on a phone yet.
 
 ## Editing
 

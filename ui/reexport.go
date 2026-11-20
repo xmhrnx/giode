@@ -250,6 +250,9 @@ const (
 )
 
 type DataGridSortKey = datagrid.SortKey
+
+// DataGridFilter is a filter on a DataGrid column (SetFilter, OnFilter).
+type DataGridFilter = datagrid.ColumnFilter
 type DocTabsElement = doctabs.DocTabs
 
 // MenuElement is a Menu: a context menu, a menu bar's menu, or a
