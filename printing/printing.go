@@ -4,8 +4,10 @@
 //
 // Android uses its print service (PDF only); iOS the print panel (PDF
 // or an image); macOS the print panel (PDF or an image); Windows hands
-// the file to its default app's Print command. On Linux and the web it
-// returns giode.ErrNotSupported.
+// the file to its default app's Print command. Linux shows the desktop's
+// print dialog through the print portal for PDFs, and sends other files
+// (or PDFs without a portal) to CUPS's lp, on the default printer. On the
+// web it returns giode.ErrNotSupported.
 package printing
 
 import (

@@ -30,7 +30,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `audio` package (streams) | AudioRecord, AudioTrack | audio units, Info.plist key | audio units | WASAPI | PulseAudio, PipeWire | – |
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | Windows.Media.Ocr | Tesseract (installed) | – |
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | Windows Hello | fprintd | – |
-| `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
+| `printing` package | print service (PDF) | print panel | print panel | Print verb | print portal (PDF), `lp` | – |
 | `dictate.Start` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
 | `ReadClipboardImage` | ✓ | ✓ | ✓ | ✓ | `wl-paste` or `xclip` | ✓ (async clipboard) |
@@ -520,8 +520,10 @@ err := printing.Print(ctx, app, "scan.pdf", printing.Options{JobName: "Receipts"
 ```
 
 It opens the system's print dialog: Android's print service (PDFs), the print panel on iOS
-and macOS (PDFs and images), and on Windows the file's default app's Print command. Linux
-and the web return `ErrNotSupported`.
+and macOS (PDFs and images), and on Windows the file's default app's Print command. On Linux
+a PDF goes through the desktop portal's print dialog (GNOME's, KDE's); other files, and PDFs
+without a portal, go to CUPS's `lp` on the default printer, without a dialog. The web returns
+`ErrNotSupported`.
 
 ## Administrator rights
 

@@ -1,4 +1,4 @@
-//go:build !android && !darwin && !windows
+//go:build !android && !darwin && !windows && !(linux && !android)
 
 package printing
 
