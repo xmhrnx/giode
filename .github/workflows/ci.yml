@@ -73,6 +73,15 @@ jobs:
           export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
           gogio -target android -arch arm64 -appid org.giode.voicememo -o voicememo.apk ./examples/voicememo
           unzip -p voicememo.apk 'classes*.dex' | grep -aq "Lorg/giode/audio/audio_android;"
+      - name: Build the screen share example APK
+        # Compiles the screencap package's cgo and packs its Java helper
+        # and capture service.
+        run: |
+          export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
+          gogio -target android -arch arm64 -appid org.giode.screenshare -o screenshare.apk ./examples/screenshare
+          for c in screencap_android ScreenCaptureService; do
+            unzip -p screenshare.apk 'classes*.dex' | grep -aq "Lorg/giode/screencap/$c;" || { echo "missing $c"; exit 1; }
+          done
       - name: Compile the store and support packages for Android
         # Their Android code (Play Billing, the installer check) is in no
         # example app.
@@ -129,3 +138,8 @@ jobs:
         env:
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.voicememo -o voicememo.app ./examples/voicememo
+      - name: Build the screen share example for the simulator
+        # Compiles the screencap package's Objective-C (ReplayKit).
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.screenshare -o screenshare.app ./examples/screenshare

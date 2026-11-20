@@ -10,6 +10,7 @@ require (
 	github.com/go-fonts/stix v0.2.2
 	github.com/go-text/typesetting v0.3.4
 	github.com/godbus/dbus/v5 v5.1.0
+	github.com/jezek/xgb v1.3.1
 	github.com/jfreymuth/pulse v0.1.3
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef
 	github.com/yuin/goldmark v1.4.13

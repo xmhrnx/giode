@@ -30,6 +30,7 @@ in this conversation; the API is alpha and changes. Map:
 | Rich text editing, chat composers, mentions, Markdown in and out | `references/components/richeditor.md` |
 | Charts: line, bar, pie, funnel, gauge, heatmap, sparklines | `references/components/charts.md` |
 | Microphone and speaker streams, devices, voice processing for calls | `references/audio.md` |
+| Screen capture and screen sharing | `references/screencap.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |
