@@ -343,6 +343,7 @@ var (
 	speech    = map[int]chan Speech{}
 	docSets   = map[int]chan Documents{}
 	notifyReq = map[int]chan bool{}
+	passkeys  = map[int]chan PasskeyResult{}
 )
 
 func newID() int {
@@ -670,4 +671,48 @@ func ReadURI(vm, ctx uintptr, uri string, max int) ([]byte, error) {
 		return nil
 	})
 	return data, err
+}
+
+// PasskeyResult is how a passkey request ended: the response JSON, or
+// the Credential Manager's error type and message.
+type PasskeyResult struct {
+	JSON, ErrType, Err string
+}
+
+// Passkey registers a passkey (create) or signs in with one through the
+// Credential Manager, Android 14 and later. Call it on the main thread.
+func Passkey(vm, ctx, view uintptr, create bool, json, user, display string) (<-chan PasskeyResult, error) {
+	id := newID()
+	ch := make(chan PasskeyResult, 1)
+	reqMu.Lock()
+	passkeys[id] = ch
+	reqMu.Unlock()
+	err := callClass(vm, ctx, pickerClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "passkey", "(Landroid/view/View;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V")
+		c := 0
+		if create {
+			c = 1
+		}
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(view), jni.Value(id), jni.Value(c),
+			jni.Value(jni.JavaString(env, json)), jni.Value(jni.JavaString(env, user)), jni.Value(jni.JavaString(env, display)))
+	})
+	if err != nil {
+		reqMu.Lock()
+		delete(passkeys, id)
+		reqMu.Unlock()
+		return nil, err
+	}
+	return ch, nil
+}
+
+//export Java_org_giode_mobile_picker_1android_onPasskey
+func Java_org_giode_mobile_picker_1android_onPasskey(cenv *C.JNIEnv, cls C.jclass, id C.jint, json, errType, errStr C.jstring) {
+	env := jni.EnvFor(uintptr(unsafe.Pointer(cenv)))
+	reqMu.Lock()
+	ch := passkeys[int(id)]
+	delete(passkeys, int(id))
+	reqMu.Unlock()
+	if ch != nil {
+		ch <- PasskeyResult{JSON: goString(env, json), ErrType: goString(env, errType), Err: goString(env, errStr)}
+	}
 }

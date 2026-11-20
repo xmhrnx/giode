@@ -18,6 +18,7 @@ description = "An AI agent in your pocket."
 website = "https://example.com"
 schemes = ["agent"]           # URL schemes the app opens
 links = ["https://example.com/app/*"]   # universal links / App Links; see giode links
+passkeys = ["example.com"]               # domains the app uses passkeys for; see giode links
 share_target = true           # in the share sheet for files and text; see distribution.md
 tags = ""                     # Go build tags
 renderer = "opengl"           # Gio's OpenGL renderer on macOS and iOS (Config.Renderer)

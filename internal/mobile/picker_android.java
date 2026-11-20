@@ -42,6 +42,7 @@ public final class picker_android {
 	static native void onSpeech(int id, String text, boolean done, String err);
 	static native void onDocuments(int id, int[] fds, String[] names, long[] sizes, String err);
 	static native void onNotifyPermission(int id, boolean enabled);
+	static native void onPasskey(int id, String json, String errType, String err);
 
 	private static final String TAG = "giode_picker";
 
@@ -517,5 +518,64 @@ public final class picker_android {
 	static String first(Bundle b) {
 		ArrayList<String> list = b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
 		return list == null || list.isEmpty() ? null : list.get(0);
+	}
+
+	// The androidx.credentials keys passkey providers read: the framework
+	// Credential Manager (Android 14) carries them without the library.
+	private static final String PK_TYPE = "androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL";
+	private static final String PK_SUBTYPE = "androidx.credentials.BUNDLE_KEY_SUBTYPE";
+	private static final String PK_REQUEST_JSON = "androidx.credentials.BUNDLE_KEY_REQUEST_JSON";
+
+	// passkey registers a passkey (create) or signs in with one, from
+	// the WebAuthn options JSON, and answers onPasskey with the response
+	// JSON or the failure's type. Call on the main thread.
+	public static void passkey(View view, final int id, boolean create, String json, String user, String display) {
+		if (Build.VERSION.SDK_INT < 34) {
+			onPasskey(id, null, "unsupported", "passkeys need Android 14");
+			return;
+		}
+		Activity activity = (Activity) view.getContext();
+		android.credentials.CredentialManager cm = activity.getSystemService(android.credentials.CredentialManager.class);
+		if (cm == null) {
+			onPasskey(id, null, "unsupported", "no Credential Manager");
+			return;
+		}
+		Bundle data = new Bundle();
+		data.putString(PK_REQUEST_JSON, json);
+		if (create) {
+			data.putString(PK_SUBTYPE, "androidx.credentials.BUNDLE_VALUE_SUBTYPE_CREATE_PUBLIC_KEY_CREDENTIAL_REQUEST");
+			data.putBoolean("androidx.credentials.BUNDLE_KEY_PREFER_IMMEDIATELY_AVAILABLE_CREDENTIALS", false);
+			Bundle info = new Bundle();
+			info.putCharSequence("androidx.credentials.BUNDLE_KEY_USER_ID", user);
+			if (display != null && !display.isEmpty()) {
+				info.putCharSequence("androidx.credentials.BUNDLE_KEY_USER_DISPLAY_NAME", display);
+			}
+			data.putBundle("androidx.credentials.BUNDLE_KEY_REQUEST_DISPLAY_INFO", info);
+			android.credentials.CreateCredentialRequest req = new android.credentials.CreateCredentialRequest.Builder(PK_TYPE, data, data)
+				.setAlwaysSendAppInfoToProvider(true).build();
+			cm.createCredential(activity, req, null, activity.getMainExecutor(),
+				new android.os.OutcomeReceiver<android.credentials.CreateCredentialResponse, android.credentials.CreateCredentialException>() {
+					public void onResult(android.credentials.CreateCredentialResponse r) {
+						onPasskey(id, r.getData().getString("androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON"), null, null);
+					}
+					public void onError(android.credentials.CreateCredentialException e) {
+						onPasskey(id, null, e.getType(), String.valueOf(e.getMessage()));
+					}
+				});
+		} else {
+			data.putString(PK_SUBTYPE, "androidx.credentials.BUNDLE_VALUE_SUBTYPE_GET_PUBLIC_KEY_CREDENTIAL_OPTION");
+			android.credentials.CredentialOption opt = new android.credentials.CredentialOption.Builder(PK_TYPE, data, data).build();
+			android.credentials.GetCredentialRequest req = new android.credentials.GetCredentialRequest.Builder(new Bundle())
+				.addCredentialOption(opt).build();
+			cm.getCredential(activity, req, null, activity.getMainExecutor(),
+				new android.os.OutcomeReceiver<android.credentials.GetCredentialResponse, android.credentials.GetCredentialException>() {
+					public void onResult(android.credentials.GetCredentialResponse r) {
+						onPasskey(id, r.getCredential().getData().getString("androidx.credentials.BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON"), null, null);
+					}
+					public void onError(android.credentials.GetCredentialException e) {
+						onPasskey(id, null, e.getType(), String.valueOf(e.getMessage()));
+					}
+				});
+		}
 	}
 }

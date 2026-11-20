@@ -2,7 +2,8 @@
 
 The `auth` package signs people in with OAuth 2.0 and OpenID Connect: Google, Microsoft
 (Entra ID), Okta, Auth0, Keycloak or any other identity provider, and through them company
-single sign-on, SAML included. It runs the Authorization Code flow with PKCE the way native
+single sign-on, SAML included. Apps also register and use [passkeys](#passkeys) for their
+own accounts. It runs the Authorization Code flow with PKCE the way native
 apps should (RFC 8252): in the system's browser or the platform's sign-in sheet, where the
 user's saved passwords, existing sessions, passkeys and their company's device checks work,
 never in a web view the app controls.
@@ -99,6 +100,62 @@ The redirect reaches the waiting sign-in before `Config.OnOpenURL`, which never 
 | Android | A Custom Tab over the app, with the browser's cookies and passwords; it closes when the redirect brings the app back |
 | Windows, Linux | The default browser; the loopback redirect, or the app's scheme passed to the running instance (keep `SingleInstance` on) |
 | Web | Not supported: a page signs in through its own server, or a JavaScript library |
+
+## Passkeys
+
+Passkeys replace passwords with a key the device keeps and unlocks with Face ID, a
+fingerprint, Windows Hello or the screen lock. The server runs WebAuthn as it would for its
+website (with SimpleWebAuthn, go-webauthn, or its identity provider); the app passes the
+server's options to the platform and the result back:
+
+```go
+// Registering, for a signed-in user:
+opts := fetch("/passkeys/register/options")     // the server's JSON options
+resp, err := app.CreatePasskey(ctx, opts)
+post("/passkeys/register", resp)                // the server verifies and stores it
+
+// Signing in:
+opts = fetch("/passkeys/login/options")
+resp, err = app.SignInWithPasskey(ctx, opts)
+switch {
+case errors.Is(err, auth.ErrNoPasskey):         // offer another way in
+case errors.Is(err, auth.ErrCanceled):
+case err == nil:
+	post("/passkeys/login", resp)
+}
+```
+
+Options and responses are WebAuthn's JSON (`PublicKeyCredentialCreationOptionsJSON` and
+`RegistrationResponseJSON`, and their sign-in counterparts), with byte fields in base64url,
+so a server's web endpoints serve the app unchanged. A `{"publicKey": ...}` wrapper is fine.
+
+| | Passkeys from |
+|---|---|
+| iOS 15+, macOS 12+ | iCloud Keychain and other passkey apps; a phone nearby; security keys |
+| Android 14+ | Google Password Manager and other credential providers (Credential Manager) |
+| Windows 10 1903+ | Windows Hello; security keys; a phone nearby on Windows 11 |
+| Linux, the web, Android before 14 | `auth.ErrUnsupported` |
+
+The platforms only let an app use passkeys for domains it's associated with. List the
+relying party's domain (its `rp.id`) under `app.passkeys` in `giode.toml`:
+
+```toml
+[app]
+passkeys = ["example.com"]
+```
+
+and serve the files `giode links` writes for it: `apple-app-site-association` gets a
+`webcredentials` entry (the CLI adds the `webcredentials:` associated domain to iOS and macOS
+signing), and `assetlinks.json` the `get_login_creds` relation for Android. Windows needs no
+association.
+
+The server must accept the origin each platform reports in the client data:
+`https://example.com` from iOS, macOS and Windows, and `android:apk-key-hash:...` (the signing
+certificate's SHA-256, base64url) from Android. Most WebAuthn libraries take a list of
+allowed origins.
+
+On iOS and macOS, having no passkey for the site ends as `ErrCanceled`: the system doesn't
+say which.
 
 ## Security
 

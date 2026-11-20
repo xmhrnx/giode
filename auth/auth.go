@@ -29,8 +29,12 @@ var (
 	ErrCanceled = errors.New("auth: sign-in canceled")
 	// ErrSignedOut: there's no token; sign in first.
 	ErrSignedOut = errors.New("auth: signed out")
-	// ErrUnsupported: the platform has no native sign-in sheet.
+	// ErrUnsupported: the platform has no native sign-in sheet, or no
+	// passkeys.
 	ErrUnsupported = errors.New("auth: not supported on this platform")
+	// ErrNoPasskey: the device has no passkey for the site, or none of
+	// the ones the server allows.
+	ErrNoPasskey = errors.New("auth: no passkey for this account")
 )
 
 // Host is what a session needs of the app: opening the browser, the

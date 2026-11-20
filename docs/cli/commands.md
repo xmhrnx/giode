@@ -12,7 +12,7 @@
 | `giode keystore` | Creates an Android release keystore and points `giode.toml` at it. |
 | `giode cert` | Creates a self-signed Windows code signing certificate for testing and points `giode.toml` at it. |
 | `giode sign <file>...` | Signs Windows executables and installers with the configured certificate. |
-| `giode links` | Writes `.well-known/assetlinks.json` and `apple-app-site-association` for each host in `app.links`, to upload to your site (fingerprints from `android.keystore` and `android.fingerprints`, team from `ios.team_id`). |
+| `giode links` | Writes `.well-known/assetlinks.json` and `apple-app-site-association` for each host in `app.links` and `app.passkeys`, to upload to your site (fingerprints from `android.keystore` and `android.fingerprints`, team from `ios.team_id`). |
 | `giode update-key` | Creates the Ed25519 key pair signing update feeds: the private key in `update.key` (added to `.gitignore`), the public key in `[update]`. |
 | `giode release [targets]` | Builds desktop targets and writes `dist/update/`: the downloads, `feed.json` and its signature, for apps using the giode `update` package. |
 | `giode bump [major\|minor\|patch\|build]` | Raises `app.version` and always `app.build`. In CI, `$GIODE_VERSION` (a tag like `v1.4.2`) and `$GIODE_BUILD` override both. |
