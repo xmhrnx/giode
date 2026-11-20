@@ -1,20 +1,22 @@
 package giode
 
 import (
-	"errors"
 	"os"
 	"strconv"
+
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/elevate"
 
 	"github.com/xmhrnx/giode/host"
 )
 
 // ErrDeclined is returned by RestartElevated when the user refuses the
 // administrator prompt.
-var ErrDeclined = errors.New("giode: the user declined")
+var ErrDeclined = platform.ErrDeclined
 
 // IsElevated reports whether the app runs with administrator rights:
 // elevated by UAC on Windows, as root on Linux and macOS.
-func IsElevated() bool { return isElevated() }
+func IsElevated() bool { return elevate.IsElevated() }
 
 // RestartElevated starts a new copy of the app with administrator
 // rights and quits this one, for work that needs them (raw disk
@@ -38,7 +40,7 @@ func (a *App) RestartElevated(args ...string) error {
 		return err
 	}
 	args = append([]string{host.WaitArg + strconv.Itoa(os.Getpid())}, args...)
-	if err := startElevated(a, exe, args); err != nil {
+	if err := elevate.Start(a.host(), exe, args); err != nil {
 		return err
 	}
 	a.Quit()

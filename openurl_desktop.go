@@ -6,6 +6,8 @@ import (
 	"context"
 	"os/exec"
 	"runtime"
+
+	"github.com/xmhrnx/giode/internal/platform/sandbox"
 )
 
 func (a *App) openURL(ctx context.Context, u string) error {
@@ -14,7 +16,7 @@ func (a *App) openURL(ctx context.Context, u string) error {
 	case "windows":
 		cmd = exec.CommandContext(ctx, "rundll32", "url.dll,FileProtocolHandler", u)
 	case "darwin":
-		return workspaceOpen(u, false)
+		return sandbox.Open(u, false)
 	default:
 		cmd = exec.CommandContext(ctx, "xdg-open", u)
 	}

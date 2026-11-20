@@ -35,6 +35,8 @@ func (a *App) notify(title, body string) error {
 // askNotificationsOnce asks for the notification permission in the
 // background, once a run, when notifications are off: KeepAlive's
 // notification needs it too.
+func init() { askNotifications = (*App).askNotificationsOnce }
+
 func (a *App) askNotificationsOnce() {
 	if on, err := mobile.NotificationsEnabled(app.JavaVM(), app.AppContext()); err != nil || on || notifyAsked.Swap(true) {
 		return

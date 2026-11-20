@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
+
+	"github.com/xmhrnx/giode/internal/platform/login"
 )
 
 // AppID is the app's reverse-DNS ID from giode.toml (app.id): the giode
@@ -16,7 +18,7 @@ var AppID string
 // loginArg is the argument a login registration starts the app with, so
 // the app can tell it was started at login. It's removed from os.Args
 // before main runs.
-const loginArg = "--giode-login"
+const loginArg = login.Arg
 
 // launchedAtLogin records that the process was started by a login
 // registration.
@@ -44,7 +46,7 @@ func stripLoginArg(args []string) ([]string, bool) {
 // to start quietly, in the tray (see Config.StartInTray), rather than
 // as if the user had opened it.
 func LaunchedAtLogin() bool {
-	return launchedAtLogin.Load() || launchedByStartupTask()
+	return launchedAtLogin.Load() || login.ByStartupTask()
 }
 
 // StartInTray says when the app starts with its window hidden in the
@@ -85,21 +87,13 @@ func (s StartInTray) startsInTray() bool {
 // The user can also change it in the system's settings, so read
 // LaunchAtLogin for the current state rather than remembering it.
 func (a *App) SetLaunchAtLogin(on bool) error {
-	return setLaunchAtLogin(loginEntry{name: a.loginName(), display: a.displayName(), icon: a.cfg.Icon}, on)
-}
-
-// loginEntry is what a login registration is made from: the entry's
-// file or key name, the name shown for it, and the icon (PNG) shown
-// where the system shows one.
-type loginEntry struct {
-	name, display string
-	icon          []byte
+	return login.Set(login.Entry{Name: a.loginName(), Display: a.displayName(), ID: AppID, Icon: a.cfg.Icon}, on)
 }
 
 // LaunchAtLogin reports whether the app is registered to start when the
 // user signs in (and, on Windows, the user hasn't turned it off).
 func (a *App) LaunchAtLogin() bool {
-	return launchAtLogin(a.loginName())
+	return login.Enabled(a.loginName())
 }
 
 // displayName is the name the system's startup apps list shows:
@@ -129,24 +123,4 @@ func (a *App) loginName() string {
 		}
 		return r
 	}, name)
-}
-
-// loginCommand is the program a login registration runs and its
-// arguments: the AppImage or Flatpak the app runs from when it does,
-// else this executable.
-func loginCommand() ([]string, error) {
-	if id := os.Getenv("FLATPAK_ID"); id != "" {
-		return []string{"flatpak", "run", id, loginArg}, nil
-	}
-	if img := os.Getenv("APPIMAGE"); img != "" {
-		return []string{img, loginArg}, nil
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return nil, err
-	}
-	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
-		exe = resolved
-	}
-	return []string{exe, loginArg}, nil
 }

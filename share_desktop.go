@@ -6,6 +6,8 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+
+	"github.com/xmhrnx/giode/internal/platform/shell"
 )
 
 // On Windows and macOS sharing opens the system's share sheet; on Linux,
@@ -31,7 +33,7 @@ func (f ShareFile) share(ctx context.Context, a *App) error {
 	if err := a.shareNative(f.Title, "", []string{abs}); err == nil {
 		return nil
 	}
-	return revealFile(abs)
+	return shell.Reveal(abs)
 }
 
 func (a *App) watchLifecycle() {}

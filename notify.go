@@ -2,12 +2,13 @@ package giode
 
 import (
 	"context"
-	"errors"
+
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // ErrNotificationsOff is returned by Notify when the user turned the
 // app's notifications off (or didn't allow them).
-var ErrNotificationsOff = errors.New("giode: notifications are turned off for this app")
+var ErrNotificationsOff = platform.ErrNotificationsOff
 
 // Notify shows a system notification with title and body - to tell
 // the user a transfer arrived or a download finished. It works on

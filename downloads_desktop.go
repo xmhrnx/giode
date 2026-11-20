@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/xmhrnx/giode/internal/platform/sandbox"
 )
 
 func (a *App) saveToDownloads(ctx context.Context, path, mime, folder string) (string, error) {
@@ -48,7 +50,7 @@ func (a *App) openFolder(ctx context.Context, path string) error {
 	case "windows":
 		cmd = exec.Command("explorer.exe", abs)
 	case "darwin":
-		return workspaceOpen(abs, true)
+		return sandbox.Open(abs, true)
 	default:
 		cmd = exec.Command("xdg-open", abs)
 	}

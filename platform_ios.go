@@ -10,10 +10,6 @@ package giode
 
 void giodeOpenURL(const char *url);
 void giodeShare(CFTypeRef vc, const char *text, const char *path, const char *subject);
-void giodeHaptic(int kind);
-void giodeIdleTimerDisabled(int disabled);
-uintptr_t giodeBeginBackgroundTask(const char *name);
-void giodeEndBackgroundTask(uintptr_t task);
 void giodeWatchLifecycle(void);
 int giodePickPhoto(CFTypeRef vc, int id, int maxSide);
 int giodeHasInfoKey(const char *key);
@@ -216,27 +212,6 @@ func giodeOnForeground() {
 // iOS reports going to the background through UIApplication, not the
 // window state.
 const lifecycleFromWindowState = false
-
-func (a *App) haptic(k HapticKind) {
-	C.giodeHaptic(C.int(k))
-}
-
-func (a *App) keepScreenOn(ctx context.Context, on bool) error {
-	d := C.int(0)
-	if on {
-		d = 1
-	}
-	C.giodeIdleTimerDisabled(d)
-	return nil
-}
-
-func (a *App) keepAlive(reason string) (func(), error) {
-	cr, free := cstr(reason)
-	defer free()
-	task := C.giodeBeginBackgroundTask(cr)
-	var once sync.Once
-	return func() { once.Do(func() { C.giodeEndBackgroundTask(task) }) }, nil
-}
 
 var photoReqs struct {
 	sync.Mutex

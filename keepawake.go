@@ -1,13 +1,17 @@
 package giode
 
-import "context"
+import (
+	"context"
+
+	"github.com/xmhrnx/giode/internal/platform/keepawake"
+)
 
 // KeepScreenOn keeps the screen from dimming and locking while on is
 // set and the app is shown - for on-device generation the user is
 // watching. On desktops it holds off the screen saver and display
 // sleep.
 func (a *App) KeepScreenOn(on bool) error {
-	return a.keepScreenOn(context.Background(), on)
+	return keepawake.KeepScreenOn(context.Background(), a.host(), on)
 }
 
 // KeepAlive asks the system to keep the app running work it started -
@@ -27,5 +31,13 @@ func (a *App) KeepScreenOn(on bool) error {
 // reason is shown where the platform shows one (Android's
 // notification, Linux's inhibitor list, macOS's power assertions).
 func (a *App) KeepAlive(reason string) (release func(), err error) {
-	return a.keepAlive(reason)
+	return keepawake.KeepAlive(a.host(), reason, func() {
+		if askNotifications != nil {
+			askNotifications(a)
+		}
+	})
 }
+
+// askNotifications, where set, asks for the notification permission
+// once, for KeepAlive's notification (Android's foreground service).
+var askNotifications func(*App)

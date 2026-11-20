@@ -242,3 +242,11 @@ func Do(fn func()) error {
 	<-done
 	return nil
 }
+
+// ComCall calls method slot of a COM object, returning its HRESULT.
+func ComCall(obj unsafe.Pointer, slot int, args ...uintptr) uintptr {
+	vtbl := *(*unsafe.Pointer)(obj)
+	fn := *(*uintptr)(unsafe.Add(vtbl, uintptr(slot)*unsafe.Sizeof(uintptr(0))))
+	r, _, _ := syscall.SyscallN(fn, append([]uintptr{uintptr(obj)}, args...)...)
+	return r
+}

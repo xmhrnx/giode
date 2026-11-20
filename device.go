@@ -4,6 +4,7 @@ import (
 	"runtime"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/platform/device"
 )
 
 // DeviceClass is a device's form factor.
@@ -37,7 +38,7 @@ type DeviceInfo struct {
 // view).
 func Device() DeviceInfo {
 	d := DeviceInfo{OS: runtime.GOOS, Class: DeviceDesktop}
-	d.TotalRAM, d.OSVersion, d.Model = deviceDetails()
+	d.TotalRAM, d.OSVersion, d.Model = device.Details()
 	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
 		d.Class = DevicePhone
 		w := elements.WindowSize()

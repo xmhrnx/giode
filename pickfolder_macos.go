@@ -17,6 +17,7 @@ import (
 	"unsafe"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/sandbox"
 )
 
 // folderPicked receives the folder giodePickFolder's panel returns.
@@ -45,6 +46,6 @@ func pickFolder(a *App, opts FolderOptions) (string, error) {
 		return "", ErrCanceled
 	}
 	// In the sandbox, the folder stays reachable after the app quits.
-	rememberFolderAccess(path)
+	sandbox.RememberFolder(path)
 	return path, nil
 }

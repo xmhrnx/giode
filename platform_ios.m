@@ -50,51 +50,6 @@ void giodeShare(CFTypeRef vcRef, const char *text, const char *path, const char 
 	});
 }
 
-void giodeHaptic(int kind) {
-	onMain(^{
-		switch (kind) {
-		case 0:
-			[[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight] impactOccurred];
-			break;
-		case 1:
-			[[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium] impactOccurred];
-			break;
-		case 2:
-			[[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy] impactOccurred];
-			break;
-		case 3:
-			[[[UINotificationFeedbackGenerator alloc] init] notificationOccurred:UINotificationFeedbackTypeSuccess];
-			break;
-		default:
-			[[[UINotificationFeedbackGenerator alloc] init] notificationOccurred:UINotificationFeedbackTypeWarning];
-			break;
-		}
-	});
-}
-
-void giodeIdleTimerDisabled(int disabled) {
-	onMain(^{
-		[UIApplication sharedApplication].idleTimerDisabled = disabled != 0;
-	});
-}
-
-uintptr_t giodeBeginBackgroundTask(const char *name) {
-	__block UIBackgroundTaskIdentifier task = UIBackgroundTaskInvalid;
-	NSString *n = [NSString stringWithUTF8String:name];
-	task = [[UIApplication sharedApplication] beginBackgroundTaskWithName:n expirationHandler:^{
-		// Time's up: iOS suspends the app once the task ends.
-		[[UIApplication sharedApplication] endBackgroundTask:task];
-		task = UIBackgroundTaskInvalid;
-	}];
-	return (uintptr_t)task;
-}
-
-void giodeEndBackgroundTask(uintptr_t task) {
-	if ((UIBackgroundTaskIdentifier)task != UIBackgroundTaskInvalid) {
-		[[UIApplication sharedApplication] endBackgroundTask:(UIBackgroundTaskIdentifier)task];
-	}
-}
-
 void giodeWatchLifecycle(void) {
 	static dispatch_once_t once;
 	dispatch_once(&once, ^{
@@ -396,41 +351,4 @@ void *giodeClipboardImagePNG(int *n) {
 		*n = (int)png.length;
 		return buf;
 	}
-}
-
-// giodePlayers holds the sounds still playing: AVAudioPlayer stops one
-// that's released.
-static NSMutableArray<AVAudioPlayer *> *giodePlayers;
-
-int giodePlaySound(const void *data, int n) {
-	NSData *d = [NSData dataWithBytes:data length:n];
-	NSError *err = nil;
-	AVAudioPlayer *p = [[AVAudioPlayer alloc] initWithData:d error:&err];
-	if (p == nil) {
-		return 0;
-	}
-	dispatch_async(dispatch_get_main_queue(), ^{
-		static dispatch_once_t once;
-		dispatch_once(&once, ^{
-			// Ambient: mixed with music, silent in silent mode, like a UI
-			// sound.
-			AVAudioSession *session = [AVAudioSession sharedInstance];
-			if (session.category != AVAudioSessionCategoryPlayAndRecord && session.category != AVAudioSessionCategoryPlayback) {
-				[session setCategory:AVAudioSessionCategoryAmbient error:nil];
-			}
-		});
-		if (giodePlayers == nil) {
-			giodePlayers = [NSMutableArray array];
-		}
-		NSMutableArray *done = [NSMutableArray array];
-		for (AVAudioPlayer *q in giodePlayers) {
-			if (!q.isPlaying) {
-				[done addObject:q];
-			}
-		}
-		[giodePlayers removeObjectsInArray:done];
-		[giodePlayers addObject:p];
-		[p play];
-	});
-	return 1;
 }

@@ -1,14 +1,16 @@
 package giode
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/securestore"
 )
 
 // ErrNotFound is returned by SecureStore.Get for a name with no value.
-var ErrNotFound = errors.New("giode: not found")
+var ErrNotFound = platform.ErrNotFound
 
 // SecureStorage keeps small secrets - API keys, tokens - in the
 // platform's credential store rather than a file: the Keychain on iOS
@@ -45,16 +47,16 @@ func (s *SecureStorage) service() string {
 
 // Set stores value under name, replacing any previous value.
 func (s *SecureStorage) Set(name string, value []byte) error {
-	return secureSet(s.service(), name, value)
+	return securestore.Set(s.service(), name, value)
 }
 
 // Get returns the value stored under name, or ErrNotFound.
 func (s *SecureStorage) Get(name string) ([]byte, error) {
-	return secureGet(s.service(), name)
+	return securestore.Get(s.service(), name)
 }
 
 // Delete removes the value stored under name; deleting a missing name
 // is not an error.
 func (s *SecureStorage) Delete(name string) error {
-	return secureDelete(s.service(), name)
+	return securestore.Delete(s.service(), name)
 }

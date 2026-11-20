@@ -2,6 +2,7 @@ package giode
 
 import (
 	"github.com/xmhrnx/giode/host"
+	"github.com/xmhrnx/giode/internal/platform"
 
 	"context"
 	"errors"
@@ -13,7 +14,7 @@ import (
 
 // ErrCanceled is returned by OpenFile, OpenFiles and SaveFile when the
 // user closes the dialog without choosing a file.
-var ErrCanceled = errors.New("giode: canceled by the user")
+var ErrCanceled = platform.ErrCanceled
 
 // ErrNotSupported is returned by features the current platform lacks.
 var ErrNotSupported = host.ErrNotSupported
