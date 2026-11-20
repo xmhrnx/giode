@@ -52,6 +52,12 @@ type Config struct {
 	// Orientation restricts rotation on mobile platforms. Defaults to
 	// OrientationAny. Desktop platforms ignore it.
 	Orientation Orientation
+	// Motion chooses whether animations play: MotionSystem (the default)
+	// follows the system's reduce-motion setting, checked as the app
+	// runs; MotionReduced and MotionFull override it. With reduced
+	// motion, Giode's transitions, keyframes, drawers, sheets and
+	// switches finish at once (see ReducedMotion).
+	Motion MotionPreference
 	// FollowSystemTheme sets the theme mode (SetMode) from the
 	// platform's light or dark appearance at startup and whenever it
 	// changes. See SystemDarkMode for the platforms that report it.

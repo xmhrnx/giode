@@ -36,6 +36,9 @@ func (d *Drawer) Layout(gtx layout.Context) layout.Dimensions {
 	// Advance the animation toward the open state, unless a drag holds
 	// the panel.
 	dur := d.duration
+	if kit.ReducedMotion() {
+		dur = 0
+	}
 	dt := gtx.Now.Sub(d.last)
 	if d.last.IsZero() || dt < 0 || dt > dur {
 		dt = dur / 10

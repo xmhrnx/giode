@@ -22,6 +22,10 @@ type (
 	ClickEvent = box.ClickEvent
 	// DragEvent describes a drag on a Pressable.
 	DragEvent = box.DragEvent
+	// KeyframeAnimation plays styles through keyframes on a Box;
+	// Keyframe is one of its steps.
+	KeyframeAnimation = box.KeyframeAnimation
+	Keyframe          = box.Keyframe
 )
 
 const (
@@ -42,7 +46,9 @@ const (
 )
 
 var (
-	Box                  = box.Box
+	Box = box.Box
+	// Keyframes returns a keyframe animation for BoxElement.Animation.
+	Keyframes            = box.Keyframes
 	Row                  = box.Row
 	Stack                = box.Stack
 	Grid                 = box.Grid

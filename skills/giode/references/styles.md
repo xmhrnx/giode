@@ -94,7 +94,7 @@ Styles compose with `Merge(base, overrides...)` or the method form
 | `Transform` | struct | `{Rotate, Scale, ScaleX, ScaleY float32; TranslateX, TranslateY int; OriginX, OriginY float32}` | Paint-only transform around the center, like CSS: layout is unaffected. |
 | `Display` | string | `DisplayNone`, `DisplayGrid` | `DisplayNone` removes the element: no space, no paint. `DisplayGrid` lays a Box's children out on a grid. |
 | `Visibility` | string | `VisibilityHidden` | Keeps the space, paints nothing, takes no input. |
-| `Transition` | `StyleTransition` | `{Duration time.Duration; Easing}` | Animates `Background`, `Color`, `BorderColor`, shadow color and `Opacity` between a Box's base and `OnHover` styles. `EaseInOut` (default), `EaseLinear`, `EaseIn`, `EaseOut`. |
+| `Transition` | `StyleTransition` | `{Duration time.Duration; Easing}` | Animates a Box between its base and `OnHover` styles, and, with `Animate(key)`, between any styles it's built with from frame to frame (see [Animation](#animation)). `EaseInOut` (default), `EaseLinear`, `EaseIn`, `EaseOut`, the back and bounce easings, or `cubic-bezier(...)`. |
 
 ## Text
 
@@ -221,8 +221,7 @@ near the screen, use `StickyHeaders` instead (see
 
 ## Not supported (by design)
 
-Complex or platform-specific CSS: keyframe animations (`Transition` animates hover changes
-only), box-sizing, named grid areas and lines, float, `white-space: nowrap` without
+Complex or platform-specific CSS: box-sizing, named grid areas and lines, float, `white-space: nowrap` without
 truncation, pseudo elements, media-query orientation. Raise an issue if one of these
 matters to you.
 
@@ -230,7 +229,58 @@ These are supported, though they're sometimes taken to be missing:
 
 - **Transforms:** `Transform` translates, scales and rotates what a Box paints, without
   changing the layout.
-- **Transitions:** `Transition` animates a Box's colors, shadow and opacity to and from its
-  `OnHover` styles.
+- **Transitions and keyframes:** see [Animation](#animation).
 - **Truncation:** `MaxLines: 1` with `TextOverflow: TextOverflowEllipsis` keeps text on one
   line ending in "…"; a larger `MaxLines` clamps it to that many lines.
+
+## Animation
+
+**Transitions.** A Box's `Transition` animates the change to and from its `OnHover`
+styles. `Animate(key)` animates every other change too: the view builds the box with
+the styles it should have now, and when they differ from the last frame's, the box moves
+to them over the `Transition`, from wherever it was, even mid-way through another change.
+A box is rebuilt every frame, so `key` (any comparable value, unique among animated boxes)
+keeps its animation between frames.
+
+```go
+giode.Box(giode.Styles{
+	Height:     ifThen(open, 240, 48),
+	Background: ifThen(selected, "theme.primary/0.1", "theme.surface"),
+	Transform:  giode.Transform{Rotate: ifThen(open, 180, 0)},
+	Transition: giode.StyleTransition{Duration: 200 * time.Millisecond},
+}, children...).Animate("panel-" + id)
+```
+
+Colors, `Opacity`, `Transform`, `BorderRadius`, `BorderWidth`, the shadow, `Padding`,
+`Gap`, and `Width` and `Height` fixed at both ends interpolate; other properties change at
+once.
+
+**Keyframes.** `giode.Keyframes(duration, frames...)` plays styles through keyframes,
+like CSS `@keyframes`: a pulse, a shake, an entrance. Each `Keyframe` has a place `At` from
+0 to 1 and the `Styles` it sets, merged over the box's own. It keeps its own clock, so
+create it once:
+
+```go
+pulse := giode.Keyframes(1200*time.Millisecond,
+	giode.Keyframe{At: 0, Styles: giode.Styles{Opacity: 1}},
+	giode.Keyframe{At: 0.5, Styles: giode.Styles{Opacity: 0.4}},
+	giode.Keyframe{At: 1, Styles: giode.Styles{Opacity: 1}},
+).Repeat(0) // forever
+
+// in the view
+giode.Box(dotStyles).Animation(pulse)
+```
+
+`Repeat(n)` (0 for forever), `Alternate(true)` (every other run backwards), `Easing`,
+`Delay`, `KeepEnd(false)` (back to the box's own styles when done, instead of keeping the
+last frame), `OnDone`, `Restart`, `Pause` and `Resume`, and `Done` control it.
+
+**Reduced motion.** When the user asks the system for less motion (Reduce Motion on macOS
+and iOS, "Show animations" off on Windows, "Remove animations" on Android, animations off
+on GNOME and KDE, `prefers-reduced-motion` on the web), Giode's animations finish at once:
+transitions, keyframes (a repeating one doesn't play; a finite one shows its end), and the
+slides of drawers, sheets, toasts, switches and segmented controls. The setting is checked
+as the app runs and when its window regains focus. `Config.Motion` overrides it
+(`MotionReduced`, `MotionFull`), as does `App.SetMotion`; `giode.ReducedMotion()` tells
+custom animations whether to play.
+

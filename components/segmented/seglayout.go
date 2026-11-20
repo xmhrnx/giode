@@ -57,7 +57,7 @@ func (c *Control) layoutSelf(gtx layout.Context) layout.Dimensions {
 	}
 	c.last = gtx.Now
 	if target := float32(c.selected); c.pos != target {
-		step := float32(dt) / float32(animDuration) * max(1, abs(target-c.pos))
+		step := kit.MotionStep(float32(dt) / float32(animDuration) * max(1, abs(target-c.pos)))
 		if c.pos < target {
 			c.pos = min(target, c.pos+step)
 		} else {

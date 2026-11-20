@@ -172,7 +172,7 @@ func (s *Switch) layoutUncached(gtx layout.Context) layout.Dimensions {
 	}
 	s.last = gtx.Now
 	if s.pos != target {
-		step := float32(dt) / float32(animDuration)
+		step := kit.MotionStep(float32(dt) / float32(animDuration))
 		if s.pos < target {
 			s.pos = min(target, s.pos+step)
 		} else {

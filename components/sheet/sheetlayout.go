@@ -41,7 +41,7 @@ func (s *Sheet) Layout(gtx layout.Context) layout.Dimensions {
 		target = 1
 	}
 	if s.progress != target && !s.dragging {
-		step := float32(dt) / float32(animDuration)
+		step := kit.MotionStep(float32(dt) / float32(animDuration))
 		if s.progress < target {
 			s.progress = min(target, s.progress+step)
 		} else {

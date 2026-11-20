@@ -70,6 +70,9 @@ type App struct {
 	maxFPS     atomic.Int64
 	lastFrame  time.Time
 	themeCheck chan struct{}
+	// motionCheck asks the reduced-motion watcher to check now.
+	motionCheck chan struct{}
+	motion      atomic.Int32
 
 	// explorer shows the file dialogs; it sees every window event.
 	explorer *explorer.Explorer
@@ -156,7 +159,7 @@ func New(cfg Config) *App {
 	if cfg.Orientation != OrientationAny {
 		opts = append(opts, cfg.Orientation.option())
 	}
-	a := &App{cfg: cfg, themeCheck: make(chan struct{}, 1)}
+	a := &App{cfg: cfg, themeCheck: make(chan struct{}, 1), motionCheck: make(chan struct{}, 1)}
 	a.closeToTray.Store(cfg.CloseToTray)
 	a.minimizeToTray.Store(cfg.MinimizeToTray)
 	a.topMost.Store(cfg.AlwaysOnTop)

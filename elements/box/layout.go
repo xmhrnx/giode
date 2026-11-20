@@ -31,7 +31,7 @@ func (b *BoxElement) Layout(gtx layout.Context) layout.Dimensions {
 
 // layoutSelf lays it out without its context menu area.
 func (b *BoxElement) layoutSelf(gtx layout.Context) layout.Dimensions {
-	if (b.hover != nil || b.press != nil) && b.CacheSafe() {
+	if (b.hover != nil || b.press != nil) && b.anim == nil && b.CacheSafe() {
 		if b.cache == nil {
 			b.cache = base.NewMemoCache()
 			cached := base.Element(boxUncached{b})

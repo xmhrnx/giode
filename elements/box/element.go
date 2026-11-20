@@ -24,6 +24,11 @@ type BoxElement struct {
 	// press makes the box clickable; see OnClick.
 	press *Pressable
 
+	// animKey animates changes of its styles (Animate); anim plays
+	// keyframes over them (Animation).
+	animKey any
+	anim    *KeyframeAnimation
+
 	// stretchX and stretchY are set by a parent laying the box out
 	// absolutely between Left and Right (Top and Bottom): it fills the
 	// constraints on that axis.

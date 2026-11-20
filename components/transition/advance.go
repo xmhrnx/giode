@@ -30,7 +30,7 @@ func (t *Transition) advance(gtx layout.Context) {
 	if d <= 0 {
 		d = Normal
 	}
-	step := float32(gtx.Now.Sub(t.lastFrame)) / float32(d)
+	step := kit.MotionStep(float32(gtx.Now.Sub(t.lastFrame)) / float32(d))
 	t.lastFrame = gtx.Now
 	if t.progress < target {
 		t.progress = min(target, t.progress+step)

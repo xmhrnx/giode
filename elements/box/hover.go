@@ -37,9 +37,22 @@ func (b *BoxElement) Hovered() bool {
 // on top while hovered - blended over the base styles' Transition when
 // one is set.
 func (b *BoxElement) resolveStyles(gtx layout.Context) styles.Styles {
+	st := b.st
+	if b.animKey != nil {
+		st = animated(gtx, b.animKey, st)
+	}
+	if b.anim != nil {
+		st = b.anim.apply(gtx, st)
+	}
+	return b.hoverStyles(gtx, st)
+}
+
+// hoverStyles returns base with the hover styles merged on top while
+// hovered, blended over base's Transition when one is set.
+func (b *BoxElement) hoverStyles(gtx layout.Context, base styles.Styles) styles.Styles {
 	h := b.hover
 	if h == nil {
-		return b.st
+		return base
 	}
 	wasHovered := h.hovered
 	h.hovered = h.Update(gtx.Source)
@@ -54,12 +67,12 @@ func (b *BoxElement) resolveStyles(gtx layout.Context) styles.Styles {
 		}
 	}
 	kit.HandleInput(h.pass)
-	tr := b.st.Transition
-	if tr.Duration <= 0 {
+	tr := base.Transition
+	if tr.Duration <= 0 || kit.ReducedMotion() {
 		if !h.hovered {
-			return b.st
+			return base
 		}
-		return styles.Merge(b.st, h.st)
+		return styles.Merge(base, h.st)
 	}
 
 	target := float32(0)
@@ -87,15 +100,17 @@ func (b *BoxElement) resolveStyles(gtx layout.Context) styles.Styles {
 
 	switch h.progress {
 	case 0:
-		return b.st
+		return base
 	case 1:
-		return styles.Merge(b.st, h.st)
+		return styles.Merge(base, h.st)
 	}
-	return blendStyles(b.st, styles.Merge(b.st, h.st), tr.Easing.Apply(h.progress))
+	return blendStyles(base, styles.Merge(base, h.st), tr.Easing.Apply(h.progress))
 }
 
-// blendStyles returns to with its animatable properties - colors and
-// opacity - interpolated from from by t.
+// blendStyles returns to with its animatable properties interpolated
+// from from by t: colors, opacity, transform, corner radius, border
+// width, shadow, padding, gap, and widths and heights fixed at both
+// ends. The rest are to's.
 func blendStyles(from, to styles.Styles, t float32) styles.Styles {
 	out := to
 	out.Background = properties.LerpColor(from.Background, to.Background, t)
@@ -109,5 +124,50 @@ func blendStyles(from, to styles.Styles, t float32) styles.Styles {
 		return float32(o)
 	}
 	out.Opacity = properties.Opacity(op(from.Opacity) + (op(to.Opacity)-op(from.Opacity))*t)
+	li := func(a, b int) int { return a + int(float32(b-a)*t+0.5*sign(float32(b-a)*t)) }
+	lf := func(a, b float32) float32 { return a + (b-a)*t }
+	one := func(v float32) float32 {
+		if v == 0 {
+			return 1
+		}
+		return v
+	}
+	ft, tt := from.Transform, to.Transform
+	out.Transform.Rotate = lf(ft.Rotate, tt.Rotate)
+	out.Transform.Scale = lf(one(ft.Scale), one(tt.Scale))
+	if ft.ScaleX != 0 || tt.ScaleX != 0 {
+		out.Transform.ScaleX = lf(one(ft.ScaleX)*one(ft.Scale), one(tt.ScaleX)*one(tt.Scale)) / one(out.Transform.Scale)
+	}
+	if ft.ScaleY != 0 || tt.ScaleY != 0 {
+		out.Transform.ScaleY = lf(one(ft.ScaleY)*one(ft.Scale), one(tt.ScaleY)*one(tt.Scale)) / one(out.Transform.Scale)
+	}
+	out.Transform.TranslateX = li(ft.TranslateX, tt.TranslateX)
+	out.Transform.TranslateY = li(ft.TranslateY, tt.TranslateY)
+	out.BorderRadius = properties.BorderRadius(li(int(from.BorderRadius), int(to.BorderRadius)))
+	out.BorderWidth = properties.BorderWidth(li(int(from.BorderWidth), int(to.BorderWidth)))
+	out.BoxShadow.X, out.BoxShadow.Y = li(from.BoxShadow.X, to.BoxShadow.X), li(from.BoxShadow.Y, to.BoxShadow.Y)
+	out.BoxShadow.Blur, out.BoxShadow.Spread = li(from.BoxShadow.Blur, to.BoxShadow.Blur), li(from.BoxShadow.Spread, to.BoxShadow.Spread)
+	out.Gap = properties.Gap(li(int(from.Gap), int(to.Gap)))
+	if from.Padding != (properties.Inset{}) || to.Padding != (properties.Inset{}) {
+		fp, tp := from.Padding, to.Padding
+		out.Padding = properties.Inset{Top: li(fp.Top, tp.Top), Right: li(fp.Right, tp.Right), Bottom: li(fp.Bottom, tp.Bottom),
+			Left: li(fp.Left, tp.Left), Start: li(fp.Start, tp.Start), End: li(fp.End, tp.End)}
+		if out.Padding == (properties.Inset{}) {
+			out.Padding = tp
+		}
+	}
+	if from.Width > 0 && to.Width > 0 {
+		out.Width = properties.Width(li(int(from.Width), int(to.Width)))
+	}
+	if from.Height > 0 && to.Height > 0 {
+		out.Height = properties.Height(li(int(from.Height), int(to.Height)))
+	}
 	return out
+}
+
+func sign(v float32) float32 {
+	if v < 0 {
+		return -1
+	}
+	return 1
 }

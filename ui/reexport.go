@@ -142,15 +142,19 @@ type (
 	Wrap            = properties.Wrap
 	Fit             = properties.Fit
 
-	BoxElement      = elements.BoxElement
-	TextElement     = elements.TextElement
-	RichTextElement = elements.RichTextElement
-	DividerElement  = elements.DividerElement
-	RawFunc         = elements.RawFunc
-	Painter         = elements.Painter
-	CanvasPath      = elements.Path
-	TextAnchor      = elements.TextAnchor
-	OutOfFlow       = elements.OutOfFlow
+	BoxElement = elements.BoxElement
+	// KeyframeAnimation plays styles through keyframes on a Box
+	// (BoxElement.Animation); Keyframe is one of its steps.
+	KeyframeAnimation = elements.KeyframeAnimation
+	Keyframe          = elements.Keyframe
+	TextElement       = elements.TextElement
+	RichTextElement   = elements.RichTextElement
+	DividerElement    = elements.DividerElement
+	RawFunc           = elements.RawFunc
+	Painter           = elements.Painter
+	CanvasPath        = elements.Path
+	TextAnchor        = elements.TextAnchor
+	OutOfFlow         = elements.OutOfFlow
 	// ContextMenu is what an element's Context takes: a Menu, or a
 	// menu of your own.
 	ContextMenu = elements.ContextMenu
@@ -358,9 +362,12 @@ type Route = router.Route
 // --- Elements ------------------------------------------------------------
 
 var (
-	Box   = elements.Box
-	Row   = elements.Row
-	Stack = elements.Stack
+	Box = elements.Box
+	// Keyframes returns a keyframe animation through frames, for
+	// BoxElement.Animation.
+	Keyframes = elements.Keyframes
+	Row       = elements.Row
+	Stack     = elements.Stack
 	// Grid lays children out on a grid; see elements.Grid.
 	Grid = elements.Grid
 	// GridSpan places a grid's child across n tracks, wherever there's
