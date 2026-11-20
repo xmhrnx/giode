@@ -33,6 +33,7 @@ import (
 	"github.com/xmhrnx/giode/components/scroll"
 	"github.com/xmhrnx/giode/components/segmented"
 	"github.com/xmhrnx/giode/components/sheet"
+	"github.com/xmhrnx/giode/components/skiplink"
 	"github.com/xmhrnx/giode/components/slider"
 	"github.com/xmhrnx/giode/components/spinner"
 	"github.com/xmhrnx/giode/components/swipeable"
@@ -343,6 +344,12 @@ type AppShellSlot = appshell.Slot
 
 type ButtonVariant = button.Variant
 type ButtonElement = button.Button
+
+// Landmark is a named region skip links jump to; see NewLandmark.
+type Landmark = skiplink.Landmark
+
+// SkipLinkElement is the link SkipLink returns.
+type SkipLinkElement = skiplink.SkipLink
 type IconButtonVariant = iconbutton.Variant
 
 // State is a minimal global-state primitive: an observable value
@@ -553,6 +560,13 @@ var (
 	// DataGrid is a virtualized table for large data sets; see
 	// datagrid.New.
 	DataGrid = datagrid.New
+	// NewLandmark returns a named region of the window - the main
+	// content, the navigation - that skip links jump to and screen
+	// readers move between; see skiplink.Landmark.
+	NewLandmark = skiplink.NewLandmark
+	// SkipLink is a link that shows only while keyboard-focused and
+	// moves the focus into a Landmark; see skiplink.SkipLink.
+	SkipLink = skiplink.New
 	// OnlyOn shows what its builder makes on some platforms only, and
 	// nothing elsewhere; see platform.OnlyOn.
 	OnlyOn = platform.OnlyOn

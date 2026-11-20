@@ -39,6 +39,38 @@ input.Invalid("Enter an email address")                   // red border, read wi
 giode.IconButton(icon).Label("Delete")                     // an icon has no text to read
 ```
 
+## Keyboard
+
+Every control takes keyboard focus with Tab and Shift+Tab, in the order it's laid out, and
+shows a focus ring while focused from the keyboard. A click or a tap focuses without a ring,
+as browsers do (`:focus-visible`).
+
+`Dialog`, `Sheet` and `Drawer` trap the focus while open: opening moves it to their first
+control, Tab and Shift+Tab wrap around inside, and closing gives it back to what had it
+before. A dialog opened from another dialog traps it in turn.
+
+### Skip links and landmarks
+
+A long navigation before the content costs a keyboard user a Tab for every link on every
+screen. A skip link is the first Tab stop: hidden until focused, then shown in the corner;
+Enter moves the focus to the first control of a landmark.
+
+```go
+main := giode.NewLandmark("Main content")
+nav := giode.NewLandmark("Navigation")
+skip := giode.SkipLink("Skip to main content", main)
+
+func view() giode.Element {
+	return giode.Row(giode.Styles{},
+		skip, // first: the first Tab stop, taking no space
+		nav.Wrap(sidebar()),
+		main.Wrap(content()),
+	)
+}
+```
+
+Landmarks are regions to screen readers too, which list them by name to jump between.
+
 ## Custom elements
 
 `Pressable` reports a button with its `Label`. `Semantics` makes it something else:

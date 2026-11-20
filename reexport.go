@@ -336,6 +336,12 @@ type ButtonVariant = ui.ButtonVariant
 
 type ButtonElement = ui.ButtonElement
 
+// Landmark is a named region skip links jump to; see NewLandmark.
+type Landmark = ui.Landmark
+
+// SkipLinkElement is the link SkipLink returns.
+type SkipLinkElement = ui.SkipLinkElement
+
 type IconButtonVariant = ui.IconButtonVariant
 
 // State is a minimal global-state primitive: an observable value
@@ -528,6 +534,13 @@ var (
 	// DataGrid is a virtualized table for large data sets; see
 	// datagrid.New.
 	DataGrid = ui.DataGrid
+	// NewLandmark returns a named region of the window - the main
+	// content, the navigation - that skip links jump to and screen
+	// readers move between; see skiplink.Landmark.
+	NewLandmark = ui.NewLandmark
+	// SkipLink is a link that shows only while keyboard-focused and
+	// moves the focus into a Landmark; see skiplink.SkipLink.
+	SkipLink = ui.SkipLink
 	// OnlyOn shows what its builder makes on some platforms only, and
 	// nothing elsewhere; see platform.OnlyOn.
 	OnlyOn = ui.OnlyOn

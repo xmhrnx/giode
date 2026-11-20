@@ -127,3 +127,12 @@ func (s *FocusScope) Release(gtx layout.Context) {
 	}
 	s.restore = nil
 }
+
+// First returns the focus tag of the first control laid out in s, or nil
+// when it has none.
+func (s *FocusScope) First() any {
+	if len(s.tags) == 0 {
+		return nil
+	}
+	return s.tags[0]
+}
