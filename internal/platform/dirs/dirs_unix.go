@@ -1,6 +1,6 @@
 //go:build !windows && !android && !ios && !js
 
-package giode
+package dirs
 
 import (
 	"bufio"
@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// picturesDir is the user's Pictures folder: XDG_PICTURES_DIR on Linux.
-func picturesDir() (string, error) {
+// Pictures is the user's Pictures folder: XDG_PICTURES_DIR on Linux.
+func Pictures() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
@@ -24,9 +24,9 @@ func picturesDir() (string, error) {
 	return filepath.Join(home, "Pictures"), nil
 }
 
-// downloadsDir is the user's Downloads folder: XDG_DOWNLOAD_DIR on
+// Downloads is the user's Downloads folder: XDG_DOWNLOAD_DIR on
 // Linux.
-func downloadsDir() (string, error) {
+func Downloads() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err

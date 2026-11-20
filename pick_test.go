@@ -12,6 +12,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 func TestPickExtensions(t *testing.T) {
@@ -88,8 +90,8 @@ func TestTypeByExtension_NoSystemTable(t *testing.T) {
 	// These must not depend on the system's mime.types, which Windows
 	// and the phones don't have.
 	for ext, want := range map[string]string{".md": "text/markdown", ".WAV": "audio/wav", ".heic": "image/heic"} {
-		if got := typeByExtension(ext); !strings.HasPrefix(got, want) {
-			t.Errorf("typeByExtension(%q) = %q, want %q", ext, got, want)
+		if got := platform.MIMEType(ext); !strings.HasPrefix(got, want) {
+			t.Errorf("platform.MIMEType(%q) = %q, want %q", ext, got, want)
 		}
 	}
 	if got := pickExtensions([]string{"text/markdown"}); !slices.Contains(got, ".md") {

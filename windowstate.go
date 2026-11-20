@@ -4,6 +4,7 @@ import (
 	"gioui.org/app"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/platform/lifecycle"
 )
 
 // WindowState is the current state of the window, as reported by the
@@ -108,7 +109,7 @@ func (a *App) handleConfig(cfg app.Config) {
 		if a.cfg.OnWindowStateChange != nil {
 			a.cfg.OnWindowStateChange(s)
 		}
-		if lifecycleFromWindowState {
+		if lifecycle.FromWindowState {
 			switch {
 			case s == WindowMinimized && a.cfg.OnBackground != nil:
 				a.cfg.OnBackground()
@@ -116,5 +117,26 @@ func (a *App) handleConfig(cfg app.Config) {
 				a.cfg.OnForeground()
 			}
 		}
+	}
+}
+
+// watchLifecycle reports the system's background and foreground changes
+// to OnBackground and OnForeground, where the system rather than the
+// window state reports them (Android, iOS).
+func (a *App) watchLifecycle() {
+	if a.cfg.OnBackground == nil && a.cfg.OnForeground == nil {
+		return
+	}
+	err := lifecycle.Watch(func() {
+		if f := a.cfg.OnBackground; f != nil {
+			f()
+		}
+	}, func() {
+		if f := a.cfg.OnForeground; f != nil {
+			f()
+		}
+	})
+	if err != nil {
+		a.logf(LogLevelWarning, "giode: can't watch the app lifecycle: %v", err)
 	}
 }

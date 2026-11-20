@@ -8,14 +8,9 @@ package giode
 #include <stdlib.h>
 #include <CoreFoundation/CoreFoundation.h>
 
-void giodeOpenURL(const char *url);
-void giodeShare(CFTypeRef vc, const char *text, const char *path, const char *subject);
-void giodeWatchLifecycle(void);
 int giodePickPhoto(CFTypeRef vc, int id, int maxSide);
 int giodeHasInfoKey(const char *key);
 int giodePickPhotos(CFTypeRef vc, int id, int maxSide, int limit);
-void giodeShareFiles(CFTypeRef vc, const char *paths);
-void giodeOpenIn(CFTypeRef vc, const char *path);
 */
 import "C"
 
@@ -42,51 +37,6 @@ func (a *App) viewController() (C.CFTypeRef, error) {
 		return 0, ErrNotSupported
 	}
 	return C.CFTypeRef(h), nil
-}
-
-func (a *App) openURL(ctx context.Context, u string) error {
-	cu, free := cstr(u)
-	defer free()
-	C.giodeOpenURL(cu)
-	return nil
-}
-
-func (t ShareText) share(ctx context.Context, a *App) error {
-	vc, err := a.viewController()
-	if err != nil {
-		return err
-	}
-	ct, f1 := cstr(t.Text)
-	defer f1()
-	cs, f2 := cstr(t.Subject)
-	defer f2()
-	C.giodeShare(vc, ct, nil, cs)
-	return nil
-}
-
-func (f ShareFile) share(ctx context.Context, a *App) error {
-	vc, err := a.viewController()
-	if err != nil {
-		return err
-	}
-	cp, free := cstr(f.Path)
-	defer free()
-	C.giodeShare(vc, nil, cp, nil)
-	return nil
-}
-
-func (f ShareFiles) share(ctx context.Context, a *App) error {
-	if len(f.Paths) == 0 {
-		return nil
-	}
-	vc, err := a.viewController()
-	if err != nil {
-		return err
-	}
-	cp, free := cstr(strings.Join(f.Paths, "\n"))
-	defer free()
-	C.giodeShareFiles(vc, cp)
-	return nil
 }
 
 // photoSets collects multiple picks.
@@ -172,46 +122,6 @@ func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) erro
 	return optin.SavePhoto(ctx, path, strings.HasPrefix(mime, "video/"))
 }
 
-var lifecycleApp struct {
-	sync.Mutex
-	app *App
-}
-
-// watchLifecycle reports UIApplication's background and foreground
-// notifications to OnBackground and OnForeground.
-func (a *App) watchLifecycle() {
-	if a.cfg.OnBackground == nil && a.cfg.OnForeground == nil {
-		return
-	}
-	lifecycleApp.Lock()
-	lifecycleApp.app = a
-	lifecycleApp.Unlock()
-	C.giodeWatchLifecycle()
-}
-
-//export giodeOnBackground
-func giodeOnBackground() {
-	lifecycleApp.Lock()
-	a := lifecycleApp.app
-	lifecycleApp.Unlock()
-	if a != nil && a.cfg.OnBackground != nil {
-		a.cfg.OnBackground()
-	}
-}
-
-//export giodeOnForeground
-func giodeOnForeground() {
-	lifecycleApp.Lock()
-	a := lifecycleApp.app
-	lifecycleApp.Unlock()
-	if a != nil && a.cfg.OnForeground != nil {
-		a.cfg.OnForeground()
-	}
-}
-
-// iOS reports going to the background through UIApplication, not the
-// window state.
-const lifecycleFromWindowState = false
 
 var photoReqs struct {
 	sync.Mutex
@@ -310,13 +220,3 @@ func requireInfoKeys(keys ...string) error {
 	return nil
 }
 
-func (a *App) openWith(ctx context.Context, path, mime string) error {
-	vc, err := a.viewController()
-	if err != nil {
-		return err
-	}
-	cp, free := cstr(path)
-	defer free()
-	C.giodeOpenIn(vc, cp)
-	return nil
-}

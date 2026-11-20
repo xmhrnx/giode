@@ -7,14 +7,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-)
 
-func (f ShareFiles) share(ctx context.Context, a *App) error {
-	if len(f.Paths) == 0 {
-		return nil
-	}
-	return ShareFile{Path: f.Paths[0]}.share(ctx, a)
-}
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/dirs"
+)
 
 func (a *App) pickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]PickedFile, error) {
 	files, err := a.PickFiles(ctx, PickOptions{Multiple: true, Types: []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}})
@@ -43,16 +39,16 @@ func (a *App) pickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]P
 }
 
 func (a *App) saveToPhotosIn(ctx context.Context, path, mime, album string) error {
-	dir, err := picturesDir()
+	dir, err := dirs.Pictures()
 	if err != nil {
 		return err
 	}
 	if album != "" {
-		dir = filepath.Join(dir, sanitizeFileName(album))
+		dir = filepath.Join(dir, platform.SanitizeFileName(album))
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	dst := uniquePath(filepath.Join(dir, filepath.Base(path)))
-	return copyFile(path, dst)
+	dst := platform.UniquePath(filepath.Join(dir, filepath.Base(path)))
+	return platform.CopyFile(path, dst)
 }

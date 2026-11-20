@@ -1,6 +1,6 @@
 //go:build darwin && !ios
 
-package giode
+package shell
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
@@ -14,14 +14,16 @@ import "C"
 import (
 	"strings"
 	"unsafe"
+
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // shareNative shows the system's share picker (AirDrop, Mail, Messages,
 // Notes...) under the window's top.
-func (a *App) shareNative(title, text string, paths []string) error {
-	v := a.NativeHandle()
+func shareNative(h platform.Host, title, text string, paths []string) error {
+	v := h.NativeHandle()
 	if v == 0 {
-		return ErrNotSupported
+		return platform.ErrNotSupported
 	}
 	ct, cp := C.CString(text), C.CString(strings.Join(paths, "\n"))
 	defer C.free(unsafe.Pointer(ct))

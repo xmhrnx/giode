@@ -10,6 +10,7 @@ import (
 	"gioui.org/app"
 
 	"github.com/xmhrnx/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // androidFile is a picked document: a stream on its descriptor, with
@@ -108,7 +109,7 @@ func extMIMEs(exts []string) []string {
 		if !strings.HasPrefix(e, ".") {
 			e = "." + e
 		}
-		t := typeByExtension(strings.ToLower(e))
+		t := platform.MIMEType(strings.ToLower(e))
 		if t == "" {
 			return nil
 		}

@@ -3,6 +3,9 @@ package giode
 import (
 	"context"
 	"os"
+
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/shell"
 )
 
 // SaveToDownloads copies the file at path into the user's Downloads
@@ -27,7 +30,7 @@ func (a *App) SaveToDownloads(ctx context.Context, path, folder string) (string,
 	if _, err := os.Stat(path); err != nil {
 		return "", err
 	}
-	return a.saveToDownloads(ctx, path, ShareFile{Path: path}.mimeType(), a.folderName(folder))
+	return shell.SaveToDownloads(ctx, path, ShareFile{Path: path}.mimeType(), a.folderName(folder))
 }
 
 // OpenDownloads shows where SaveToDownloads puts files: the Downloads
@@ -35,7 +38,7 @@ func (a *App) SaveToDownloads(ctx context.Context, path, folder string) (string,
 // Downloads/<folder> in the file manager on desktops (folder is the
 // app's name when empty).
 func (a *App) OpenDownloads(ctx context.Context, folder string) error {
-	return a.openDownloads(ctx, a.folderName(folder))
+	return shell.OpenDownloads(ctx, a.host(), a.folderName(folder))
 }
 
 // OpenFolder opens the folder at path in the file manager: Explorer,
@@ -51,7 +54,7 @@ func (a *App) OpenFolder(ctx context.Context, path string) error {
 	if !st.IsDir() {
 		return &os.PathError{Op: "open folder", Path: path, Err: os.ErrInvalid}
 	}
-	return a.openFolder(ctx, path)
+	return shell.OpenFolder(ctx, a.host(), path)
 }
 
 // folderName is folder, else the app's name.
@@ -62,5 +65,5 @@ func (a *App) folderName(folder string) string {
 			folder = a.Title()
 		}
 	}
-	return sanitizeFileName(folder)
+	return platform.SanitizeFileName(folder)
 }

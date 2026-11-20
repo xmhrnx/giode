@@ -4,12 +4,14 @@ import (
 	"net/url"
 	"runtime"
 	"strings"
+
+	"github.com/xmhrnx/giode/internal/platform/sharetarget"
 )
 
 // openedURL hands a link that opened the app to OnOpenURL, on the UI
 // goroutine.
 func (a *App) openedURL(u *url.URL) {
-	if isShareScheme(u.Scheme) {
+	if sharetarget.IsShareScheme(u.Scheme) {
 		return // the share extension's; listenShares delivers the share
 	}
 	if a.auth.take(u) {

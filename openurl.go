@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/xmhrnx/giode/internal/platform/shell"
 )
 
 // allowedSchemes are the URL schemes OpenURL opens. Links in content the
@@ -29,7 +31,7 @@ func (a *App) OpenURL(ctx context.Context, rawURL string) error {
 	if !allowedSchemes[strings.ToLower(u.Scheme)] {
 		return fmt.Errorf("giode: won't open %q: only http, https, mailto, tel and sms links are opened", rawURL)
 	}
-	return a.openURL(ctx, u.String())
+	return shell.OpenURL(ctx, a.host(), u.String())
 }
 
 // openLink is the default handler for RichText links.

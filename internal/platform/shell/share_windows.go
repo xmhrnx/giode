@@ -1,4 +1,4 @@
-package giode
+package shell
 
 import (
 	"errors"
@@ -6,7 +6,9 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/internal/winrt"
+	"golang.org/x/sys/windows"
 )
 
 // Sharing on Windows: the system's share sheet (Windows 10 and later),
@@ -15,9 +17,13 @@ import (
 // the files are loaded as StorageFiles first, so the share sheet's data
 // request is answered at once.
 
-const wmShare = 0x8000 + 0x4746 // WM_APP + "GF"
+// WMShare is the window message that opens the share sheet on the
+// window's thread: the window's procedure calls RunShare for it.
+const WMShare = 0x8000 + 0x4746 // WM_APP + "GF"
 
 var (
+	procPostMessageW = windows.NewLazySystemDLL("user32.dll").NewProc("PostMessageW")
+
 	iidDTMInterop       = winrt.ParseGUID("3a3dcd6c-3eab-43dc-bcde-45671ce800c8")
 	iidDTM              = winrt.ParseGUID("a5caee9b-8708-49d1-8d36-67d25a8da00c")
 	iidDataRequestedArg = winrt.ParseGUID("cb8ba807-6ac5-43c9-8ac5-9ba232163182")
@@ -44,19 +50,19 @@ var shareReq struct {
 }
 
 // shareNative shows the share sheet for text or files.
-func (a *App) shareNative(title, text string, paths []string) error {
-	hwnd := a.NativeHandle()
+func shareNative(h platform.Host, title, text string, paths []string) error {
+	hwnd := h.NativeHandle()
 	if hwnd == 0 {
-		return ErrNotSupported
+		return platform.ErrNotSupported
 	}
 	if title == "" {
-		title = a.Title()
+		title = h.Title()
 	}
 	done := make(chan error, 1)
 	shareReq.Lock()
 	shareReq.title, shareReq.text, shareReq.paths, shareReq.done = title, text, paths, done
 	shareReq.Unlock()
-	procPostMessageW.Call(hwnd, wmShare, 0, 0)
+	procPostMessageW.Call(hwnd, WMShare, 0, 0)
 	select {
 	case err := <-done:
 		return err
@@ -65,8 +71,8 @@ func (a *App) shareNative(title, text string, paths []string) error {
 	}
 }
 
-// runShare opens the share sheet; on the window's thread.
-func runShare(a *App, hwnd uintptr) {
+// RunShare opens the share sheet; on the window's thread.
+func RunShare(hwnd uintptr) {
 	shareReq.Lock()
 	done := shareReq.done
 	paths := shareReq.paths

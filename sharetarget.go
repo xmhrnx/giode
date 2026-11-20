@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/xmhrnx/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/sharetarget"
 )
 
 // SharedContent is what another app shared with this one through the
@@ -21,9 +25,20 @@ type SharedContent struct {
 	Text, Subject string
 }
 
-// isShareScheme reports whether a URL scheme is the one iOS's share
-// extension opens the app with, which isn't for OnOpenURL.
-var isShareScheme = func(scheme string) bool { return false }
+// listenShares hands what other apps share with this one to
+// OnShareReceived.
+func (a *App) listenShares() {
+	err := sharetarget.Listen(func(s mobile.Shared) {
+		c := SharedContent{Text: s.Text, Subject: s.Subject}
+		for _, f := range s.Files {
+			c.Files = append(c.Files, sharedFile(f.File, f.Name, f.MIME, f.Size))
+		}
+		a.shareReceived(c)
+	})
+	if err != nil {
+		a.logf(LogLevelWarning, "giode: can't receive shares: %v", err)
+	}
+}
 
 // shareReceived hands a share to OnShareReceived on the UI goroutine.
 func (a *App) shareReceived(s SharedContent) {
@@ -45,7 +60,7 @@ func sharedFile(f *os.File, name, mimeType string, size int64) PickedFile {
 	if p.Name == "." || p.Name == "/" {
 		p.Name = ""
 	}
-	if t := typeByExtension(filepath.Ext(p.Name)); t != "" {
+	if t := platform.MIMEType(filepath.Ext(p.Name)); t != "" {
 		p.MIME = t
 	}
 	if p.MIME == "" || p.MIME == "application/octet-stream" {

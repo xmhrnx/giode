@@ -2,6 +2,8 @@ package platform
 
 import (
 	"context"
+
+	"gioui.org/app"
 )
 
 // Level is a log message's level, as giode.LogLevel.
@@ -20,6 +22,9 @@ type Host interface {
 	// NativeHandle is the window's native handle (giode.App.NativeHandle):
 	// an HWND, an NSView, a GioView..., or 0 before the window exists.
 	NativeHandle() uintptr
+	// NativeView is the window's view event (giode.App.NativeView), or
+	// nil.
+	NativeView() app.ViewEvent
 	// Post runs f on the UI goroutine.
 	Post(f func())
 	// RunOnWindow runs f on the window's own thread (Gio's Window.Run)

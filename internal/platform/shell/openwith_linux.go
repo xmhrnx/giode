@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package shell
 
 import (
 	"context"
@@ -12,16 +12,16 @@ import (
 	"os/exec"
 	"strings"
 
-	"gioui.org/app"
 	"github.com/godbus/dbus/v5"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
-// openWith asks the XDG desktop portal's OpenURI to open the file, as
+// OpenWith asks the XDG desktop portal's OpenURI to open the file, as
 // Flatpak and Snap apps must and desktops otherwise do: its default
 // app, or the portal's app chooser. Without a portal it runs xdg-open.
-func (a *App) openWith(ctx context.Context, path, mime string) error {
-	err := portalOpenFile(ctx, a, path)
-	if err == nil || errors.Is(err, ErrCanceled) || !errors.Is(err, errNoPortal) {
+func OpenWith(ctx context.Context, h platform.Host, path, mime string) error {
+	err := portalOpenFile(ctx, h, path)
+	if err == nil || errors.Is(err, platform.ErrCanceled) || !errors.Is(err, errNoPortal) {
 		return err
 	}
 	// The handler keeps running (or hands off and exits); either way
@@ -41,7 +41,7 @@ var errNoPortal = errors.New("giode: no desktop portal")
 // portalOpenFile hands the portal the file, open for reading, through
 // OpenURI.OpenFile, and waits for its answer: the app it started, or
 // the user's choice in its app chooser.
-func portalOpenFile(ctx context.Context, a *App, path string) error {
+func portalOpenFile(ctx context.Context, h platform.Host, path string) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -63,12 +63,7 @@ func portalOpenFile(ctx context.Context, a *App, path string) error {
 	signals := make(chan *dbus.Signal, 4)
 	conn.Signal(signals)
 
-	parent := ""
-	if a.window != nil {
-		if v, ok := a.NativeView().(app.X11ViewEvent); ok && v.Window != 0 {
-			parent = fmt.Sprintf("x11:%x", v.Window)
-		}
-	}
+	parent := platform.PortalParent(h)
 	options := map[string]dbus.Variant{
 		"handle_token": dbus.MakeVariant(token),
 		"writable":     dbus.MakeVariant(false),
@@ -102,7 +97,7 @@ func portalOpenFile(ctx context.Context, a *App, path string) error {
 			case 0:
 				return nil
 			case 1:
-				return ErrCanceled
+				return platform.ErrCanceled
 			default:
 				return fmt.Errorf("giode: no app opened %s", path)
 			}

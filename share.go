@@ -2,8 +2,12 @@ package giode
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
+
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/shell"
 )
 
 // Shareable is something App.Share can hand to the system: ShareText,
@@ -76,7 +80,7 @@ func (f ShareFile) mimeType() string {
 	if f.MIME != "" {
 		return f.MIME
 	}
-	if t := typeByExtension(filepath.Ext(f.Path)); t != "" {
+	if t := platform.MIMEType(filepath.Ext(f.Path)); t != "" {
 		return t
 	}
 	return "application/octet-stream"
@@ -101,4 +105,27 @@ func (f ShareFile) mimeType() string {
 // goroutine rather than a click handler.
 func (a *App) Share(ctx context.Context, item Shareable) error {
 	return item.share(ctx, a)
+}
+
+func (t ShareText) share(ctx context.Context, a *App) error {
+	err := shell.ShareText(ctx, a.host(), t.Text, t.Subject, t.Title)
+	if errors.Is(err, shell.ErrNoShareSheet) {
+		// A desktop without a share sheet: the clipboard.
+		a.SetClipboard(t.Text)
+		return nil
+	}
+	return err
+}
+
+func (f ShareFile) share(ctx context.Context, a *App) error {
+	mime := f.mimeType()
+	return shell.ShareFiles(ctx, a.host(), []shell.File{{Path: f.Path, MIME: mime}}, mime, f.Title)
+}
+
+func (f ShareFiles) share(ctx context.Context, a *App) error {
+	files := make([]shell.File, len(f.Paths))
+	for i, p := range f.Paths {
+		files[i] = shell.File{Path: p, MIME: ShareFile{Path: p}.mimeType()}
+	}
+	return shell.ShareFiles(ctx, a.host(), files, f.mimeType(), f.Title)
 }

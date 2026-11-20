@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+
+	"github.com/xmhrnx/giode/internal/platform/shell"
 )
 
 // OpenWith opens the file at path in another app, the one the system
@@ -38,5 +40,5 @@ func (a *App) OpenWith(ctx context.Context, path string) error {
 	if st.IsDir() {
 		return &os.PathError{Op: "open with", Path: abs, Err: os.ErrInvalid}
 	}
-	return a.openWith(ctx, abs, ShareFile{Path: abs}.mimeType())
+	return shell.OpenWith(ctx, a.host(), abs, ShareFile{Path: abs}.mimeType())
 }

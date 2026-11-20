@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package shell
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/godbus/dbus/v5"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // fakeOpenURI is the portal's OpenURI: it reads the file it's handed
@@ -55,20 +56,19 @@ func TestPortalOpenFile(t *testing.T) {
 	}
 	path := filepath.Join(t.TempDir(), "notes.txt")
 	os.WriteFile(path, []byte("hello"), 0o600)
-	a := &App{}
-	if err := a.OpenWith(context.Background(), path); err != nil {
+	if err := OpenWith(context.Background(), nil, path, ""); err != nil {
 		t.Fatal(err)
 	}
 	if got := <-p.got; got != "hello" {
 		t.Errorf("the portal read %q", got)
 	}
 	p.code.Store(1)
-	if err := a.OpenWith(context.Background(), path); !errors.Is(err, ErrCanceled) {
+	if err := OpenWith(context.Background(), nil, path, ""); !errors.Is(err, platform.ErrCanceled) {
 		t.Errorf("dismissed chooser: %v", err)
 	}
 	<-p.got
 	p.code.Store(2)
-	if err := a.OpenWith(context.Background(), path); err == nil {
+	if err := OpenWith(context.Background(), nil, path, ""); err == nil {
 		t.Error("no app: no error")
 	}
 }
