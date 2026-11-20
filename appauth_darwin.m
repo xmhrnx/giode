@@ -20,16 +20,20 @@
 		return self.window;
 	}
 #if TARGET_OS_IPHONE
+	UIWindow *any = nil;
 	for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
 		if ([scene isKindOfClass:UIWindowScene.class]) {
 			for (UIWindow *w in ((UIWindowScene *)scene).windows) {
 				if (w.isKeyWindow) {
 					return w;
 				}
+				if (any == nil) {
+					any = w;
+				}
 			}
 		}
 	}
-	return UIApplication.sharedApplication.windows.firstObject;
+	return any;
 #else
 	return NSApp.keyWindow ?: NSApp.mainWindow ?: NSApp.windows.firstObject;
 #endif
@@ -59,6 +63,11 @@ void giodeAuthStart(uintptr_t viewRef, int ident, char *url, char *scheme, int e
 			giodeAuthDone(ident, (char *)"invalid authorization URL", 2);
 			return;
 		}
+		// initWithURL:callbackURLScheme: is deprecated from iOS 17.4,
+		// whose replacement older systems lack; apps building with -Werror
+		// and a recent deployment target mustn't fail on it.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 		ASWebAuthenticationSession *as = [[ASWebAuthenticationSession alloc]
 			initWithURL:authURL
 			callbackURLScheme:s
@@ -75,6 +84,7 @@ void giodeAuthStart(uintptr_t viewRef, int ident, char *url, char *scheme, int e
 					giodeAuthDone(ident, (char *)msg.UTF8String, 2);
 				}
 			}];
+#pragma clang diagnostic pop
 		as.presentationContextProvider = anchor;
 		as.prefersEphemeralWebBrowserSession = ephemeral != 0;
 		sessions[@(ident)] = as;
@@ -98,7 +108,7 @@ void giodeAuthCancel(int ident) {
 static void giodePasskeySend(int ident, int kind, NSArray<NSData *> *parts, NSString *msg) {
 	void *bufs[5] = {0};
 	int lens[5] = {0};
-	int n = (int)MIN(parts.count, 5);
+	int n = parts.count < 5 ? (int)parts.count : 5;
 	for (int i = 0; i < n; i++) {
 		bufs[i] = (void *)parts[i].bytes;
 		lens[i] = (int)parts[i].length;
