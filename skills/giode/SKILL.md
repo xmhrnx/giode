@@ -38,6 +38,7 @@ in this conversation; the API is alpha and changes. Map:
 | Playing video and audio files and streams, captions | `references/media.md` |
 | Voice and video calls, data channels over WebRTC | `references/rtc.md` |
 | Ringing with the system call screen (CallKit, ConnectionService), VoIP pushes | `references/telecom.md` |
+| Notifications with buttons, reply, threads, channels, badges | `references/notifications.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |

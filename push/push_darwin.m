@@ -85,6 +85,12 @@ static BOOL isRemote(UNNotification *n) {
 }
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)r withCompletionHandler:(void (^)(void))done {
+	BOOL custom = ![r.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier];
+	if (isRemote(r.notification) && custom && [self.next respondsToSelector:_cmd]) {
+		// A button of a category from giode/notification.
+		[self.next userNotificationCenter:center didReceiveNotificationResponse:r withCompletionHandler:done];
+		return;
+	}
 	if (isRemote(r.notification)) {
 		UNNotificationContent *c = r.notification.request.content;
 		sendMessage(c.userInfo, c.title, c.body, 1);
@@ -101,13 +107,25 @@ static BOOL isRemote(UNNotification *n) {
 
 static GiodePushCenterDelegate *centerDelegate;
 
+// reaches reports whether following the next links from d gets to target
+// (giode/notification's delegate chains the same way).
+static BOOL reaches(id d, id target) {
+	for (int i = 0; d != nil && i < 8; i++) {
+		if (d == target) {
+			return YES;
+		}
+		d = [d respondsToSelector:@selector(next)] ? [d performSelector:@selector(next)] : nil;
+	}
+	return NO;
+}
+
 static void installCenterDelegate(void) {
 	UNUserNotificationCenter *nc = [UNUserNotificationCenter currentNotificationCenter];
 	if (centerDelegate == nil) {
 		centerDelegate = [[GiodePushCenterDelegate alloc] init];
 	}
 	id<UNUserNotificationCenterDelegate> cur = nc.delegate;
-	if (cur == centerDelegate) {
+	if (reaches(cur, centerDelegate)) {
 		return;
 	}
 	if (cur != nil) {

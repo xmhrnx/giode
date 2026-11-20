@@ -98,6 +98,15 @@ jobs:
           for c in telecom_android GiodeConnectionService; do
             unzip -p call.apk 'classes*.dex' | grep -aq "Lorg/giode/telecom/$c;" || { echo "missing $c"; exit 1; }
           done
+      - name: Build the inbox example
+        # Compiles the notification package for Android and packs its
+        # receiver and activity.
+        run: |
+          export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
+          gogio -target android -arch arm64 -appid org.giode.inbox -o inbox.apk ./examples/inbox
+          for c in notification_android NotificationReceiver NotificationActivity; do
+            unzip -p inbox.apk 'classes*.dex' | grep -aq "Lorg/giode/notification/$c;" || { echo "missing $c"; exit 1; }
+          done
       - name: Compile the store and support packages for Android
         # Their Android code (Play Billing, the installer check) is in no
         # example app.
@@ -169,3 +178,8 @@ jobs:
         env:
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.call -o call.app ./examples/call
+      - name: Build the inbox example for the simulator
+        # Compiles the notification package's Objective-C.
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.inbox -o inbox.app ./examples/inbox
