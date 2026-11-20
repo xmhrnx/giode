@@ -71,6 +71,15 @@ func view() giode.Element {
 
 Landmarks are regions to screen readers too, which list them by name to jump between.
 
+### Text fields
+
+A text field reports its caret and selection with its text (not a password field's), so a
+screen reader reads the character, word or selection the caret moves over and can move
+the caret itself: Orca through AT-SPI's Text interface, VoiceOver on macOS through the
+selected text range, TalkBack through the node's text selection (giode CLI patches,
+revision 21 on). A custom field reports them with `HasCaret`, `Caret` and `Anchor` on its
+node, and takes them back through a `SetSelection(start, end int)` method on its `Target`.
+
 ## Custom elements
 
 `Pressable` reports a button with its `Label`. `Semantics` makes it something else:
@@ -123,6 +132,7 @@ without a `Click` is activated with a tap at its middle.
 | `Live` | `LivePolite` or `LiveAssertive`: changes are announced. |
 | `Min`, `Max`, `Now` | A slider's or progress bar's range and value. |
 | `Pos`, `Count` | An item's place in its list or set, from 1. |
+| `HasCaret`, `Caret`, `Anchor` | A text field's caret and the other end of its selection, in runes. |
 | `Parent`, `LabelledBy`, `DescribedBy`, `Controls` | Relations to other nodes, by ID. |
 
 ## Motion

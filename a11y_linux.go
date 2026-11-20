@@ -127,7 +127,10 @@ type atspiBridge struct {
 	appID   atomic.Int32
 	on      atomic.Bool
 	focus   int32
-	mu      sync.Mutex
+	// caret is the focused node's caret and anchor last frame.
+	caret [2]int
+	text  string
+	mu    sync.Mutex
 	// origin returns the window's client area on the screen; ok is false
 	// where it isn't known (Wayland).
 	origin func() (x, y int, ok bool)
@@ -1027,14 +1030,58 @@ func (x atspiText) GetTextAtOffset(msg dbus.Message, off int32, boundary uint32)
 	return x.GetStringAtOffset(msg, off, g)
 }
 
-func (x atspiText) GetNSelections(msg dbus.Message) (int32, *dbus.Error) { return 0, nil }
+func (x atspiText) GetNSelections(msg dbus.Message) (int32, *dbus.Error) {
+	_, n, err := x.b.resolve(msg)
+	if err != nil {
+		return 0, err
+	}
+	if start, end, ok := a11ySelection(n); ok && start != end {
+		return 1, nil
+	}
+	return 0, nil
+}
 
 func (x atspiText) GetSelection(msg dbus.Message, i int32) (int32, int32, *dbus.Error) {
+	_, n, err := x.b.resolve(msg)
+	if err != nil {
+		return 0, 0, err
+	}
+	if start, end, ok := a11ySelection(n); ok && i == 0 && start != end {
+		return int32(start), int32(end), nil
+	}
 	return 0, 0, nil
 }
 
+// selectText selects [start, end) in the message's node.
+func (x atspiText) selectText(msg dbus.Message, start, end int32) (bool, *dbus.Error) {
+	o, _, err := x.b.resolve(msg)
+	if err != nil || o.root || o.frame || x.b.a == nil {
+		return false, err
+	}
+	return x.b.t.perform(x.b.a, o.k, a11ySetSelection, fmt.Sprintf("%d,%d", start, end)), nil
+}
+
 func (x atspiText) SetCaretOffset(msg dbus.Message, off int32) (bool, *dbus.Error) {
-	return false, nil
+	return x.selectText(msg, off, off)
+}
+
+func (x atspiText) SetSelection(msg dbus.Message, i, start, end int32) (bool, *dbus.Error) {
+	if i != 0 {
+		return false, nil
+	}
+	return x.selectText(msg, start, end)
+}
+
+func (x atspiText) AddSelection(msg dbus.Message, start, end int32) (bool, *dbus.Error) {
+	return x.selectText(msg, start, end)
+}
+
+func (x atspiText) RemoveSelection(msg dbus.Message, i int32) (bool, *dbus.Error) {
+	_, n, err := x.b.resolve(msg)
+	if err != nil || !n.HasCaret {
+		return false, err
+	}
+	return x.selectText(msg, int32(n.Caret), int32(n.Caret))
 }
 
 func (x atspiText) GetCharacterExtents(msg dbus.Message, off int32, coords uint32) (int32, int32, int32, int32, *dbus.Error) {
@@ -1198,8 +1245,8 @@ func (x atspiProps) Get(msg dbus.Message, iface, prop string) (dbus.Variant, *db
 	case "org.a11y.atspi.Text.CharacterCount":
 		return v(int32(utf8.RuneCountInString(atspiTextOf(n))))
 	case "org.a11y.atspi.Text.CaretOffset":
-		if n.Kind == elements.SemanticInput {
-			return v(int32(utf8.RuneCountInString(n.Value)))
+		if n.HasCaret {
+			return v(int32(n.Caret))
 		}
 		return v(int32(-1))
 	case "org.a11y.atspi.Action.NActions":
@@ -1232,6 +1279,15 @@ func (x atspiProps) Set(msg dbus.Message, iface, prop string, val dbus.Variant) 
 }
 
 // --- Events ---
+
+// textChanged reports whether focused node n's text differs from last
+// frame's, for TextChanged events that only typing sends (not a caret
+// move).
+func (b *atspiBridge) textChanged(n elements.SemanticNode) bool {
+	changed := n.Value != b.text
+	b.text = n.Value
+	return changed
+}
 
 func (b *atspiBridge) emit(path dbus.ObjectPath, event, detail string, d1, d2 int32, data any) {
 	b.conn.Emit(path, event, detail, d1, d2, dbus.MakeVariant(data), map[string]dbus.Variant{})
@@ -1277,8 +1333,18 @@ func (b *atspiBridge) events() {
 		if atspiHasValue(n) {
 			b.emit(path, "org.a11y.atspi.Event.Object.PropertyChange", "accessible-value", 0, 0, n.Now)
 		}
-		if n.Kind == elements.SemanticInput {
+		if n.Kind == elements.SemanticInput && b.textChanged(n) {
 			b.emit(path, "org.a11y.atspi.Event.Object.TextChanged", "insert", 0, int32(utf8.RuneCountInString(n.Value)), n.Value)
+		}
+		if n.HasCaret {
+			caret := [2]int{n.Caret, n.Anchor}
+			if caret != b.caret || k != old {
+				b.emit(path, "org.a11y.atspi.Event.Object.TextCaretMoved", "", int32(n.Caret), 0, int32(0))
+				if n.Anchor != n.Caret || b.caret[0] != b.caret[1] {
+					b.emit(path, "org.a11y.atspi.Event.Object.TextSelectionChanged", "", 0, 0, int32(0))
+				}
+			}
+			b.caret = caret
 		}
 		b.emit(path, "org.a11y.atspi.Event.Object.PropertyChange", "accessible-name", 0, 0, b.name(atspiObj{k: k}, n))
 	}

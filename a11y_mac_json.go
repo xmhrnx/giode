@@ -2,6 +2,8 @@ package giode
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 
 	"github.com/xmhrnx/giode/elements"
 )
@@ -42,6 +44,12 @@ type macNode struct {
 	Count    int     `json:"count,omitempty"`
 	Level    int     `json:"level,omitempty"`
 	Modal    bool    `json:"modal,omitempty"`
+	// A text field's selection, [SelStart, SelEnd) in UTF-16 units as
+	// NSRange counts them, when HasCaret.
+	HasCaret bool `json:"hascaret,omitempty"`
+	SelStart int  `json:"selstart"`
+	SelEnd   int  `json:"selend"`
+	Length   int  `json:"length"`
 
 	// Actions it takes: "press", "increment", "decrement", "setvalue",
 	// "focus".
@@ -194,6 +202,11 @@ func fillMacNode(out *macNode, n elements.SemanticNode) {
 	default:
 		out.Label = a11yText(n)
 	}
+	if start, end, ok := a11ySelection(n); ok {
+		out.HasCaret = true
+		out.SelStart, out.SelEnd = utf16Offset(n.Value, start), utf16Offset(n.Value, end)
+		out.Length = utf16Offset(n.Value, len([]rune(n.Value)))
+	}
 	activate, _, setText, focus := a11yActions(n)
 	if activate {
 		out.Actions = append(out.Actions, "press")
@@ -209,6 +222,42 @@ func fillMacNode(out *macNode, n elements.SemanticNode) {
 	if focus {
 		out.Actions = append(out.Actions, "focus")
 	}
+	if _, ok := n.Target.(a11ySelectable); ok && n.HasCaret {
+		out.Actions = append(out.Actions, "select")
+	}
+}
+
+// utf16Offset returns the UTF-16 length of s's first runes runes.
+func utf16Offset(s string, runes int) int {
+	n := 0
+	for i, r := range []rune(s) {
+		if i >= runes {
+			break
+		}
+		if r >= 0x10000 {
+			n += 2
+		} else {
+			n++
+		}
+	}
+	return n
+}
+
+// runeOffset returns how many runes of s the first u UTF-16 units span.
+func runeOffset(s string, u int) int {
+	n, i := 0, 0
+	for _, r := range s {
+		if n >= u {
+			break
+		}
+		if r >= 0x10000 {
+			n += 2
+		} else {
+			n++
+		}
+		i++
+	}
+	return i
 }
 
 // macAction maps a bridge action name to a11yAction.
@@ -224,10 +273,25 @@ func macAction(name string) a11yAction {
 		return a11ySetText
 	case "focus":
 		return a11yFocus
+	case "select":
+		return a11ySetSelection
 	case "expand":
 		return a11yExpand
 	case "collapse":
 		return a11yCollapse
 	}
 	return 0
+}
+
+// utf16RangeToRunes turns "start,end" in UTF-16 units of node k's value
+// into runes.
+func utf16RangeToRunes(t *a11yTree, k int32, arg string) string {
+	n, _, _, ok := t.node(k)
+	a, b, found := strings.Cut(arg, ",")
+	start, err1 := strconv.Atoi(a)
+	end, err2 := strconv.Atoi(b)
+	if !ok || !found || err1 != nil || err2 != nil {
+		return arg
+	}
+	return strconv.Itoa(runeOffset(n.Value, start)) + "," + strconv.Itoa(runeOffset(n.Value, end))
 }

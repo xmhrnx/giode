@@ -57,7 +57,8 @@ func dialBus(t *testing.T, addr string) *dbus.Conn {
 func atspiTestTree() *a11yTree {
 	tree := newA11yTree()
 	tree.update([]elements.SemanticNode{
-		{ID: "name", Kind: elements.SemanticInput, Label: "Name", Value: "Ada Lovelace", Required: true, Bounds: image.Rect(10, 10, 210, 40), Focused: true, Target: &atspiTextTarget{}},
+		{ID: "name", Kind: elements.SemanticInput, Label: "Name", Value: "Ada Lovelace", Required: true, Bounds: image.Rect(10, 10, 210, 40), Focused: true, Target: &atspiTextTarget{},
+			HasCaret: true, Caret: 12, Anchor: 4},
 		{ID: "dark", Kind: elements.SemanticSwitch, Label: "Dark mode", Checked: elements.Checked, Bounds: image.Rect(10, 50, 110, 80)},
 		{ID: "vol", Kind: elements.SemanticSlider, Label: "Volume", Min: 0, Max: 1, Now: 0.25, Bounds: image.Rect(10, 90, 210, 110)},
 	})
@@ -66,7 +67,8 @@ func atspiTestTree() *a11yTree {
 
 type atspiTextTarget struct{ text string }
 
-func (c *atspiTextTarget) SetText(s string) { c.text = s }
+func (c *atspiTextTarget) SetText(s string)            { c.text = s }
+func (c *atspiTextTarget) SetSelection(start, end int) {}
 
 func TestATSPIObjects(t *testing.T) {
 	addr := privateBus(t)
@@ -115,6 +117,13 @@ func TestATSPIObjects(t *testing.T) {
 	entry.Call("org.a11y.atspi.Text.GetStringAtOffset", 0, int32(5), uint32(1)).Store(&word, &ws, &we)
 	if word != "Lovelace" || ws != 4 {
 		t.Errorf("word at 5 = %q from %d", word, ws)
+	}
+	caret, _ := entry.GetProperty("org.a11y.atspi.Text.CaretOffset")
+	var nsel, s0, s1 int32
+	entry.Call("org.a11y.atspi.Text.GetNSelections", 0).Store(&nsel)
+	entry.Call("org.a11y.atspi.Text.GetSelection", 0, int32(0)).Store(&s0, &s1)
+	if caret.Value() != int32(12) || nsel != 1 || s0 != 4 || s1 != 12 {
+		t.Errorf("caret %v, %d selections, selection [%d, %d)", caret, nsel, s0, s1)
 	}
 	var states []uint32
 	entry.Call("org.a11y.atspi.Accessible.GetState", 0).Store(&states)

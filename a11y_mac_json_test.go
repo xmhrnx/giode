@@ -68,3 +68,20 @@ func TestReadingOrder(t *testing.T) {
 		t.Errorf("reading order = %v, want %v (the list is a container, the button's text part of it)", got, want)
 	}
 }
+
+func TestUTF16Offsets(t *testing.T) {
+	s := "a😀b"
+	if utf16Offset(s, 2) != 3 || runeOffset(s, 3) != 2 || runeOffset(s, 1) != 1 {
+		t.Errorf("utf16Offset(2) = %d, runeOffset(3) = %d", utf16Offset(s, 2), runeOffset(s, 3))
+	}
+	tree := newA11yTree()
+	tree.update([]elements.SemanticNode{{ID: "f", Kind: elements.SemanticInput, Value: s, HasCaret: true, Caret: 3, Anchor: 1}})
+	var n macNode
+	json.Unmarshal([]byte(tree.macJSON(tree.num["f"])), &n)
+	if !n.HasCaret || n.SelStart != 1 || n.SelEnd != 4 || n.Length != 4 {
+		t.Errorf("selection = %+v", n)
+	}
+	if got := utf16RangeToRunes(tree, tree.num["f"], "1,3"); got != "1,2" {
+		t.Errorf("utf16RangeToRunes = %q", got)
+	}
+}

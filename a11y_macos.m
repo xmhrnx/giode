@@ -180,6 +180,42 @@ static NSRect axFrame(NSView *view, double x, double y, double w, double h) {
 	return [self.current[@"level"] integerValue];
 }
 
+- (NSInteger)accessibilityNumberOfCharacters {
+	return [self.current[@"length"] integerValue];
+}
+
+- (NSRange)accessibilitySelectedTextRange {
+	if (![self flag:@"hascaret"]) {
+		return NSMakeRange(NSNotFound, 0);
+	}
+	NSInteger s = [self.current[@"selstart"] integerValue], e = [self.current[@"selend"] integerValue];
+	return NSMakeRange(s, e - s);
+}
+
+- (void)setAccessibilitySelectedTextRange:(NSRange)range {
+	if ([self has:@"select"] && range.location != NSNotFound) {
+		NSString *arg = [NSString stringWithFormat:@"%ld,%ld", (long)range.location, (long)(range.location + range.length)];
+		[self perform:@"select" arg:arg];
+	}
+}
+
+- (NSString *)accessibilitySelectedText {
+	NSRange r = self.accessibilitySelectedTextRange;
+	id v = self.current[@"value"];
+	if (r.location == NSNotFound || ![v isKindOfClass:[NSString class]] || NSMaxRange(r) > [v length]) {
+		return nil;
+	}
+	return [v substringWithRange:r];
+}
+
+- (NSRange)accessibilityVisibleCharacterRange {
+	return NSMakeRange(0, [self.current[@"length"] integerValue]);
+}
+
+- (NSInteger)accessibilityInsertionPointLineNumber {
+	return [self flag:@"hascaret"] ? 0 : -1;
+}
+
 - (NSRect)accessibilityFrame {
 	NSDictionary *n = self.current;
 	NSView *view = self.view;
@@ -240,6 +276,9 @@ static NSRect axFrame(NSView *view, double x, double y, double w, double h) {
 	}
 	if (selector == @selector(setAccessibilityFocused:)) {
 		return [self has:@"focus"];
+	}
+	if (selector == @selector(setAccessibilitySelectedTextRange:)) {
+		return [self has:@"select"];
 	}
 	if (selector == @selector(setAccessibilityExpanded:)) {
 		return [self.current[@"expanded"] intValue] >= 0;
@@ -357,6 +396,9 @@ void giodeAXChanged(uintptr_t viewRef, int32_t focus, int32_t *changed, int n, c
 			GiodeAXElement *e = ax.elements[k];
 			if (e != nil) {
 				NSAccessibilityPostNotification(e, NSAccessibilityValueChangedNotification);
+				if ([e.current[@"hascaret"] boolValue]) {
+					NSAccessibilityPostNotification(e, NSAccessibilitySelectedTextChangedNotification);
+				}
 			}
 		}
 		if (focus > 0) {

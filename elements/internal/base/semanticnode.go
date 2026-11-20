@@ -66,6 +66,11 @@ type SemanticNode struct {
 	// Pos and Count are an item's place in its list or set, from 1, when
 	// the list shows only some items (virtualized).
 	Pos, Count int `json:"-"`
+	// HasCaret marks a text field showing its caret: Caret is where it
+	// is and Anchor the selection's other end, in runes from the start
+	// of Value; Anchor == Caret is no selection.
+	HasCaret      bool `json:"-"`
+	Caret, Anchor int  `json:"-"`
 }
 
 // CheckState is a checkable control's state.

@@ -193,5 +193,9 @@ func giodeAXAction(view C.uintptr_t, id C.int32_t, action *C.char, arg *C.char) 
 	if arg != nil {
 		s = C.GoString(arg)
 	}
+	if act == a11ySetSelection {
+		// The range comes in UTF-16 units, as NSRange counts.
+		s = utf16RangeToRunes(t, int32(id), s)
+	}
 	return C.int(boolInt(t.perform(a, int32(id), act, s)))
 }

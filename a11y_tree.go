@@ -2,6 +2,7 @@ package giode
 
 import (
 	"image"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -164,7 +165,7 @@ func a11ySum(n elements.SemanticNode) string {
 	b.WriteByte(0)
 	b.WriteString(n.Description)
 	r := n.Bounds
-	for _, v := range []int{r.Min.X, r.Min.Y, r.Max.X, r.Max.Y, int(n.Checked), int(n.Expanded), n.Level} {
+	for _, v := range []int{r.Min.X, r.Min.Y, r.Max.X, r.Max.Y, int(n.Checked), int(n.Expanded), n.Level, n.Caret, n.Anchor} {
 		b.WriteByte(0)
 		b.WriteString(itoa(v))
 	}
@@ -344,7 +345,25 @@ const (
 	a11yFocus
 	a11yIncrement
 	a11yDecrement
+	// a11ySetSelection selects text: its argument is "start,end", in
+	// runes.
+	a11ySetSelection
 )
+
+// a11ySelectable is a text field a screen reader can move the caret or
+// selection of.
+type a11ySelectable interface {
+	SetSelection(start, end int)
+}
+
+// a11ySelection returns n's selection as [start, end), start <= end;
+// ok is false when it shows no caret.
+func a11ySelection(n elements.SemanticNode) (start, end int, ok bool) {
+	if !n.HasCaret {
+		return 0, 0, false
+	}
+	return min(n.Caret, n.Anchor), max(n.Caret, n.Anchor), true
+}
 
 // a11yStepper is a control a screen reader can step, like a slider.
 type a11yStepper interface {
@@ -384,6 +403,19 @@ func (t *a11yTree) perform(a *App, k int32, action a11yAction, arg string) bool 
 			return false
 		}
 		a.Post(func() { s.SetText(arg) })
+		return true
+	case a11ySetSelection:
+		sel, ok := n.Target.(a11ySelectable)
+		if !ok {
+			return false
+		}
+		a0, b0, found := strings.Cut(arg, ",")
+		start, err1 := strconv.Atoi(strings.TrimSpace(a0))
+		end, err2 := strconv.Atoi(strings.TrimSpace(b0))
+		if !found || err1 != nil || err2 != nil {
+			return false
+		}
+		a.Post(func() { sel.SetSelection(start, end) })
 		return true
 	case a11yIncrement, a11yDecrement:
 		st, ok := n.Target.(a11yStepper)

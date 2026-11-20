@@ -90,8 +90,14 @@ func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if i.invalid != "" {
 		desc = i.invalid
 	}
-	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticInput, Label: label, Value: value, Description: desc,
-		Required: i.required, Invalid: i.invalid != "", Focused: i.focused, Target: i}, dims.Size)
+	n := elements.SemanticNode{Kind: elements.SemanticInput, Label: label, Value: value, Description: desc,
+		Required: i.required, Invalid: i.invalid != "", Focused: i.focused, Target: i}
+	if i.editor.Mask == 0 {
+		// A password's caret would give its length away.
+		n.HasCaret = true
+		n.Caret, n.Anchor = i.editor.Selection()
+	}
+	elements.RecordSemantic(gtx, n, dims.Size)
 	return dims
 }
 

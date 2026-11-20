@@ -21,6 +21,7 @@ const (
 	androidActionExpand         = 262144
 	androidActionCollapse       = 524288
 	androidActionSetText        = 2097152
+	androidActionSetSelection   = 131072
 )
 
 // androidNode is a node as giode's patched GioView reads it to fill an
@@ -66,6 +67,10 @@ type androidNode struct {
 	Row     int  `json:"row,omitempty"`
 
 	Actions []int `json:"actions,omitempty"`
+
+	// A text field's selection in UTF-16 units, as Android counts.
+	SelStart *int `json:"selStart,omitempty"`
+	SelEnd   *int `json:"selEnd,omitempty"`
 }
 
 // androidClass is the Android widget class TalkBack describes a kind as.
@@ -210,6 +215,28 @@ func fillAndroidNode(out *androidNode, n elements.SemanticNode, focusable bool) 
 	if focus {
 		out.Actions = append(out.Actions, androidActionFocus)
 	}
+	if start, end, ok := a11ySelection(n); ok {
+		s, e := utf16Offset(n.Value, start), utf16Offset(n.Value, end)
+		if n.Caret < n.Anchor {
+			s, e = e, s
+		}
+		out.SelStart, out.SelEnd = &s, &e
+		if _, ok := n.Target.(a11ySelectable); ok {
+			out.Actions = append(out.Actions, androidActionSetSelection)
+		}
+	}
+}
+
+// androidSelection returns the focused text field and its selection in
+// UTF-16 units (start the anchor, end the caret) and its length, for
+// TalkBack to read what the caret moves over.
+func (t *a11yTree) androidSelection() (id int32, start, end, count int, ok bool) {
+	k := t.focusedNode()
+	n, _, _, found := t.node(k)
+	if !found || !n.HasCaret {
+		return 0, 0, 0, 0, false
+	}
+	return k, utf16Offset(n.Value, n.Anchor), utf16Offset(n.Value, n.Caret), utf16Offset(n.Value, len([]rune(n.Value))), true
 }
 
 // androidAction maps an Android action ID to a11yAction.
@@ -229,6 +256,8 @@ func androidAction(id int) a11yAction {
 		return a11yCollapse
 	case androidActionFocus:
 		return a11yFocus
+	case androidActionSetSelection:
+		return a11ySetSelection
 	}
 	return 0
 }
