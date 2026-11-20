@@ -17,9 +17,31 @@ func TestPostWhileHidden_Windows(t *testing.T) {
 	// The window loop itself: Run exits the process when the window
 	// closes.
 	go func() { done <- a.runLoop(func() Element { return Text("hidden") }) }()
+	// However the test ends - skipped, failed or passed - the window
+	// loop must be over before the next test: its frames would lay out
+	// at the same time as that test's.
+	finished := false
+	t.Cleanup(func() {
+		if finished {
+			return
+		}
+		deadline := time.After(30 * time.Second)
+		for {
+			a.Quit()
+			select {
+			case <-done:
+				return
+			case <-time.After(500 * time.Millisecond):
+			case <-deadline:
+				t.Error("the window loop didn't end")
+				return
+			}
+		}
+	})
 	select {
 	case <-ready:
 	case err := <-done:
+		finished = true
 		t.Skipf("no window on this machine: %v", err)
 	case <-time.After(20 * time.Second):
 		t.Skip("the window never drew a frame on this machine")
@@ -46,6 +68,7 @@ func TestPostWhileHidden_Windows(t *testing.T) {
 	a.Post(a.Quit) // a tray "Quit" item, from the hidden window
 	select {
 	case <-done:
+		finished = true
 	case <-time.After(5 * time.Second):
 		t.Fatal("Quit through Post didn't end the app while hidden")
 	}
