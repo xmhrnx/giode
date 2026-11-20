@@ -133,7 +133,7 @@ func TestInput_BidiCaret(t *testing.T) {
 	h.frame()
 	var stops []int
 	for i := 0; i < 6; i++ {
-		h.press(key.NameRightArrow, key.ModShortcut)
+		h.press(key.NameRightArrow, key.ModShortcutAlt)
 		stops = append(stops, in.Caret())
 	}
 	t.Logf("word stops %v", stops)
