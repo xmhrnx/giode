@@ -14,6 +14,7 @@ import (
 	"github.com/xmhrnx/giode/components/colorpicker"
 	"github.com/xmhrnx/giode/components/copybutton"
 	"github.com/xmhrnx/giode/components/datagrid"
+	"github.com/xmhrnx/giode/components/datepicker"
 	"github.com/xmhrnx/giode/components/dialog"
 	"github.com/xmhrnx/giode/components/doctabs"
 	"github.com/xmhrnx/giode/components/drawer"
@@ -657,6 +658,16 @@ type InputAPI struct {
 	// hue bar, optional alpha bar, hex field and preset swatches -
 	// showing value ("#3366FF").
 	Color func(value string, st ...Styles) *colorpicker.ColorPicker
+	// Date creates a date field with a calendar popover; typed dates
+	// follow the locale's order.
+	Date func(st ...Styles) *datepicker.DatePicker
+	// DateRange creates start and end date fields with a two-month
+	// calendar.
+	DateRange func(st ...Styles) *datepicker.DateRangePicker
+	// Time creates a time field with a list of times.
+	Time func(st ...Styles) *datepicker.TimePicker
+	// DateTime creates a date field and a time field together.
+	DateTime func() *datepicker.DateTimeField
 }
 
 // Input groups the form-control constructors that collect user
@@ -672,7 +683,27 @@ var Input = InputAPI{
 	Segmented:    segmented.New,
 	Number:       numberinput.New,
 	Color:        colorpicker.New,
+	Date:         datepicker.New,
+	DateRange:    datepicker.NewRange,
+	Time:         datepicker.NewTime,
+	DateTime:     datepicker.NewDateTime,
 }
+
+// DateCalendar creates a month calendar to pick a day or a range from;
+// see datepicker.DateCalendar.
+var DateCalendar = datepicker.NewCalendar
+
+// TimeOfDay is a time on a clock, what a time field holds.
+type TimeOfDay = datepicker.TimeOfDay
+
+// DatePickerElement and the others are the date and time fields' types.
+type (
+	DatePickerElement      = datepicker.DatePicker
+	DateRangePickerElement = datepicker.DateRangePicker
+	TimePickerElement      = datepicker.TimePicker
+	DateTimeFieldElement   = datepicker.DateTimeField
+	DateCalendarElement    = datepicker.DateCalendar
+)
 
 // SheetMode selects when a Select opens as a bottom sheet; see
 // dropdown.Select.Sheet.

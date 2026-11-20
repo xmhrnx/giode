@@ -13,7 +13,6 @@ import (
 	"gioui.org/op"
 
 	"github.com/xmhrnx/giode/datetime"
-	"github.com/xmhrnx/giode/ui"
 )
 
 type harness struct {
@@ -29,7 +28,7 @@ func newHarness(w layout.Widget) *harness {
 		h.now = h.now.Add(16 * time.Millisecond)
 		var ops op.Ops
 		gtx := layout.Context{Ops: &ops, Now: h.now, Source: h.r.Source(), Constraints: layout.Constraints{Max: image.Pt(800, 600)}}
-		ui.Frame(gtx, rawElement(h.el))
+		frame(gtx, rawElement(h.el))
 		h.r.Frame(&ops)
 	}
 	return h

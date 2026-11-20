@@ -77,9 +77,11 @@ type DateCalendar struct {
 
 	prev, next *iconbutton.Button
 	// grids are where each month's days were drawn last frame.
-	grids   []monthGrid
-	cell    int
-	rtl     bool
+	grids []monthGrid
+	cell  int
+	rtl   bool
+	// origin is its window position, last frame.
+	origin  image.Point
 	pressed time.Time
 }
 
@@ -436,6 +438,7 @@ func (c *DateCalendar) dayAt(p f32.Point) (time.Time, bool) {
 // weekdays, and the days.
 func (c *DateCalendar) Layout(gtx layout.Context) layout.Dimensions {
 	c.rtl = kit.RTL(gtx)
+	elements.TrackPosition(&c.origin)
 	c.update(gtx)
 	loc := c.loc()
 	cal := c.calendar()

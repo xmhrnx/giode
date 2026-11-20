@@ -16,8 +16,9 @@ import (
 	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/datetime"
+	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
-	"github.com/xmhrnx/giode/ui"
 )
 
 // TestShot writes PNGs of calendars to GIODE_SHOT_DIR, for looking at.
@@ -41,7 +42,7 @@ func TestShot(t *testing.T) {
 			gtx.Locale = system.Locale{Direction: system.RTL}
 		}
 		paint.Fill(gtx.Ops, properties.CalcColor("theme.background"))
-		ui.Frame(gtx, rawElement(el))
+		frame(gtx, rawElement(el))
 		if err := win.Frame(&ops); err != nil {
 			t.Fatal(err)
 		}
@@ -63,4 +64,16 @@ func TestShot(t *testing.T) {
 	fa := NewCalendar().Locale(datetime.NewLocale("fa-IR"))
 	fa.SetSelected(now)
 	shot("calendar-fa", 560, 640, true, fa.Layout)
+	dp := New(styles.Styles{Width: 220}).Locale(datetime.NewLocale("en-US")).Label("Due date")
+	dp.SetValue(now)
+	dp.openCalendar()
+	shot("datepicker-open", 700, 820, false, func(gtx layout.Context) layout.Dimensions {
+		return elements.Box(styles.Styles{Padding: properties.UniformInset(20)}, dp).Layout(gtx)
+	})
+	tp := NewTime(styles.Styles{Width: 160}).Locale(datetime.NewLocale("en-US"))
+	tp.SetValue(TimeOfDay{14, 30})
+	tp.openList()
+	shot("timepicker-open", 500, 700, false, func(gtx layout.Context) layout.Dimensions {
+		return elements.Box(styles.Styles{Padding: properties.UniformInset(20)}, tp).Layout(gtx)
+	})
 }

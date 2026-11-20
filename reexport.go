@@ -611,6 +611,22 @@ type InputAPI = ui.InputAPI
 // Input.AutoComplete.
 var Input = ui.Input
 
+// DateCalendar creates a month calendar to pick a day or a range from;
+// see datepicker.DateCalendar.
+var DateCalendar = ui.DateCalendar
+
+// TimeOfDay is a time on a clock, what a time field holds.
+type TimeOfDay = ui.TimeOfDay
+
+// DatePickerElement and the others are the date and time fields' types.
+type (
+	DatePickerElement      = ui.DatePickerElement
+	DateRangePickerElement = ui.DateRangePickerElement
+	TimePickerElement      = ui.TimePickerElement
+	DateTimeFieldElement   = ui.DateTimeFieldElement
+	DateCalendarElement    = ui.DateCalendarElement
+)
+
 // SheetMode selects when a Select opens as a bottom sheet; see
 // dropdown.Select.Sheet.
 type SheetMode = ui.SheetMode
