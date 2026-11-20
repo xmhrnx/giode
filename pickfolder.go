@@ -3,6 +3,8 @@ package giode
 import (
 	"context"
 	"sync"
+
+	"github.com/xmhrnx/giode/internal/platform/picker"
 )
 
 // pickMu shows one folder picker at a time.
@@ -33,6 +35,6 @@ func (a *App) PickFolder(ctx context.Context, opts FolderOptions) (string, error
 	return await(ctx, func() (string, error) {
 		pickMu.Lock()
 		defer pickMu.Unlock()
-		return pickFolder(a, opts)
+		return picker.PickFolder(a.host(), opts.Title, opts.Directory)
 	}, func(string) {})
 }

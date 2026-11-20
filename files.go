@@ -3,6 +3,7 @@ package giode
 import (
 	"github.com/xmhrnx/giode/host"
 	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/picker"
 
 	"context"
 	"errors"
@@ -133,14 +134,19 @@ func await[T any](ctx context.Context, f func() (T, error), discard func(T)) (T,
 	}
 }
 
-// splitPaths splits paths that each end with a NUL, the one byte a
-// path can't hold, leaving out empty ones.
-func splitPaths(b []byte) []string {
-	var out []string
-	for _, p := range strings.Split(string(b), "\x00") {
-		if p != "" {
-			out = append(out, p)
-		}
+// chooseFiles shows the platform's open dialog: its own where it has
+// one, else Gio's explorer.
+func (a *App) chooseFiles(exts []string, multiple bool) ([]io.ReadCloser, error) {
+	files, err := picker.OpenFiles(a.host(), exts, multiple)
+	if !errors.Is(err, picker.ErrUseFallback) {
+		return files, err
 	}
-	return out
+	if !multiple {
+		f, err := a.explorer.ChooseFile(exts...)
+		if err != nil {
+			return nil, err
+		}
+		return []io.ReadCloser{f}, nil
+	}
+	return a.explorer.ChooseFiles(exts...)
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"image"
 	"image/jpeg"
 	"io"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/xmhrnx/giode/internal/optin"
 	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/picker"
 )
 
 // PickedFile is a file the user picked, open for reading, with what's
@@ -187,9 +189,16 @@ type PhotoOptions struct {
 // goroutine. It returns ErrCanceled when the user backs out.
 func (a *App) PickPhoto(ctx context.Context, opts PhotoOptions) (PickedFile, error) {
 	if opts.Source == Camera && !optin.TakePhotoLinked {
-		return PickedFile{}, notLinked("takephoto")
+		return PickedFile{}, platform.NotLinked("takephoto")
 	}
-	return a.pickPhoto(ctx, opts)
+	p, err := picker.PickPhoto(ctx, a.host(), opts.MaxSide, opts.Source == Camera)
+	if errors.Is(err, picker.ErrUseFallback) {
+		return a.photoFromFile(ctx, opts)
+	}
+	if err != nil {
+		return PickedFile{}, err
+	}
+	return jpegFile(p.Name, p.JPEG), nil
 }
 
 // photoFromFile is PickPhoto through the file picker, decoding and

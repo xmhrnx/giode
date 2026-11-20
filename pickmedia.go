@@ -1,6 +1,11 @@
 package giode
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	"github.com/xmhrnx/giode/internal/platform/picker"
+)
 
 // MediaOptions configures PickMedia.
 type MediaOptions struct {
@@ -29,7 +34,18 @@ func (a *App) PickMedia(ctx context.Context, opts MediaOptions) ([]PickedFile, e
 	if !opts.Photos && !opts.Videos {
 		opts.Photos, opts.Videos = true, true
 	}
-	return a.pickMedia(ctx, opts)
+	rcs, err := picker.PickMedia(ctx, a.host(), opts.Limit, opts.Photos, opts.Videos)
+	if errors.Is(err, picker.ErrUseFallback) {
+		return a.pickMediaFiles(ctx, opts)
+	}
+	if err != nil {
+		return nil, err
+	}
+	files := make([]PickedFile, len(rcs))
+	for i, f := range rcs {
+		files[i] = describe(f)
+	}
+	return files, nil
 }
 
 // pickMediaFiles is PickMedia through the file picker.

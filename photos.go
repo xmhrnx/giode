@@ -2,9 +2,13 @@ package giode
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 
 	"github.com/xmhrnx/giode/internal/optin"
+	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/picker"
 )
 
 // PickPhotos lets the user pick several photos at once, up to limit (0
@@ -19,7 +23,45 @@ func (a *App) PickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]P
 	if opts.Source == Camera {
 		return nil, ErrNotSupported
 	}
-	return a.pickPhotos(ctx, opts, limit)
+	ps, err := picker.PickPhotos(ctx, a.host(), opts.MaxSide, limit)
+	if errors.Is(err, picker.ErrUseFallback) {
+		return a.photosFromFiles(ctx, opts, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	files := make([]PickedFile, len(ps))
+	for i, p := range ps {
+		files[i] = jpegFile(p.Name, p.JPEG)
+	}
+	return files, nil
+}
+
+// photosFromFiles is PickPhotos through the file picker.
+func (a *App) photosFromFiles(ctx context.Context, opts PhotoOptions, limit int) ([]PickedFile, error) {
+	files, err := a.PickFiles(ctx, PickOptions{Multiple: true, Types: []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}})
+	if err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(files) > limit {
+		for _, f := range files[limit:] {
+			f.Close()
+		}
+		files = files[:limit]
+	}
+	var out []PickedFile
+	for _, f := range files {
+		data, err := toJPEG(f, opts.MaxSide)
+		f.Close()
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", f.Name, err)
+		}
+		out = append(out, jpegFile(f.Name, data))
+	}
+	if len(out) == 0 {
+		return nil, ErrCanceled
+	}
+	return out, nil
 }
 
 // SaveToPhotos adds the picture or video at path to the device's photo
@@ -42,7 +84,7 @@ func (a *App) PickPhotos(ctx context.Context, opts PhotoOptions, limit int) ([]P
 // It copies the whole file: call it from a goroutine.
 func (a *App) SaveToPhotos(ctx context.Context, path, album string) error {
 	if !optin.SavePhotoLinked {
-		return notLinked("gallery")
+		return platform.NotLinked("gallery")
 	}
 	if _, err := os.Stat(path); err != nil {
 		return err
@@ -53,5 +95,5 @@ func (a *App) SaveToPhotos(ctx context.Context, path, album string) error {
 			album = a.Title()
 		}
 	}
-	return a.saveToPhotosIn(ctx, path, ShareFile{Path: path}.mimeType(), album)
+	return picker.SaveToPhotos(ctx, path, ShareFile{Path: path}.mimeType(), album)
 }

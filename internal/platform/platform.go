@@ -6,6 +6,7 @@ package platform
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/xmhrnx/giode/host"
 )
@@ -22,3 +23,9 @@ var (
 	// ErrNotFound is giode.ErrNotFound.
 	ErrNotFound = errors.New("giode: not found")
 )
+
+// NotLinked is the error of a feature whose opt-in package (see
+// internal/optin) the app doesn't import.
+func NotLinked(pkg string) error {
+	return fmt.Errorf("%w: this needs the github.com/xmhrnx/giode/%s package imported", ErrNotSupported, pkg)
+}

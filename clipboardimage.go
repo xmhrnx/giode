@@ -1,21 +1,11 @@
 package giode
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
-	_ "golang.org/x/image/webp"
+	"github.com/xmhrnx/giode/internal/platform/clipimage"
 )
-
-// maxClipboardImage bounds the encoded image ReadClipboardImage reads.
-const maxClipboardImage = 64 << 20
 
 // ReadClipboardImage returns the image on the system clipboard - a
 // screenshot, or an image copied from a browser, a document or an image
@@ -40,18 +30,5 @@ const maxClipboardImage = 64 << 20
 // and the browser may ask the user); on Linux, wl-paste (Wayland) or
 // xclip (X11), which must be installed.
 func (a *App) ReadClipboardImage(ctx context.Context) (image.Image, error) {
-	return a.readClipboardImage(ctx)
-}
-
-// decodeClipboardImage decodes an image read from the clipboard in any
-// format Go can: PNG, JPEG, GIF, BMP, TIFF, WebP.
-func decodeClipboardImage(data []byte) (image.Image, error) {
-	if len(data) == 0 {
-		return nil, nil
-	}
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("giode: decoding the clipboard image: %w", err)
-	}
-	return img, nil
+	return clipimage.Read(ctx, a.host())
 }
