@@ -149,6 +149,14 @@ type Config struct {
 	// Escape and Back handlers have had theirs; see giode.OnKey. It
 	// runs on the UI goroutine and returns whether it used the key.
 	OnKey func(e key.Event) bool
+	// OnSuspend runs when the computer is about to sleep, and OnResume
+	// when it woke: close connections before, reconnect after. Both run
+	// on the UI goroutine. On Linux sleep waits for OnSuspend to return
+	// (for up to the system's delay, usually 5 seconds); Windows and
+	// macOS don't wait. Phones don't report sleep: use OnBackground and
+	// OnForeground there.
+	OnSuspend func()
+	OnResume  func()
 	// OnWindowStateChange runs when the window is minimized,
 	// maximized, made fullscreen or restored - by the app or by the
 	// user.

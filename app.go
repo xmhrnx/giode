@@ -67,6 +67,9 @@ func (a *App) Run(view func() Element) error {
 	a.listenShares()
 	ctx, cancel := context.WithCancel(context.Background())
 	a.watchSystemTheme(ctx.Done())
+	if a.cfg.OnSuspend != nil || a.cfg.OnResume != nil {
+		a.watchPower(ctx.Done(), a.powerEvent)
+	}
 	a.watchMotion(ctx.Done())
 	a.watchA11yPrefs(ctx.Done())
 	if a.mcp != nil {

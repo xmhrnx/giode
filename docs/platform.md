@@ -156,6 +156,23 @@ The [giode CLI](https://github.com/xmhrnx/giode-cli) adds them when `giode.toml`
 `KeepScreenOn` and save progress in `OnBackground` as a fallback. Android 15
 limits `dataSync` services to six hours a day, after which the service stops.
 
+## Sleep and wake
+
+`Config.OnSuspend` runs when the computer is about to sleep and `Config.OnResume` when it
+woke: close connections and save state before, reconnect after.
+
+```go
+app := giode.New(giode.Config{
+	OnSuspend: func() { conn.Close() },
+	OnResume:  func() { go reconnect() },
+})
+```
+
+Both run on the UI goroutine. On Linux (systemd-logind) the sleep waits for `OnSuspend` to
+return, for up to the system's delay (usually 5 seconds); Windows
+(`PowerRegisterSuspendResumeNotification`) and macOS (`NSWorkspace`) don't wait. Phones
+don't report sleep: use `OnBackground` and `OnForeground` there.
+
 ## Saved settings and progress
 
 Package `settings` keeps small values across restarts: preferences, progress, the last
