@@ -40,4 +40,5 @@ permission in its `android_manifest.xml`, which the Giode CLI merges into the ap
 Only one capture runs at a time there. The web isn't supported; `Start` returns
 `giode.ErrNotSupported`.
 
-`examples/screenshare` picks a display and shows the capture live.
+`examples/screenshare` picks a display and shows the capture live through a `video.Surface`
+(see [Video](video.md)).
