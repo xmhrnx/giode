@@ -82,6 +82,7 @@ func (i *Input) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if i.editor.Mask != 0 {
 		value = ""
 	}
+	kit.NoteFocusable(&i.editor)
 	desc := ""
 	if i.label != "" && i.placeholder != "" {
 		desc = i.placeholder

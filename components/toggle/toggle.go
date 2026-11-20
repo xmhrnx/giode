@@ -144,7 +144,10 @@ func (s *Switch) layoutSelf(gtx layout.Context) layout.Dimensions {
 		s.build = func() elements.Element { return uncached }
 		s.watched.Snap = s.watch
 	}
-	return s.cache.LayoutOwn(gtx, s.build, &s.watched)
+	dims := s.cache.LayoutOwn(gtx, s.build, &s.watched)
+	// The ring outside the cache: focus doesn't change what it drew.
+	kit.FocusRing(gtx, &s.click, dims.Size, dims.Size.Y/2)
+	return dims
 }
 
 // layoutUncached lays it out without the cache.
@@ -212,7 +215,6 @@ func (s *Switch) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if s.on {
 		chk = elements.Checked
 	}
-	kit.FocusRing(gtx, &s.click, dims.Size, dims.Size.Y/2)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticSwitch, Label: s.label, Value: value, Checked: chk, Disabled: s.disabled, Target: s}, dims.Size)
 	return dims
 }

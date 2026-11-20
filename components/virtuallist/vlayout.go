@@ -134,6 +134,7 @@ func (l *List) layoutSelf(gtx layout.Context) layout.Dimensions {
 	l.wasAtEnd = atEnd
 
 	l.bar.Layout(gtx, viewport, l.n*l.itemPx, &l.offset, l.st.ScrollBar)
+	kit.NoteFocusable(l)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticScroll, Target: l}, viewport)
 	return layout.Dimensions{Size: viewport}
 }

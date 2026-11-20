@@ -27,6 +27,10 @@ func (s *Sheet) Layout(gtx layout.Context) layout.Dimensions {
 	if isOpen && !s.wasOpen {
 		s.detent = 0
 	}
+	if !isOpen && s.wasOpen {
+		// Closed: focus goes back to what had it.
+		s.focus.Release(gtx)
+	}
 	s.wasOpen = isOpen
 	if isOpen && !s.fixed {
 		elements.HandleDismiss(s.close)

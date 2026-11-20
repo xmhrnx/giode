@@ -44,7 +44,11 @@ func NotePointerPress() {
 // FocusVisible reports whether tag's focus should show: it's focused,
 // and the focus came from the keyboard.
 func FocusVisible(gtx layout.Context, tag any) bool {
+	NoteFocusable(tag)
 	focused := gtx.Focused(tag)
+	if focused {
+		lastFocused = tag
+	}
 	frame := frameCount.Load()
 	ringMu.Lock()
 	last, was := ringFocused[tag]

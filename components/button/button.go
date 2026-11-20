@@ -3,11 +3,13 @@
 package button
 
 import (
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/state"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -39,7 +41,10 @@ type Button struct {
 	variant   Variant
 	onClick   func()
 	clickable widget.Clickable
-	pass      func(gtx layout.Context) bool
+	// focusReq asks for keyboard focus next frame (Focus); hasFocus is
+	// whether it had it last frame.
+	focusReq, hasFocus bool
+	pass               func(gtx layout.Context) bool
 
 	icon, trailing elements.Element
 	disabled       bool
@@ -186,6 +191,11 @@ func (b *Button) Layout(gtx layout.Context) layout.Dimensions {
 
 // layoutSelf lays it out without its context menu area.
 func (b *Button) layoutSelf(gtx layout.Context) layout.Dimensions {
+	if b.focusReq {
+		b.focusReq = false
+		gtx.Execute(key.FocusCmd{Tag: &b.clickable})
+	}
+	b.hasFocus = gtx.Source.Focused(&b.clickable)
 	if b.CacheSafe() {
 		if b.cache == nil {
 			b.cache = elements.NewMemoCache()
@@ -193,9 +203,14 @@ func (b *Button) layoutSelf(gtx layout.Context) layout.Dimensions {
 			b.build = func() elements.Element { return uncached }
 			b.watched.Snap = b.watch
 		}
-		return b.cache.LayoutOwn(gtx, b.build, &b.watched)
+		dims := b.cache.LayoutOwn(gtx, b.build, &b.watched)
+		// The ring outside the cache: focus doesn't change what it drew.
+		kit.FocusRing(gtx, &b.clickable, dims.Size, gtx.Dp(6))
+		return dims
 	}
-	return b.layoutUncached(gtx)
+	dims := b.layoutUncached(gtx)
+	kit.FocusRing(gtx, &b.clickable, dims.Size, gtx.Dp(6))
+	return dims
 }
 
 func (b *Button) layoutUncached(gtx layout.Context) layout.Dimensions {
@@ -226,7 +241,15 @@ func (b *Button) layoutUncached(gtx layout.Context) layout.Dimensions {
 		// cached subtree.
 		kit.MarkLive()
 	}
-	kit.FocusRing(gtx, &b.clickable, dims.Size, gtx.Dp(6))
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: b.label, Disabled: b.inert(), Focused: gtx.Source.Focused(&b.clickable), Target: b}, dims.Size)
 	return dims
 }
+
+// Focus gives the button keyboard focus on the next frame.
+func (b *Button) Focus() {
+	b.focusReq = true
+	state.RequestRedraw()
+}
+
+// Focused reports whether the button had keyboard focus last frame.
+func (b *Button) Focused() bool { return b.hasFocus }

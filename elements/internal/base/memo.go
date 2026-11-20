@@ -92,6 +92,9 @@ type MemoCache struct {
 	// portal is set when the subtree registered portals or Back
 	// handlers, which can't be replayed from cache.
 	portal bool
+	// focusables are the focusable controls the subtree reported, for
+	// focus scopes on replayed frames.
+	focusables []any
 	// drag is set when the subtree takes part in drag and drop, and
 	// dragEpoch is the drag epoch it was recorded in (see dragStale).
 	drag      bool

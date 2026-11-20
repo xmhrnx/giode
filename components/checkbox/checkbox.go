@@ -134,7 +134,10 @@ func (c *Checkbox) layoutSelf(gtx layout.Context) layout.Dimensions {
 		c.build = func() elements.Element { return uncached }
 		c.watched.Snap = c.watch
 	}
-	return c.cache.LayoutOwn(gtx, c.build, &c.watched)
+	dims := c.cache.LayoutOwn(gtx, c.build, &c.watched)
+	// The ring outside the cache: focus doesn't change what it drew.
+	kit.FocusRing(gtx, &c.bool, dims.Size, gtx.Dp(4))
+	return dims
 }
 
 // layoutUncached lays it out without the cache.
@@ -176,7 +179,6 @@ func (c *Checkbox) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if c.bool.Value {
 		chk = elements.Checked
 	}
-	kit.FocusRing(gtx, &c.bool, dims.Size, gtx.Dp(4))
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticCheckbox, Label: c.label, Value: value, Checked: chk, Focused: gtx.Source.Focused(&c.bool), Target: c}, dims.Size)
 	return dims
 }

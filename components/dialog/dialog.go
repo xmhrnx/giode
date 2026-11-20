@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
 	"github.com/xmhrnx/giode/styles/properties"
@@ -37,6 +38,10 @@ type Dialog struct {
 	size image.Point
 	// label names the dialog to assistive technology.
 	label string
+	// focus keeps keyboard focus inside while open.
+	focus kit.FocusScope
+	// shown is whether it was open last frame, to give focus back.
+	shown bool
 }
 
 // Label names the dialog for screen readers, which announce it when it

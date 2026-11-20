@@ -9,6 +9,7 @@ import (
 
 	"gioui.org/gesture"
 	"gioui.org/widget"
+	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/components/scroll"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
@@ -25,6 +26,8 @@ import (
 // window while open, so it can sit anywhere in the tree. Create it
 // once with New, outside the view function.
 type Sheet struct {
+	// focus keeps keyboard focus inside while open.
+	focus    kit.FocusScope
 	open     *bool
 	content  func() elements.Element
 	footer   func() elements.Element

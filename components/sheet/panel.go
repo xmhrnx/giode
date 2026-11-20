@@ -78,6 +78,9 @@ func (s *Sheet) panelOps(gtx layout.Context, width, maxH, fixedH int, handle boo
 
 	track := elements.TrackChild()
 	macro := op.Record(gtx.Ops)
+	popScope := kit.PushFocusScope(&s.focus)
+	defer s.focus.Trap(gtx)
+	defer popScope()
 	dims := kit.LayoutClickable(pgtx, &s.panel, func(gtx layout.Context) layout.Dimensions {
 		d := panel.Layout(gtx)
 		if handle && !s.fixed {

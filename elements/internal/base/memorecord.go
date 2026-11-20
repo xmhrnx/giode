@@ -63,6 +63,7 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	popInput := kit.PushInputScope(&c.input)
 	c.retain = c.retain[:0]
 	popRetain := pushRetainScope(&c.retain)
+	popFocus := kit.PushFocusRecord(&c.focusables)
 	reads := state.Track()
 	portals, backs, probeStart, stickies, drags := len(portalQueue), len(backStack), len(probes), stickyCount, dragAware
 	semStart := 0
@@ -75,6 +76,7 @@ func (c *MemoCache) record(gtx layout.Context, build func() Element, deps []any)
 	c.call = macro.Stop()
 
 	reads.Stop()
+	popFocus()
 	popRetain()
 	popInput()
 	popLive()

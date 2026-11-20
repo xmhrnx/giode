@@ -57,7 +57,11 @@ var defaultBackground = "#1e293b"
 // Create it once with New, outside the view function.
 type Drawer struct {
 	// label names the drawer for screen readers (Label).
-	label   string
+	label string
+	// focus keeps keyboard focus inside while open; trapped is set while
+	// it does.
+	focus   kit.FocusScope
+	trapped bool
 	open    *bool
 	wasOpen bool
 	side    Side

@@ -29,6 +29,11 @@ func (d *Drawer) Layout(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	isOpen := d.Opened()
+	if !isOpen && d.trapped {
+		// Closed: focus goes back to what had it.
+		d.trapped = false
+		d.focus.Release(gtx)
+	}
 	if isOpen && !d.fixed {
 		elements.HandleDismiss(func() { *d.open = false })
 	}
@@ -168,7 +173,13 @@ func (d *Drawer) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	}
 	panelGtx := gtx
 	panelGtx.Constraints = layout.Exact(image.Pt(width, win.Y))
+	popScope := kit.PushFocusScope(&d.focus)
 	elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticDialog, Label: d.label, Target: d}, elements.Box(st, d.content())).Layout(panelGtx)
+	popScope()
+	if d.Opened() {
+		d.trapped = true
+		d.focus.Trap(gtx)
+	}
 	cl.Pop()
 	pop()
 	off.Pop()

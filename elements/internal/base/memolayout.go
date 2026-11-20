@@ -67,6 +67,9 @@ func (c *MemoCache) Layout(gtx layout.Context, build func() Element, deps ...any
 				*semantics = append(*semantics, n)
 			}
 		}
+		for _, t := range c.focusables {
+			kit.NoteFocusable(t)
+		}
 		c.call.Add(gtx.Ops)
 	} else {
 		c.misses++

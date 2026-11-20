@@ -23,8 +23,14 @@ func (d *Dialog) Layout(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	if !d.Opened() {
+		if d.shown {
+			// Closed: focus goes back to what had it.
+			d.shown = false
+			d.focus.Release(gtx)
+		}
 		return layout.Dimensions{}
 	}
+	d.shown = true
 	if !d.fixed {
 		elements.HandleDismiss(func() { *d.open = false })
 	}
@@ -85,7 +91,10 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	off := op.Offset(pos).Push(gtx.Ops)
 	pop := elements.PushOffset(pos)
 	panel := elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticDialog, Label: d.label, Target: d}, elements.Box(st, d.content()))
+	popScope := kit.PushFocusScope(&d.focus)
 	dims := kit.LayoutClickable(panelGtx, &d.panel, panel.Layout)
+	popScope()
+	d.focus.Trap(gtx)
 	pop()
 	off.Pop()
 	if dims.Size != d.size {
