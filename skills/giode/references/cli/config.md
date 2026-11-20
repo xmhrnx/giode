@@ -21,6 +21,7 @@ links = ["https://example.com/app/*"]   # universal links / App Links; see giode
 passkeys = ["example.com"]               # domains the app uses passkeys for; see giode links
 share_target = true           # in the share sheet for files and text; see distribution.md
 calls = true                  # voice and video calls: iOS voip and audio background modes; see ../telecom.md
+background_tasks = ["sync"]   # giode/background tasks iOS may run (BGTaskScheduler); see ../background.md
 tags = ""                     # Go build tags
 renderer = "opengl"           # Gio's OpenGL renderer on macOS and iOS (Config.Renderer)
 gio_patches = true            # build against Gio with giode's patches (default true)

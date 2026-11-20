@@ -1,0 +1,5 @@
+[app]
+name = "Inbox"
+id = "org.giode.inbox"
+version = "1.0.0"
+background_tasks = ["digest"]

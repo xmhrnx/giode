@@ -1,7 +1,9 @@
 // Command inbox shows rich notifications: a message with Like and
 // Reply buttons, threads that group by conversation, a quiet channel,
 // and the badge count. What the user does with them, also with the app
-// closed, shows in the log.
+// closed, shows in the log. A background task posts a digest every
+// 15 minutes, also while the app isn't running (giode.toml lists it in
+// app.background_tasks for iOS).
 package main
 
 import (
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/background"
 	"github.com/xmhrnx/giode/notification"
 )
 
@@ -51,6 +54,14 @@ func main() {
 		}
 		logf("sent %s from %s", id, from)
 	}
+
+	// The system may start the process just for this: register it
+	// before Run.
+	background.Register("digest", func(ctx context.Context) error {
+		_, err := notification.Show(notification.Notification{ID: "digest", Title: "Inbox", Channel: "digest",
+			Body: "Checked in the background at " + time.Now().Format("15:04")})
+		return err
+	})
 
 	app = giode.New(giode.Config{Title: "Inbox", Size: image.Pt(460, 620), Background: "theme.background"})
 	notification.DefineChannel(notification.Channel{ID: "messages", Name: "Messages", Description: "New messages", Importance: notification.High})
@@ -92,6 +103,10 @@ func main() {
 			logf("digest: %v", err)
 		}
 	})
+	every := giode.Button("Digest every 15 min").OnClick(func() {
+		err := background.Schedule("digest", background.Options{Interval: 15 * time.Minute, Network: true})
+		logf("background digest: %v", err)
+	})
 	clear := giode.Button("Clear all").OnClick(func() {
 		unread = 0
 		notification.SetBadge(0)
@@ -102,7 +117,7 @@ func main() {
 
 	err := app.Run(func() giode.Element {
 		items := []giode.Element{
-			giode.Row(giode.Styles{Gap: 8, Wrap: giode.WrapWrap}, ask, send, digest, clear),
+			giode.Row(giode.Styles{Gap: 8, Wrap: giode.WrapWrap}, ask, send, digest, every, clear),
 			giode.Text(fmt.Sprintf("Unread: %d", unread), giode.Styles{Color: "theme.muted"}),
 		}
 		for _, l := range lines {

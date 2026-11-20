@@ -42,6 +42,7 @@ export const NAV = [
 			{ path: "rtc", label: "Calls (WebRTC)" },
 			{ path: "telecom", label: "System call screen" },
 			{ path: "notifications", label: "Notifications" },
+			{ path: "background", label: "Background work" },
 			{ path: "forms", label: "Forms" },
 			{ path: "mcp", label: "MCP server" },
 			{ path: "extending", label: "Extending the library" },
