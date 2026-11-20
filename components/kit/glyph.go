@@ -38,6 +38,10 @@ const (
 	GlyphChevronForward
 	// GlyphChevronBack points against the reading direction.
 	GlyphChevronBack
+	// GlyphCalendar is a date field's button: a calendar page.
+	GlyphCalendar
+	// GlyphClock is a time field's button: a clock face.
+	GlyphClock
 )
 
 // glyphLines holds each glyph as polylines on a 24x24 grid.
@@ -54,6 +58,16 @@ var glyphLines = map[Glyph][][]f32.Point{
 	GlyphCopy: {
 		{{X: 9, Y: 9}, {X: 19, Y: 9}, {X: 19, Y: 20}, {X: 9, Y: 20}, {X: 9, Y: 9}},
 		{{X: 5, Y: 15}, {X: 5, Y: 4}, {X: 15, Y: 4}, {X: 15, Y: 6}},
+	},
+	GlyphCalendar: {
+		{{X: 4, Y: 6}, {X: 20, Y: 6}, {X: 20, Y: 20}, {X: 4, Y: 20}, {X: 4, Y: 6}},
+		{{X: 4, Y: 10}, {X: 20, Y: 10}},
+		{{X: 8, Y: 3.5}, {X: 8, Y: 7.5}},
+		{{X: 16, Y: 3.5}, {X: 16, Y: 7.5}},
+	},
+	GlyphClock: {
+		{{X: 20.00, Y: 12.00}, {X: 19.73, Y: 14.07}, {X: 18.93, Y: 16.00}, {X: 17.66, Y: 17.66}, {X: 16.00, Y: 18.93}, {X: 14.07, Y: 19.73}, {X: 12.00, Y: 20.00}, {X: 9.93, Y: 19.73}, {X: 8.00, Y: 18.93}, {X: 6.34, Y: 17.66}, {X: 5.07, Y: 16.00}, {X: 4.27, Y: 14.07}, {X: 4.00, Y: 12.00}, {X: 4.27, Y: 9.93}, {X: 5.07, Y: 8.00}, {X: 6.34, Y: 6.34}, {X: 8.00, Y: 5.07}, {X: 9.93, Y: 4.27}, {X: 12.00, Y: 4.00}, {X: 14.07, Y: 4.27}, {X: 16.00, Y: 5.07}, {X: 17.66, Y: 6.34}, {X: 18.93, Y: 8.00}, {X: 19.73, Y: 9.93}, {X: 20.00, Y: 12.00}},
+		{{X: 12, Y: 7.5}, {X: 12, Y: 12}, {X: 15, Y: 14}},
 	},
 	GlyphRestore: {
 		{{X: 4, Y: 8}, {X: 16, Y: 8}, {X: 16, Y: 20}, {X: 4, Y: 20}, {X: 4, Y: 8}},

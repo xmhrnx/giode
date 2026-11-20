@@ -30,8 +30,14 @@ var (
 
 // Register replaces the font collection used to shape text.
 func Register(faces []font.FontFace) {
+	mu.Lock()
+	replaced = true
+	mu.Unlock()
 	register(faces, nil)
 }
+
+// replaced is set once Register replaced the Go fonts.
+var replaced bool
 
 // register replaces the collection, and the RegisterFont aliases with
 // as.
@@ -84,7 +90,10 @@ func Refresh(limit int) bool {
 // UseGofont uses the Go fonts, embedded in the binary, for text. They're
 // the default; call it to go back to them after Register.
 func UseGofont() {
-	Register(gofont.Collection())
+	mu.Lock()
+	replaced = false
+	mu.Unlock()
+	register(gofont.Collection(), nil)
 }
 
 // Shaper returns the text shaper. With no fonts registered it loads the
@@ -313,4 +322,40 @@ func Primary(f font.Font) string {
 		s = s[:i]
 	}
 	return strings.Trim(strings.TrimSpace(s), `"`)
+}
+
+// ForText resolves f (as Resolve) for text s. System fonts that text
+// in another script falls back to often come in regular and bold only,
+// and Gio finds none of them for the weights between - medium,
+// semibold - drawing the text as empty boxes. While text uses the Go
+// fonts, whose Latin, Greek and Cyrillic don't need a fallback, text
+// with characters past them gets the nearest of regular and bold.
+func ForText(f font.Font, s string) font.Font {
+	if w := f.Weight; w != font.Normal && w != font.Bold && f.Typeface == "" && usingGoFonts() && needsFallback(s) {
+		if w >= font.SemiBold {
+			f.Weight = font.Bold
+		} else {
+			f.Weight = font.Normal
+		}
+	}
+	return Resolve(f)
+}
+
+// usingGoFonts reports whether text uses the Go fonts: no default
+// family set and no collection registered in their place.
+func usingGoFonts() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return defaultFamily == "" && !replaced
+}
+
+// needsFallback reports whether s has characters the Go fonts lack:
+// anything from Hebrew (U+0590) on, symbols and emoji aside.
+func needsFallback(s string) bool {
+	for _, r := range s {
+		if r >= 0x0590 && r < 0x2000 || r >= 0x2E80 && r < 0xFE00 || r >= 0xFE70 && r < 0xFF00 {
+			return true
+		}
+	}
+	return false
 }

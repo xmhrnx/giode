@@ -64,11 +64,11 @@ func (t *TextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	paint.ColorOp{Color: col}.Add(gtx.Ops)
 	textColor := colMacro.Stop()
 
-	face := fonts.Resolve(font.Font{
+	face := fonts.ForText(font.Font{
 		Weight:   st.FontWeight.Weight(),
 		Style:    st.FontStyle.Style(),
 		Typeface: font.Typeface(st.FontFamily),
-	})
+	}, t.str)
 	label := widget.Label{
 		Alignment:  st.TextAlign.LayoutAlignment(),
 		MaxLines:   int(st.MaxLines),

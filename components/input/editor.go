@@ -81,11 +81,11 @@ func (e *editorEl) Layout(gtx layout.Context) layout.Dimensions {
 	}
 
 	e.input.editor.Alignment = st.TextAlign.LayoutAlignment()
-	face := fonts.Resolve(font.Font{
+	face := fonts.ForText(font.Font{
 		Typeface: font.Typeface(st.FontFamily),
 		Weight:   st.FontWeight.Weight(),
 		Style:    st.FontStyle.Style(),
-	})
+	}, e.input.editor.Text())
 	dims := e.input.editor.Layout(gtx, fonts.Shaper(), face, size, textColor, selColor)
 	// Long-press (or right-click) for Cut, Copy, Paste and Select all.
 	e.input.menu.layout(gtx, e.input, dims.Size)
