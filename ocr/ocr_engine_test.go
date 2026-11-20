@@ -45,15 +45,21 @@ func TestRecognizeText(t *testing.T) {
 		t.Skip("no OCR engine:", err)
 	}
 	t.Logf("%q", res.Text)
-	if len(res.Lines) != 2 || !strings.Contains(res.Text, "HELLO") || !strings.Contains(res.Text, "42") {
+	if len(res.Lines) < 2 || !strings.Contains(res.Text, "HELLO") || !strings.Contains(res.Text, "42") {
 		t.Fatalf("read %+v", res)
 	}
+	// Engines differ on a blocky pixel font (Windows skips some of the
+	// first line's words): check what both read.
 	l := res.Lines[0]
-	if len(l.Words) != 3 || l.Words[0].Text != "HELLO" || l.Box.Dx() < 200 {
+	if len(l.Words) == 0 || l.Words[0].Text != "HELLO" || l.Box.Dx() < 100 {
 		t.Errorf("first line %+v", l)
 	}
-	if l.Words[1].Box.Min.X <= l.Words[0].Box.Max.X {
-		t.Errorf("word boxes out of order: %v %v", l.Words[0].Box, l.Words[1].Box)
+	second := res.Lines[len(res.Lines)-1]
+	if len(second.Words) < 2 || second.Words[len(second.Words)-1].Text != "42" {
+		t.Fatalf("last line %+v", second)
+	}
+	if second.Words[1].Box.Min.X <= second.Words[0].Box.Max.X || second.Box.Min.Y <= l.Box.Min.Y {
+		t.Errorf("boxes out of order: %+v", res.Lines)
 	}
 	// A language that isn't installed falls back to English.
 	if _, err := Recognize(context.Background(), page("FALLBACK"), Options{Languages: []string{"ja"}}); err != nil {
