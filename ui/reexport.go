@@ -9,6 +9,7 @@ import (
 	"github.com/xmhrnx/giode/components/avatar"
 	"github.com/xmhrnx/giode/components/badge"
 	"github.com/xmhrnx/giode/components/button"
+	"github.com/xmhrnx/giode/components/calendarview"
 	"github.com/xmhrnx/giode/components/checkbox"
 	"github.com/xmhrnx/giode/components/chip"
 	"github.com/xmhrnx/giode/components/colorpicker"
@@ -688,6 +689,26 @@ var Input = InputAPI{
 	Time:         datepicker.NewTime,
 	DateTime:     datepicker.NewDateTime,
 }
+
+// CalendarView creates a calendar of events by month, week, day or
+// agenda; see calendarview.CalendarView.
+var CalendarView = calendarview.New
+
+// CalendarEvent is an event a CalendarView shows.
+type CalendarEvent = calendarview.Event
+
+// CalendarMode is what a CalendarView shows.
+type CalendarMode = calendarview.Mode
+
+// CalendarViewElement is CalendarView's type.
+type CalendarViewElement = calendarview.CalendarView
+
+const (
+	CalendarMonth  = calendarview.Month
+	CalendarWeek   = calendarview.Week
+	CalendarDay    = calendarview.Day
+	CalendarAgenda = calendarview.Agenda
+)
 
 // DateCalendar creates a month calendar to pick a day or a range from;
 // see datepicker.DateCalendar.

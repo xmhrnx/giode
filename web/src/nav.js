@@ -47,6 +47,7 @@ export const NAV = [
 			{ path: "components/button", label: "Button" },
 			{ path: "components/input", label: "Input" },
 			{ path: "components/datepicker", label: "Date and time fields" },
+			{ path: "components/calendar", label: "Calendar views" },
 			{ path: "components/controls", label: "Switch, Segmented, Chip, Badge, Avatar" },
 			{ path: "components/tabs", label: "Tabs" },
 			{ path: "components/scroll", label: "Scroll" },

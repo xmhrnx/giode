@@ -611,6 +611,26 @@ type InputAPI = ui.InputAPI
 // Input.AutoComplete.
 var Input = ui.Input
 
+// CalendarView creates a calendar of events by month, week, day or
+// agenda; see calendarview.CalendarView.
+var CalendarView = ui.CalendarView
+
+// CalendarEvent is an event a CalendarView shows.
+type CalendarEvent = ui.CalendarEvent
+
+// CalendarMode is what a CalendarView shows.
+type CalendarMode = ui.CalendarMode
+
+// CalendarViewElement is CalendarView's type.
+type CalendarViewElement = ui.CalendarViewElement
+
+const (
+	CalendarMonth  = ui.CalendarMonth
+	CalendarWeek   = ui.CalendarWeek
+	CalendarDay    = ui.CalendarDay
+	CalendarAgenda = ui.CalendarAgenda
+)
+
 // DateCalendar creates a month calendar to pick a day or a range from;
 // see datepicker.DateCalendar.
 var DateCalendar = ui.DateCalendar
