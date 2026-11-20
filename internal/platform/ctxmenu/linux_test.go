@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package ctxmenu
 
 import (
 	"os"
@@ -14,11 +14,11 @@ func TestContextActions_LinuxFiles(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_DATA_HOME", "")
 	t.Setenv("XDG_CONFIG_HOME", "")
-	actions := []ContextAction{
+	actions := []Action{
 		{ID: "ask", Label: "Ask Agent", Extensions: []string{".md", "txt"}},
 		{ID: "here", Label: "Open Agent here", Folders: true, FolderBackground: true},
 	}
-	if err := installContextActions("com-example-agent", "/opt/agent/agent", actions); err != nil {
+	if err := Install("com-example-agent", "/opt/agent/agent", actions); err != nil {
 		t.Fatal(err)
 	}
 	read := func(p string) string {
@@ -51,7 +51,7 @@ func TestContextActions_LinuxFiles(t *testing.T) {
 	// Another app's files survive uninstalling.
 	other := filepath.Join(home, ".local/share/nemo/actions/other.nemo_action")
 	os.WriteFile(other, []byte("[Nemo Action]\n"), 0o644)
-	if err := uninstallContextActions("com-example-agent"); err != nil {
+	if err := Uninstall("com-example-agent"); err != nil {
 		t.Fatal(err)
 	}
 	for _, dir := range []string{".local/share/nautilus/scripts", ".config/caja/scripts", ".local/share/kio/servicemenus"} {

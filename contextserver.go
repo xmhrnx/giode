@@ -1,9 +1,9 @@
 package giode
 
 import (
-	"crypto/sha1"
-	"fmt"
 	"strings"
+
+	"github.com/xmhrnx/giode/internal/platform/ctxmenu"
 )
 
 // Explorer starts a program once per selected file for a command-line
@@ -17,13 +17,7 @@ import (
 // ContextActionCLSID returns the COM class ID Explorer's DropTarget
 // verb for a context action names, as "{XXXXXXXX-XXXX-...}": a name-based
 // UUID (version 5) of "giode-context-action:" + prefix + "." + id.
-func ContextActionCLSID(prefix, id string) string {
-	h := sha1.Sum([]byte("giode-context-action:" + prefix + "." + id))
-	b := h[:16]
-	b[6] = b[6]&0x0f | 0x50
-	b[8] = b[8]&0x3f | 0x80
-	return strings.ToUpper(fmt.Sprintf("{%x-%x-%x-%x-%x}", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]))
-}
+func ContextActionCLSID(prefix, id string) string { return ctxmenu.CLSID(prefix, id) }
 
 // isEmbeddingArg reports whether arg is the flag COM starts a local
 // server with.

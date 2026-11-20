@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package ctxmenu
 
 import (
 	"testing"
@@ -10,15 +10,15 @@ import (
 
 func TestContextActions_WindowsRegistry(t *testing.T) {
 	prefix := "giode-test-ctx"
-	actions := []ContextAction{
+	actions := []Action{
 		{ID: "ask", Label: "Ask Agent", Extensions: []string{".md"}},
 		{ID: "all", Label: "Send to Agent"},
 		{ID: "here", Label: "Open Agent here", Folders: true, FolderBackground: true},
 	}
-	if err := installContextActions(prefix, `C:\Agent\agent.exe`, actions); err != nil {
+	if err := Install(prefix, `C:\Agent\agent.exe`, actions); err != nil {
 		t.Fatal(err)
 	}
-	defer uninstallContextActions(prefix)
+	defer Uninstall(prefix)
 	check := func(path, want string) {
 		t.Helper()
 		k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Classes\`+path+`\command`, registry.QUERY_VALUE)
@@ -42,7 +42,7 @@ func TestContextActions_WindowsRegistry(t *testing.T) {
 	}
 	k.Close()
 
-	if err := uninstallContextActions(prefix); err != nil {
+	if err := Uninstall(prefix); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := registry.OpenKey(registry.CURRENT_USER, `Software\Classes\*\shell\giode-test-ctx.all`, registry.QUERY_VALUE); err == nil {

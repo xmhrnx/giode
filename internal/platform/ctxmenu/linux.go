@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package ctxmenu
 
 import (
 	"errors"
@@ -38,8 +38,8 @@ func contextDirs() (nautilus, caja, dolphin, nemo string, err error) {
 		filepath.Join(data, "nemo", "actions"), nil
 }
 
-func installContextActions(prefix, exe string, actions []ContextAction) error {
-	uninstallContextActions(prefix)
+func Install(prefix, exe string, actions []Action) error {
+	Uninstall(prefix)
 	nautilus, caja, dolphin, nemo, err := contextDirs()
 	if err != nil {
 		return err
@@ -59,15 +59,15 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 		// GNOME Files and Caja: scripts get the selection in an
 		// environment variable, a path per line. They can't filter by
 		// type, so they show for everything selected.
-		if c.onFiles() || c.Folders {
+		if c.OnFiles() || c.Folders {
 			name := strings.ReplaceAll(c.Label, "/", "∕")
 			for _, s := range []struct{ dir, env string }{{nautilus, "NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"}, {caja, "CAJA_SCRIPT_SELECTED_FILE_PATHS"}} {
-				write(s.dir, name, "#!/bin/sh\n# "+marker+"\nIFS='\n'\nexec "+q+" "+contextActionFlag+c.ID+" $"+s.env+"\n")
+				write(s.dir, name, "#!/bin/sh\n# "+marker+"\nIFS='\n'\nexec "+q+" "+Flag+c.ID+" $"+s.env+"\n")
 			}
 		}
 		// Dolphin.
 		var types []string
-		if c.onFiles() {
+		if c.OnFiles() {
 			if len(c.Extensions) == 0 {
 				types = append(types, "all/allfiles")
 			}
@@ -84,7 +84,7 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 		}
 		write(dolphin, id+".desktop", "[Desktop Entry]\n# "+marker+"\nType=Service\nX-KDE-ServiceTypes=KonqPopupMenu/Plugin\n"+
 			"MimeType="+strings.Join(types, ";")+";\nActions=giode\n\n[Desktop Action giode]\nName="+c.Label+
-			"\nExec="+q+" "+contextActionFlag+c.ID+" %F\n")
+			"\nExec="+q+" "+Flag+c.ID+" %F\n")
 		// Nemo.
 		exts := "nodirs"
 		switch {
@@ -94,20 +94,20 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 				e = append(e, strings.TrimPrefix(ext, "."))
 			}
 			exts = strings.Join(e, ";") + ";"
-		case c.onFiles() && c.Folders:
+		case c.OnFiles() && c.Folders:
 			exts = "any"
-		case c.Folders && !c.onFiles():
+		case c.Folders && !c.OnFiles():
 			exts = "dir"
 		}
-		if c.onFiles() || c.Folders {
-			write(nemo, id+".nemo_action", "[Nemo Action]\n# "+marker+"\nName="+c.Label+"\nExec="+q+" "+contextActionFlag+c.ID+
+		if c.OnFiles() || c.Folders {
+			write(nemo, id+".nemo_action", "[Nemo Action]\n# "+marker+"\nName="+c.Label+"\nExec="+q+" "+Flag+c.ID+
 				" %F\nSelection=notnone\nExtensions="+exts+"\n")
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func uninstallContextActions(prefix string) error {
+func Uninstall(prefix string) error {
 	nautilus, caja, dolphin, nemo, err := contextDirs()
 	if err != nil {
 		return err

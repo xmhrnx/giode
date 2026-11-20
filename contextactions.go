@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/ctxmenu"
 )
 
 // ContextAction is an entry the app adds to the file manager's
@@ -49,13 +50,11 @@ type ContextAction struct {
 }
 
 // onFiles reports whether the action is offered on files.
-func (c ContextAction) onFiles() bool {
-	return c.Files || len(c.Extensions) > 0 || (!c.Folders && !c.FolderBackground)
-}
+func (c ContextAction) onFiles() bool { return ctxmenu.Action(c).OnFiles() }
 
 // contextActionFlag starts the arguments of a context action
 // invocation: --giode-action=<id> <paths...>.
-const contextActionFlag = "--giode-action="
+const contextActionFlag = ctxmenu.Flag
 
 // buildContextActions is giode.toml's context actions, set by the giode
 // CLI at build time: base64 (URL encoding) of their JSON.
@@ -131,12 +130,16 @@ func (a *App) InstallContextActions() error {
 			return errors.New("giode: a context action needs a Label and an ID of letters, digits, - and _")
 		}
 	}
-	return installContextActions(a.contextActionPrefix(), exe, actions)
+	ca := make([]ctxmenu.Action, len(actions))
+	for i, c := range actions {
+		ca[i] = ctxmenu.Action(c)
+	}
+	return ctxmenu.Install(a.contextActionPrefix(), exe, ca)
 }
 
 // UninstallContextActions removes what InstallContextActions added.
 func (a *App) UninstallContextActions() error {
-	return uninstallContextActions(a.contextActionPrefix())
+	return ctxmenu.Uninstall(a.contextActionPrefix())
 }
 
 // contextActionPrefix names the app's entries: its app ID, or the
@@ -148,4 +151,18 @@ func (a *App) contextActionPrefix() string {
 		id = strings.TrimSuffix(filepath.Base(exe), filepath.Ext(exe))
 	}
 	return sanitizeID(id)
+}
+
+func init() {
+	// macOS's Services: the app provides them once it launches.
+	launchHook = func(a *App) {
+		if a.cfg.OnContextAction != nil {
+			ctxmenu.RegisterServices()
+		}
+	}
+	ctxmenu.OnService = func(id string, paths []string) {
+		if a := currentApp.Load(); a != nil && a.cfg.OnContextAction != nil {
+			a.runContextAction(append([]string{contextActionFlag + id}, paths...))
+		}
+	}
 }

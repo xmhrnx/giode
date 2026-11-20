@@ -1,11 +1,11 @@
 //go:build !windows && !(linux && !android) && !(darwin && !ios)
 
-package giode
+package ctxmenu
 
 import "errors"
 
-func installContextActions(string, string, []ContextAction) error {
+func Install(string, string, []Action) error {
 	return errors.New("giode: context actions are a desktop feature")
 }
 
-func uninstallContextActions(string) error { return nil }
+func Uninstall(string) error { return nil }

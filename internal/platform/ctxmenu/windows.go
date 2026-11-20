@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package ctxmenu
 
 import (
 	"errors"
@@ -16,8 +16,8 @@ import (
 
 const contextActionsRecord = "GiodeContextActions"
 
-func installContextActions(prefix, exe string, actions []ContextAction) error {
-	uninstallContextActions(prefix)
+func Install(prefix, exe string, actions []Action) error {
+	Uninstall(prefix)
 	var created []string
 	add := func(parent, id, label, arg string) error {
 		path := `Software\Classes\` + parent + `\shell\` + prefix + "." + id
@@ -33,7 +33,7 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 			// the app's COM class (see contextserver_windows.go) rather
 			// than starting a copy per item with the command below,
 			// which stays for programs that only run commands.
-			clsid := ContextActionCLSID(prefix, id)
+			clsid := CLSID(prefix, id)
 			if err := registerDropTarget(path, clsid, exe); err != nil {
 				return err
 			}
@@ -45,11 +45,11 @@ func installContextActions(prefix, exe string, actions []ContextAction) error {
 		}
 		defer c.Close()
 		created = append(created, path)
-		return c.SetStringValue("", `"`+exe+`" `+contextActionFlag+id+` "`+arg+`"`)
+		return c.SetStringValue("", `"`+exe+`" `+Flag+id+` "`+arg+`"`)
 	}
 	var errs []error
 	for _, c := range actions {
-		if c.onFiles() {
+		if c.OnFiles() {
 			if len(c.Extensions) == 0 {
 				errs = append(errs, add("*", c.ID, c.Label, "%1"))
 			}
@@ -97,7 +97,7 @@ func registerDropTarget(path, clsid, exe string) error {
 	return s.SetStringValue("", `"`+exe+`"`)
 }
 
-func uninstallContextActions(prefix string) error {
+func Uninstall(prefix string) error {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\`+prefix, registry.ALL_ACCESS)
 	if err != nil {
 		return nil
