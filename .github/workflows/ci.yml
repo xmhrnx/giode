@@ -67,6 +67,12 @@ jobs:
           for c in camera/camera_android biometric/biometric_android printing/printing_android ocr/ocr_android; do
             unzip -p scanner.apk 'classes*.dex' | grep -aq "Lorg/giode/$c;" || { echo "missing $c"; exit 1; }
           done
+      - name: Build the voice memo example APK
+        # Compiles the audio package's cgo and packs its Java helper.
+        run: |
+          export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
+          gogio -target android -arch arm64 -appid org.giode.voicememo -o voicememo.apk ./examples/voicememo
+          unzip -p voicememo.apk 'classes*.dex' | grep -aq "Lorg/giode/audio/audio_android;"
       - name: Compile the store and support packages for Android
         # Their Android code (Play Billing, the installer check) is in no
         # example app.
@@ -117,3 +123,9 @@ jobs:
         env:
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.attach -o attach.app ./examples/attach
+      - name: Build the voice memo example for the simulator
+        # Compiles the audio package's Objective-C (audio units, the
+        # audio session) with the iOS SDK.
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        run: gogio -target ios -arch amd64 -minsdk 15 -appid org.giode.voicememo -o voicememo.app ./examples/voicememo
