@@ -419,13 +419,6 @@ func initUIAVtables() {
 	vtValue, vtRange, vtExpand, vtSelItem = value, rangeV, expand, selItem
 }
 
-func boolInt(b bool) int32 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // installA11y sets up the tree; the bridge starts when a screen reader
 // first asks the window for it (uiaGetObject).
 func installA11y(a *App) {

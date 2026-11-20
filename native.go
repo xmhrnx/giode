@@ -20,6 +20,7 @@ func (a *App) handleViewEvent(ev app.ViewEvent) {
 	a.trayView(ev)
 	a.placementView(ev)
 	a.startInTray(ev)
+	a.a11yView(ev)
 	if pending && a.windowHidden.Load() {
 		a.hideNow()
 	}

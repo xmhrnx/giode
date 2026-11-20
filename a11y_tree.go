@@ -313,7 +313,15 @@ const (
 	a11yExpand
 	a11yCollapse
 	a11yFocus
+	a11yIncrement
+	a11yDecrement
 )
+
+// a11yStepper is a control a screen reader can step, like a slider.
+type a11yStepper interface {
+	Value() float32
+	Change(v float32)
+}
 
 // perform does action on node k, on the UI goroutine. It reports
 // whether the node takes the action.
@@ -348,6 +356,20 @@ func (t *a11yTree) perform(a *App, k int32, action a11yAction, arg string) bool 
 		}
 		a.Post(func() { s.SetText(arg) })
 		return true
+	case a11yIncrement, a11yDecrement:
+		st, ok := n.Target.(a11yStepper)
+		if !ok {
+			return false
+		}
+		step := float32(n.Max-n.Min) / 20
+		if step <= 0 {
+			step = 0.05
+		}
+		if action == a11yDecrement {
+			step = -step
+		}
+		a.Post(func() { st.Change(st.Value() + step) })
+		return true
 	case a11yFocus:
 		f, ok := n.Target.(interface{ Focus() })
 		if !ok {
@@ -370,4 +392,11 @@ func a11yActions(n elements.SemanticNode) (activate, scroll, setText, focus bool
 	_, setText = n.Target.(interface{ SetText(string) })
 	_, focus = n.Target.(interface{ Focus() })
 	return
+}
+
+func boolInt(b bool) int32 {
+	if b {
+		return 1
+	}
+	return 0
 }
