@@ -227,6 +227,15 @@ func OpenURL(vm, ctx, view uintptr, url string) error {
 	})
 }
 
+// OpenCustomTab opens url in a Custom Tab for signing in. Call it on
+// the main thread.
+func OpenCustomTab(vm, ctx, view uintptr, url string) error {
+	return callClass(vm, ctx, servicesClass, func(env jni.Env, cls jni.Class) error {
+		m := jni.GetStaticMethodID(env, cls, "openCustomTab", "(Landroid/view/View;Ljava/lang/String;)V")
+		return jni.CallStaticVoidMethod(env, cls, m, jni.Value(view), jni.Value(jni.JavaString(env, url)))
+	})
+}
+
 // Haptic performs the android.view.HapticFeedbackConstants feedback c
 // on view. Call it on the main thread.
 func Haptic(vm, ctx, view uintptr, c int) error {

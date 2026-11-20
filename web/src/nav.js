@@ -34,6 +34,7 @@ export const NAV = [
 			{ path: "performance", label: "Rendering performance" },
 			{ path: "accessibility", label: "Accessibility" },
 			{ path: "datetime", label: "Dates and times" },
+			{ path: "auth", label: "Sign-in and SSO" },
 			{ path: "mcp", label: "MCP server" },
 			{ path: "extending", label: "Extending the library" },
 			{ path: "low-level", label: "Low-level access" },

@@ -51,6 +51,9 @@ func PickPhotos(vm, ctx, view uintptr, maxSide, limit int) (<-chan Photos, error
 // OpenURL reports ErrUnsupported outside Android.
 func OpenURL(vm, ctx, view uintptr, url string) error { return ErrUnsupported }
 
+// OpenCustomTab reports ErrUnsupported outside Android.
+func OpenCustomTab(vm, ctx, view uintptr, url string) error { return ErrUnsupported }
+
 // Haptic reports ErrUnsupported outside Android.
 func Haptic(vm, ctx, view uintptr, c int) error { return ErrUnsupported }
 

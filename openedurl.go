@@ -12,6 +12,9 @@ func (a *App) openedURL(u *url.URL) {
 	if isShareScheme(u.Scheme) {
 		return // the share extension's; listenShares delivers the share
 	}
+	if a.auth.take(u) {
+		return // a sign-in's redirect
+	}
 	if a.cfg.OnOpenURL == nil {
 		a.logf(LogLevelWarning, "giode: opened with %s but Config.OnOpenURL isn't set", u.Redacted())
 		return

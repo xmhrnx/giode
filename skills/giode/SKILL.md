@@ -24,6 +24,9 @@ in this conversation; the API is alpha and changes. Map:
 | Window options, title bar, tray, file dialogs | `references/window.md`, `references/components/titlebar.md` |
 | Pickers, notifications, secure storage, elevation, i18n, RTL, push, purchases | `references/platform.md` |
 | Android/iOS specifics, Java bridge | `references/mobile.md` |
+| Screen readers, focus, contrast and text size | `references/accessibility.md` |
+| Dates, calendars, time zones, date pickers | `references/datetime.md`, `references/components/datepicker.md`, `references/components/calendar.md` |
+| Sign-in with Google, Microsoft, Okta, any OpenID provider | `references/auth.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |

@@ -64,7 +64,9 @@ type App struct {
 	navColor    color.NRGBA
 
 	hideKeyboard atomic.Bool
-	frames       frameRecorder
+	// auth holds sign-in sessions and the links they wait for (appauth.go).
+	auth   authState
+	frames frameRecorder
 	// maxFPS is the frame-rate cap (Config.MaxFPS, SetMaxFPS); 0 for
 	// none. lastFrame is when the last frame started.
 	maxFPS     atomic.Int64

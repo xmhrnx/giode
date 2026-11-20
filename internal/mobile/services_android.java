@@ -39,6 +39,22 @@ public final class services_android {
 		ctx.startActivity(intent);
 	}
 
+	// openCustomTab opens url in a Custom Tab, the browser shown over the
+	// app with its cookies and passwords, for signing in: the plain
+	// intent extras need no AndroidX. Browsers without Custom Tabs open
+	// it as usual. NO_HISTORY closes the tab once the sign-in redirect
+	// brings the app back. Call on the main thread.
+	public static void openCustomTab(View view, String url) {
+		Context ctx = view.getContext();
+		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+		android.os.Bundle extras = new android.os.Bundle();
+		extras.putBinder("android.support.customtabs.extra.SESSION", null);
+		intent.putExtras(extras);
+		intent.putExtra("androidx.browser.customtabs.extra.SHARE_STATE", 2); // off
+		intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
+		ctx.startActivity(intent);
+	}
+
 	// haptic performs a HapticFeedbackConstants feedback on view. Call on
 	// the main thread.
 	public static boolean haptic(View view, int constant) {
