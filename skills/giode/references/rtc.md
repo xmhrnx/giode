@@ -95,4 +95,7 @@ c.RemoteVideo().View(video.ViewOptions{Fit: video.Cover}) // the other side
 Screen sharing sends `screencap` frames the same way (see [Screen capture](screencap.md));
 [Video](video.md) has the view's options.
 
+Android builds need the linker flag `-checklinkname=0` for pion's network interface listing;
+the Giode CLI passes it. With upstream gogio, add `-ldflags "-checklinkname=0"`.
+
 The browser build isn't supported yet: `New` returns `rtc.ErrUnsupported` there.

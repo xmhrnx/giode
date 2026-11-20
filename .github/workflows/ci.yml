@@ -90,10 +90,11 @@ jobs:
           unzip -p player.apk 'classes*.dex' | grep -aq "Lorg/giode/media/media_android;"
       - name: Build the call example APK
         # Compiles the rtc and telecom packages for Android and packs the
-        # connection service.
+        # connection service. pion's Android network listing needs
+        # -checklinkname=0, which the Giode CLI passes itself.
         run: |
           export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
-          gogio -target android -arch arm64 -appid org.giode.call -o call.apk ./examples/call
+          gogio -target android -arch arm64 -appid org.giode.call -ldflags "-checklinkname=0" -o call.apk ./examples/call
           for c in telecom_android GiodeConnectionService; do
             unzip -p call.apk 'classes*.dex' | grep -aq "Lorg/giode/telecom/$c;" || { echo "missing $c"; exit 1; }
           done
