@@ -32,6 +32,7 @@ in this conversation; the API is alpha and changes. Map:
 | Microphone and speaker streams, devices, voice processing for calls | `references/audio.md` |
 | Screen capture and screen sharing | `references/screencap.md` |
 | Showing video frames: remote video, decoded streams, self view | `references/video.md` |
+| Playing video and audio files and streams, captions | `references/media.md` |
 | Goroutines, `Post`, `AfterLayout` | `references/threading.md` |
 | Global state, routing | `references/state.md`, `references/routing.md` |
 | Slow frames, `Memo`, long lists | `references/performance.md` |

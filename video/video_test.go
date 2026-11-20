@@ -127,6 +127,9 @@ func TestBuffersAndOps(t *testing.T) {
 	if s.op == first {
 		t.Error("a new frame kept the old op")
 	}
+	if snap := s.Snapshot(); snap == nil || snap.RGBAAt(0, 0) != red {
+		t.Error("snapshot")
+	}
 	if s.Frames() != 6 || s.Size() != image.Pt(4, 2) {
 		t.Errorf("frames %d, size %v", s.Frames(), s.Size())
 	}
@@ -170,5 +173,30 @@ func TestI420(t *testing.T) {
 	}
 	if got := img.RGBAAt(3, 0); got.R < 250 || got.G < 250 || got.B < 250 {
 		t.Errorf("white = %v", got)
+	}
+}
+
+func TestNV12AndBGRA(t *testing.T) {
+	// The same red/white frame as TestI420, with interleaved chroma.
+	uv := []byte{90, 240, 128, 128}
+	f := I420{
+		Y: []byte{81, 81, 235, 235, 81, 81, 235, 235},
+		U: uv, V: uv[1:], PixelStrideUV: 2,
+		Width: 4, Height: 2, StrideY: 4, StrideU: 4, StrideV: 4,
+	}
+	s := NewSurface(nil)
+	s.PushI420(f)
+	img := s.Snapshot()
+	if got := img.RGBAAt(1, 0); got.R < 240 || got.G > 15 || got.B > 15 {
+		t.Errorf("red = %v", got)
+	}
+	if got := img.RGBAAt(2, 1); got.R < 250 || got.G < 250 || got.B < 250 {
+		t.Errorf("white = %v", got)
+	}
+	// BGRA with a padded stride.
+	s.PushBGRA([]byte{255, 0, 0, 0, 0, 0, 255, 0, 7, 9, 9, 9}, 2, 1, 12)
+	img = s.Snapshot()
+	if img.RGBAAt(0, 0) != blue || img.RGBAAt(1, 0) != red {
+		t.Errorf("bgra = %v %v", img.RGBAAt(0, 0), img.RGBAAt(1, 0))
 	}
 }

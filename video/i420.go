@@ -11,6 +11,7 @@ func convertI420(dst *image.RGBA, f I420) {
 	} else {
 		cr, cgu, cgv, cb = 359, 88, 183, 454
 	}
+	ps := max(f.PixelStrideUV, 1)
 	for y := 0; y < f.Height; y++ {
 		yr := f.Y[y*f.StrideY:]
 		ur := f.U[(y/2)*f.StrideU:]
@@ -18,7 +19,7 @@ func convertI420(dst *image.RGBA, f I420) {
 		out := dst.Pix[y*dst.Stride:]
 		for x := 0; x < f.Width; x++ {
 			yy := int(yr[x])
-			u, v := int(ur[x/2])-128, int(vr[x/2])-128
+			u, v := int(ur[x/2*ps])-128, int(vr[x/2*ps])-128
 			if !f.FullRange {
 				yy = (yy - 16) * 298 >> 8
 				u, v = u*292>>8, v*292>>8

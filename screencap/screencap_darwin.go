@@ -6,7 +6,7 @@ package screencap
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
 #cgo LDFLAGS: -framework Foundation -framework CoreMedia -framework CoreVideo
 #cgo ios LDFLAGS: -framework ReplayKit -framework UIKit
-#cgo !ios LDFLAGS: -weak_framework ScreenCaptureKit -framework CoreGraphics
+#cgo !ios LDFLAGS: -framework ScreenCaptureKit -framework CoreGraphics
 
 #include <stdlib.h>
 

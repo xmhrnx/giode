@@ -89,12 +89,30 @@ func (s *Surface) Push(img image.Image) {
 	s.publish(dst)
 }
 
+// PushBGRA shows w×h BGRA pixels, rows stride bytes apart: what Apple
+// and Windows frameworks produce.
+func (s *Surface) PushBGRA(pix []byte, w, h, stride int) {
+	dst := s.buffer(w, h)
+	for y := 0; y < h; y++ {
+		src := pix[y*stride : y*stride+w*4]
+		out := dst.Pix[y*dst.Stride:]
+		for x := 0; x < len(src); x += 4 {
+			out[x], out[x+1], out[x+2], out[x+3] = src[x+2], src[x+1], src[x], 255
+		}
+	}
+	s.publish(dst)
+}
+
 // I420 is a planar YUV 4:2:0 frame, what video decoders and WebRTC
 // produce.
 type I420 struct {
 	Y, U, V                   []byte
 	StrideY, StrideU, StrideV int
-	Width, Height             int
+	// PixelStrideUV is the distance between chroma samples: 1 for
+	// planar I420, 2 for the interleaved planes of NV12 and NV21 (as
+	// Android's YUV_420_888 images often are). 0 means 1.
+	PixelStrideUV int
+	Width, Height int
 	// FullRange is set for full-range (JPEG) levels; video is limited
 	// range (16–235) by default.
 	FullRange bool
@@ -126,6 +144,19 @@ func (s *Surface) Size() image.Point {
 		return image.Point{}
 	}
 	return s.bufs[s.latest].Rect.Size()
+}
+
+// Snapshot returns a copy of the latest frame, or nil.
+func (s *Surface) Snapshot() *image.RGBA {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.latest < 0 {
+		return nil
+	}
+	src := s.bufs[s.latest]
+	img := image.NewRGBA(src.Rect)
+	copy(img.Pix, src.Pix)
+	return img
 }
 
 // Frames is how many frames were pushed.
