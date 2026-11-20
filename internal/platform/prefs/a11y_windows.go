@@ -1,17 +1,21 @@
 //go:build windows
 
-package giode
+package prefs
 
 import (
 	"fmt"
 	"unsafe"
 
+	"gioui.org/app"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
 var (
+	user32                    = windows.NewLazySystemDLL("user32.dll")
 	procSystemParametersInfoW = user32.NewProc("SystemParametersInfoW")
 	procGetSysColor           = user32.NewProc("GetSysColor")
 )
@@ -28,11 +32,11 @@ type highContrastW struct {
 	scheme *uint16
 }
 
-func systemHighContrast() (bool, error) {
+func HighContrast() (bool, error) {
 	hc := highContrastW{size: uint32(unsafe.Sizeof(highContrastW{}))}
 	r, _, err := procSystemParametersInfoW.Call(spiGetHighContrast, uintptr(hc.size), uintptr(unsafe.Pointer(&hc)), 0)
 	if r == 0 {
-		return false, fmt.Errorf("%w: %v", ErrNotSupported, err)
+		return false, fmt.Errorf("%w: %v", platform.ErrNotSupported, err)
 	}
 	return hc.flags&hcfHighContrastOn != 0, nil
 }
@@ -43,10 +47,10 @@ func sysColor(i uintptr) properties.Color {
 	return properties.Color(fmt.Sprintf("#%02x%02x%02x", byte(c), byte(c>>8), byte(c>>16)))
 }
 
-// systemContrastPalettes are the user's high-contrast theme colors
+// ContrastPalettes are the user's high-contrast theme colors
 // (Aquatic, Desert, Dusk, Night sky, or their own), the same in both
 // modes: the theme decides light or dark.
-func systemContrastPalettes() (light, dark *properties.Palette, ok bool) {
+func ContrastPalettes() (light, dark *properties.Palette, ok bool) {
 	const (
 		colorWindow        = 5
 		colorWindowText    = 8
@@ -71,12 +75,12 @@ func systemContrastPalettes() (light, dark *properties.Palette, ok bool) {
 	return p, p, true
 }
 
-// systemBoldText: Windows has no bold text setting.
-func systemBoldText() (bool, error) { return false, ErrNotSupported }
+// BoldText: Windows has no bold text setting.
+func BoldText() (bool, error) { return false, platform.ErrNotSupported }
 
-// systemTextScale reads Settings > Accessibility > Text size, stored as
+// TextScale reads Settings > Accessibility > Text size, stored as
 // a percentage.
-func systemTextScale() (float32, error) {
+func TextScale() (float32, error) {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Accessibility`, registry.QUERY_VALUE)
 	if err != nil {
 		return 1, nil
@@ -89,4 +93,4 @@ func systemTextScale() (float32, error) {
 	return float32(v) / 100, nil
 }
 
-func gioScalesText(a *App) bool { return false }
+func GioScalesText(view app.ViewEvent) bool { return false }

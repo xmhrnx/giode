@@ -1,19 +1,20 @@
-package giode
+package speech
 
 import (
 	"context"
 
 	"github.com/xmhrnx/giode/internal/optin"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
-// dictate runs package dictate's speech recognizer (SFSpeechRecognizer).
-func (a *App) dictate(ctx context.Context, lang string) (<-chan Transcript, error) {
+// Listen runs package dictate's speech recognizer (SFSpeechRecognizer).
+func Listen(ctx context.Context, h platform.Host, lang string) (<-chan Result, error) {
 	if optin.Dictate == nil {
-		return nil, errDictateNotLinked
+		return nil, platform.NotLinked("dictate")
 	}
-	in := make(chan Transcript, 16)
+	in := make(chan Result, 16)
 	stop, err := optin.Dictate(lang, func(text string, final bool, err error) {
-		t := Transcript{Text: text, Final: final, Err: err}
+		t := Result{Text: text, Final: final, Err: err}
 		if final {
 			// Never block the main thread on a slow reader; the final
 			// result still arrives.
@@ -28,7 +29,7 @@ func (a *App) dictate(ctx context.Context, lang string) (<-chan Transcript, erro
 	if err != nil {
 		return nil, err
 	}
-	out := make(chan Transcript, 16)
+	out := make(chan Result, 16)
 	go func() {
 		defer close(out)
 		stopped := false

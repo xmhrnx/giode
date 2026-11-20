@@ -3,6 +3,7 @@ package giode
 import (
 	"time"
 
+	"github.com/xmhrnx/giode/internal/platform/prefs"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -14,8 +15,8 @@ func SystemDarkMode() (bool, error) {
 	return readSystemDark()
 }
 
-// readSystemDark is systemDark, replaceable in tests.
-var readSystemDark = systemDark
+// readSystemDark is prefs.Dark, replaceable in tests.
+var readSystemDark = prefs.Dark
 
 // themePoll is how often the system appearance is checked while the
 // app runs. Platforms don't notify Gio apps of changes, but it's also

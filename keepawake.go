@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/xmhrnx/giode/internal/platform/keepawake"
+	"github.com/xmhrnx/giode/internal/platform/notify"
 )
 
 // KeepScreenOn keeps the screen from dimming and locking while on is
@@ -31,13 +32,5 @@ func (a *App) KeepScreenOn(on bool) error {
 // reason is shown where the platform shows one (Android's
 // notification, Linux's inhibitor list, macOS's power assertions).
 func (a *App) KeepAlive(reason string) (release func(), err error) {
-	return keepawake.KeepAlive(a.host(), reason, func() {
-		if askNotifications != nil {
-			askNotifications(a)
-		}
-	})
+	return keepawake.KeepAlive(a.host(), reason, func() { notify.AskOnce(a.host()) })
 }
-
-// askNotifications, where set, asks for the notification permission
-// once, for KeepAlive's notification (Android's foreground service).
-var askNotifications func(*App)

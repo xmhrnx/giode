@@ -1,15 +1,15 @@
 //go:build darwin
 
-package giode
+package platform
 
 /*
 #include <pthread.h>
 */
 import "C"
 
-// onMainThread reports whether the caller runs on the main thread, as
+// OnMainThread reports whether the caller runs on the main thread, as
 // AppKit and UIKit callbacks (the Dock, the window's buttons,
 // Services) do.
-func onMainThread() bool {
+func OnMainThread() bool {
 	return C.pthread_main_np() != 0
 }

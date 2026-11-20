@@ -1,6 +1,7 @@
 package giode
 
 import (
+	"github.com/xmhrnx/giode/internal/platform/power"
 	"github.com/xmhrnx/giode/ui"
 
 	"context"
@@ -71,7 +72,7 @@ func (a *App) Run(view func() Element) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	a.watchSystemTheme(ctx.Done())
 	if a.cfg.OnSuspend != nil || a.cfg.OnResume != nil {
-		a.watchPower(ctx.Done(), a.powerEvent)
+		power.Watch(a.host(), ctx.Done(), a.powerEvent, a.cfg.OnSuspend != nil)
 	}
 	a.watchMotion(ctx.Done())
 	a.watchA11yPrefs(ctx.Done())

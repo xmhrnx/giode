@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/xmhrnx/giode/internal/platform/prefs"
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
@@ -46,9 +47,9 @@ func SystemTextScale() (float32, error) { return readTextScale() }
 
 // The readers, replaceable in tests.
 var (
-	readHighContrast = systemHighContrast
-	readBoldText     = systemBoldText
-	readTextScale    = systemTextScale
+	readHighContrast = prefs.HighContrast
+	readBoldText     = prefs.BoldText
+	readTextScale    = prefs.TextScale
 )
 
 // SetContrast overrides Config.Contrast while the app runs.
@@ -90,7 +91,7 @@ func (a *App) applyContrast() {
 		on, _ = readHighContrast()
 		if on {
 			// The system's own high-contrast colors, where it has them.
-			if light, dark, ok := systemContrastPalettes(); ok {
+			if light, dark, ok := prefs.ContrastPalettes(); ok {
 				properties.SetHighContrastPalette(properties.ModeLight, light)
 				properties.SetHighContrastPalette(properties.ModeDark, dark)
 			}
@@ -138,7 +139,7 @@ func (a *App) appliedTextScale() float32 {
 	if s == 0 {
 		return 1
 	}
-	if a.textScaleWanted() <= 0 && gioScalesText(a) {
+	if a.textScaleWanted() <= 0 && prefs.GioScalesText(a.NativeView()) {
 		return 1
 	}
 	return s

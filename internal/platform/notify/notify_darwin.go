@@ -1,4 +1,4 @@
-package giode
+package notify
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
@@ -22,6 +22,7 @@ import (
 	"unsafe"
 
 	"github.com/xmhrnx/giode/internal/bridge"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // Notifications on iOS and macOS go through UNUserNotificationCenter,
@@ -48,12 +49,12 @@ func notifySetup() error {
 		}
 	})
 	if !notifyOK {
-		return fmt.Errorf("%w: notifications need an app bundle (build the app with giode)", ErrNotSupported)
+		return fmt.Errorf("%w: notifications need an app bundle (build the app with giode)", platform.ErrNotSupported)
 	}
 	return nil
 }
 
-func (a *App) notify(title, body string) error {
+func Show(h platform.Host, title, body string) error {
 	if err := notifySetup(); err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (a *App) notify(title, body string) error {
 	C.giodeNotify(C.int(id), ct, cb)
 	C.free(unsafe.Pointer(ct))
 	C.free(unsafe.Pointer(cb))
-	if onMainThread() {
+	if platform.OnMainThread() {
 		return nil // never hold up the main thread
 	}
 	select {
@@ -92,9 +93,9 @@ func giodeNotified(id C.int, denied C.int, errMsg *C.char) {
 	var err error
 	switch {
 	case denied != 0 && errMsg != nil:
-		err = fmt.Errorf("%w: %s", ErrNotificationsOff, C.GoString(errMsg))
+		err = fmt.Errorf("%w: %s", platform.ErrNotificationsOff, C.GoString(errMsg))
 	case denied != 0:
-		err = ErrNotificationsOff
+		err = platform.ErrNotificationsOff
 	case errMsg != nil:
 		err = errors.New(C.GoString(errMsg))
 	}
@@ -103,7 +104,7 @@ func giodeNotified(id C.int, denied C.int, errMsg *C.char) {
 
 var allowWait = map[int]chan bool{}
 
-func (a *App) requestNotificationPermission(ctx context.Context) (bool, error) {
+func RequestPermission(ctx context.Context, h platform.Host) (bool, error) {
 	if err := notifySetup(); err != nil {
 		return false, err
 	}
@@ -135,3 +136,6 @@ func giodeNotifyAllowed(id C.int, ok C.int) {
 		ch <- ok != 0
 	}
 }
+
+// AskOnce: only Android asks.
+func AskOnce(h platform.Host) {}

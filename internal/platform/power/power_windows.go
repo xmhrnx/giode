@@ -1,9 +1,10 @@
-package giode
+package power
 
 import (
 	"sync"
 	"unsafe"
 
+	"github.com/xmhrnx/giode/internal/platform"
 	"golang.org/x/sys/windows"
 )
 
@@ -32,7 +33,7 @@ var (
 	powerHandler      func(suspend bool)
 )
 
-func (a *App) watchPower(done <-chan struct{}, event func(suspend bool)) {
+func Watch(h platform.Host, done <-chan struct{}, event func(suspend bool), hold bool) {
 	if procPowerRegisterSuspendResume.Find() != nil {
 		return
 	}
@@ -58,6 +59,8 @@ func (a *App) watchPower(done <-chan struct{}, event func(suspend bool)) {
 	var handle uintptr
 	const deviceNotifyCallback = 2
 	if r, _, _ := procPowerRegisterSuspendResume.Call(deviceNotifyCallback, uintptr(unsafe.Pointer(&powerSubscription)), uintptr(unsafe.Pointer(&handle))); r != 0 {
-		a.logf(LogLevelDebug, "giode: no sleep notices (%d)", r)
+		if h != nil {
+			h.Logf(platform.Debug, "giode: no sleep notices (%d)", r)
+		}
 	}
 }

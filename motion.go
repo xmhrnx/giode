@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/internal/platform/prefs"
 )
 
 // MotionPreference is whether animations play (Config.Motion).
@@ -46,8 +47,8 @@ func (a *App) SetMotion(p MotionPreference) {
 // ErrNotSupported where it can't be read.
 func SystemReducedMotion() (bool, error) { return readReducedMotion() }
 
-// readReducedMotion is systemReducedMotion, replaceable in tests.
-var readReducedMotion = systemReducedMotion
+// readReducedMotion is prefs.ReducedMotion, replaceable in tests.
+var readReducedMotion = prefs.ReducedMotion
 
 // watchMotion applies the reduce-motion setting at startup and when it
 // changes: checked every few seconds and when the window regains focus.

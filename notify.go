@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/notify"
 )
 
 // ErrNotificationsOff is returned by Notify when the user turned the
@@ -27,7 +28,7 @@ var ErrNotificationsOff = platform.ErrNotificationsOff
 // It returns once the system took the notification, or after a moment
 // while the permission prompt is still up.
 func (a *App) Notify(title, body string) error {
-	return a.notify(title, body)
+	return notify.Show(a.host(), title, body)
 }
 
 // RequestNotificationPermission asks the user to allow the app's
@@ -37,5 +38,5 @@ func (a *App) Notify(title, body string) error {
 // It blocks until the user answers: call it from a goroutine. Elsewhere
 // it reports true.
 func (a *App) RequestNotificationPermission(ctx context.Context) (bool, error) {
-	return a.requestNotificationPermission(ctx)
+	return notify.RequestPermission(ctx, a.host())
 }

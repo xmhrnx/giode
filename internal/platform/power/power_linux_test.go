@@ -1,6 +1,6 @@
 //go:build linux && !android
 
-package giode
+package power
 
 import (
 	"bufio"
@@ -50,11 +50,10 @@ func TestSleepNotices(t *testing.T) {
 	conn.Export(l, logindPath, logindIface)
 	conn.RequestName(logindName, dbus.NameFlagDoNotQueue)
 
-	a := &App{cfg: Config{OnSuspend: func() {}}}
 	events := make(chan bool, 4)
 	done := make(chan struct{})
 	defer close(done)
-	a.watchPower(done, func(s bool) { events <- s })
+	Watch(nil, done, func(s bool) { events <- s }, true)
 	select {
 	case got := <-l.inhibits:
 		if got != "sleep/delay" {

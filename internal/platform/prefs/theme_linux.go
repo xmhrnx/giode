@@ -1,30 +1,31 @@
 //go:build linux && !android
 
-package giode
+package prefs
 
 import (
 	"errors"
 
 	"github.com/godbus/dbus/v5"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
-// systemDark reads the XDG desktop portal's appearance setting:
+// Dark reads the XDG desktop portal's appearance setting:
 // color-scheme 1 means dark.
-func systemDark() (bool, error) {
+func Dark() (bool, error) {
 	v, err := readPortalSetting("org.freedesktop.appearance", "color-scheme")
 	if err != nil {
 		return false, err
 	}
 	scheme, ok := v.(uint32)
 	if !ok {
-		return false, ErrNotSupported
+		return false, platform.ErrNotSupported
 	}
 	return scheme == 1, nil
 }
 
-// systemReducedMotion reads the desktop's animation setting through the
+// ReducedMotion reads the desktop's animation setting through the
 // portal: GNOME's enable-animations, or KDE's animation speed at 0.
-func systemReducedMotion() (bool, error) {
+func ReducedMotion() (bool, error) {
 	if v, err := readPortalSetting("org.gnome.desktop.interface", "enable-animations"); err == nil {
 		if on, ok := v.(bool); ok {
 			return !on, nil
@@ -35,20 +36,20 @@ func systemReducedMotion() (bool, error) {
 			return f == 0, nil
 		}
 	}
-	return false, ErrNotSupported
+	return false, platform.ErrNotSupported
 }
 
 // readPortalSetting reads a setting through the XDG desktop portal.
 func readPortalSetting(namespace, key string) (any, error) {
 	conn, err := dbus.SessionBus()
 	if err != nil {
-		return nil, errors.Join(ErrNotSupported, err)
+		return nil, errors.Join(platform.ErrNotSupported, err)
 	}
 	var v dbus.Variant
 	err = conn.Object("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop").
 		Call("org.freedesktop.portal.Settings.Read", 0, namespace, key).Store(&v)
 	if err != nil {
-		return nil, errors.Join(ErrNotSupported, err)
+		return nil, errors.Join(platform.ErrNotSupported, err)
 	}
 	// Read wraps the value in a second variant.
 	if inner, ok := v.Value().(dbus.Variant); ok {

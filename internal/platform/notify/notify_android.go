@@ -1,4 +1,4 @@
-package giode
+package notify
 
 import (
 	"context"
@@ -7,46 +7,45 @@ import (
 	"gioui.org/app"
 
 	"github.com/xmhrnx/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // notifyAsked is set once Notify or KeepAlive asked for the
 // notification permission in this run.
 var notifyAsked atomic.Bool
 
-// notify shows the notification when the app may, and otherwise asks
+// Show shows the notification when the app may, and otherwise asks
 // for the permission the first time (posting this notification if the
-// user allows it); later it returns ErrNotificationsOff.
-func (a *App) notify(title, body string) error {
+// user allows it); later it returns platform.ErrNotificationsOff.
+func Show(h platform.Host, title, body string) error {
 	vm, ctx := app.JavaVM(), app.AppContext()
 	if on, err := mobile.NotificationsEnabled(vm, ctx); err == nil && !on {
 		if notifyAsked.Swap(true) {
-			return ErrNotificationsOff
+			return platform.ErrNotificationsOff
 		}
 		go func() {
-			if ok, _ := a.RequestNotificationPermission(context.Background()); ok {
-				a.xnotify(title, body)
+			if ok, _ := RequestPermission(context.Background(), h); ok {
+				xnotify(title, body)
 			}
 		}()
 		return nil
 	}
-	return a.xnotify(title, body)
+	return xnotify(title, body)
 }
 
-// askNotificationsOnce asks for the notification permission in the
-// background, once a run, when notifications are off: KeepAlive's
-// notification needs it too.
-func init() { askNotifications = (*App).askNotificationsOnce }
-
-func (a *App) askNotificationsOnce() {
+// AskOnce asks for the notification permission in the background, once
+// a run, when notifications are off: KeepAlive's notification needs it
+// too.
+func AskOnce(h platform.Host) {
 	if on, err := mobile.NotificationsEnabled(app.JavaVM(), app.AppContext()); err != nil || on || notifyAsked.Swap(true) {
 		return
 	}
-	go a.RequestNotificationPermission(context.Background())
+	go RequestPermission(context.Background(), h)
 }
 
-func (a *App) requestNotificationPermission(ctx context.Context) (bool, error) {
+func RequestPermission(ctx context.Context, h platform.Host) (bool, error) {
 	var ch <-chan bool
-	err := a.onAndroidMain(ctx, func(view uintptr) error {
+	err := platform.OnAndroidMain(ctx, h, func(view uintptr) error {
 		var err error
 		ch, err = mobile.RequestNotifications(app.JavaVM(), app.AppContext(), view)
 		return err

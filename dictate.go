@@ -5,6 +5,7 @@ import (
 
 	"github.com/xmhrnx/giode/internal/optin"
 	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/speech"
 )
 
 // Transcript is one result of Dictate: the text recognized so far,
@@ -40,7 +41,18 @@ func (a *App) Dictate(ctx context.Context, lang string) (<-chan Transcript, erro
 	if !optin.DictateLinked {
 		return nil, errDictateNotLinked
 	}
-	return a.dictate(ctx, lang)
+	in, err := speech.Listen(ctx, a.host(), lang)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan Transcript, 16)
+	go func() {
+		defer close(out)
+		for r := range in {
+			out <- Transcript{Text: r.Text, Final: r.Final, Err: r.Err}
+		}
+	}()
+	return out, nil
 }
 
 var errDictateNotLinked = platform.NotLinked("dictate")
