@@ -148,6 +148,9 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 	case wmStartDrag:
 		runExport(t.app, hwnd)
 		return 0
+	case wmShare:
+		runShare(t.app, hwnd)
+		return 0
 	case wmGetObject:
 		// UI Automation asking for the window's provider (lParam
 		// UiaRootObjectId, sign-extended or not).

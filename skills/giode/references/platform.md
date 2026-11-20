@@ -32,7 +32,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | Windows Hello | fprintd | – |
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | print portal (PDF), `lp` | – |
 | `dictate.Start` | ✓ | Info.plist keys | – | – | – | – |
-| `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
+| `Share` (`ShareFiles` too) | share sheet | share sheet | share picker | share sheet | reveal / clipboard | – |
 | `ReadClipboardImage` | ✓ | ✓ | ✓ | ✓ | `wl-paste` or `xclip` | ✓ (async clipboard) |
 | `PlaySound` | AudioTrack | AVAudioPlayer | NSSound | PlaySound (one at a time) | `pw-play`, `paplay` or `aplay` | Web Audio |
 | `OnShareReceived` (share target) | `app.share_target` | share extension, `app.share_target` | – | – | – | – |

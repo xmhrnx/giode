@@ -165,8 +165,11 @@ otherwise requires for handing files to other apps, and MediaStore is the provid
 This needs Android 10 or later. The helper is a small Java class shipped as a `.jar` in
 `internal/mobile`, which gogio packs into the APK automatically.
 
-On desktops, `ShareText` copies the text to the clipboard and `ShareFile` shows the file in
-the file manager (Explorer, Finder, or the freedesktop file manager on Linux). On iOS it opens
+On Windows 10 and later `Share` opens the system's share sheet for the app's window
+(DataTransferManager), with the files or the text; on macOS the share picker (AirDrop, Mail,
+Messages, Notes...) under the window's top. Linux has no share sheet: `ShareText` copies the
+text to the clipboard and `ShareFile` shows the file in the file manager, as Windows and macOS
+do when their sheet can't open. On iOS it opens
 the share sheet (`UIActivityViewController`, a popover on iPad) with the file itself; on
 the web `Share` returns `ErrNotSupported`. A large file takes a moment to copy, so
 call `Share` from a goroutine too.

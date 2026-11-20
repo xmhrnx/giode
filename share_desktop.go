@@ -8,7 +8,14 @@ import (
 	"path/filepath"
 )
 
+// On Windows and macOS sharing opens the system's share sheet; on Linux,
+// which has none, text goes to the clipboard and a file is shown in the
+// file manager.
+
 func (t ShareText) share(ctx context.Context, a *App) error {
+	if err := a.shareNative(t.Title, t.Text, nil); err == nil {
+		return nil
+	}
 	a.SetClipboard(t.Text)
 	return nil
 }
@@ -20,6 +27,9 @@ func (f ShareFile) share(ctx context.Context, a *App) error {
 	}
 	if _, err := os.Stat(abs); err != nil {
 		return err
+	}
+	if err := a.shareNative(f.Title, "", []string{abs}); err == nil {
+		return nil
 	}
 	return revealFile(abs)
 }
