@@ -1,16 +1,21 @@
-package giode
+package window
+
+import "github.com/xmhrnx/giode/internal/platform"
 
 // Window buttons on Windows: the minimize and maximize boxes are window
 // styles; close is the system menu's Close item, grayed (WM_CLOSE is
 // refused in trayWndProc through vetoClose).
 
 var (
-	procGetSystemMenu  = user32.NewProc("GetSystemMenu")
-	procEnableMenuItem = user32.NewProc("EnableMenuItem")
+	procGetSystemMenu     = user32.NewProc("GetSystemMenu")
+	procGetWindowLongPtrW = user32.NewProc("GetWindowLongPtrW")
+	procSetWindowLongPtrW = user32.NewProc("SetWindowLongPtrW")
+	procEnableMenuItem    = user32.NewProc("EnableMenuItem")
 )
 
-func (a *App) windowButtonsView() {
-	hwnd := a.NativeHandle()
+// Buttons removes the title bar buttons asked for.
+func Buttons(h platform.Host, noMin, noMax, noClose bool) {
+	hwnd := h.NativeHandle()
 	if hwnd == 0 {
 		return
 	}
@@ -20,14 +25,14 @@ func (a *App) windowButtonsView() {
 		wsMaximizeBox = 0x00010000
 	)
 	style, _, _ := procGetWindowLongPtrW.Call(hwnd, gwlStyle)
-	if a.cfg.NoMinimize {
+	if noMin {
 		style &^= wsMinimizeBox
 	}
-	if a.cfg.NoMaximize {
+	if noMax {
 		style &^= wsMaximizeBox
 	}
 	procSetWindowLongPtrW.Call(hwnd, gwlStyle, style)
-	if a.cfg.NoClose {
+	if noClose {
 		const scClose, mfGrayed = 0xF060, 0x1
 		if menu, _, _ := procGetSystemMenu.Call(hwnd, 0); menu != 0 {
 			procEnableMenuItem.Call(menu, scClose, mfGrayed)

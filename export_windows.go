@@ -55,7 +55,7 @@ var (
 
 func installExporter(a *App) {
 	dnd.SetExporter(func(data dnd.ExportData, done func(bool)) bool {
-		hwnd := a.hwnd()
+		hwnd := a.NativeHandle()
 		dropMu.Lock()
 		_, subclassed := dropWindows[hwnd]
 		dropMu.Unlock()

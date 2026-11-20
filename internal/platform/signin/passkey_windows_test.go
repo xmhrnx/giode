@@ -1,4 +1,4 @@
-package giode
+package signin
 
 import (
 	"testing"

@@ -1,6 +1,6 @@
 //go:build linux && !android && !nox11
 
-package giode
+package window
 
 /*
 #cgo LDFLAGS: -lX11
@@ -19,10 +19,14 @@ static void giodeMotifFunctions(Display *dpy, Window w, long functions) {
 */
 import "C"
 
-import "gioui.org/app"
+import (
+	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform"
+)
 
-func (a *App) windowButtonsView() {
-	x, ok := a.NativeView().(app.X11ViewEvent)
+// Buttons removes the title bar buttons asked for.
+func Buttons(h platform.Host, noMin, noMax, noClose bool) {
+	x, ok := h.NativeView().(app.X11ViewEvent)
 	if !ok || x.Display == nil || x.Window == 0 {
 		return
 	}
@@ -34,13 +38,13 @@ func (a *App) windowButtonsView() {
 		funcClose    = 1 << 5
 	)
 	f := funcResize | funcMove
-	if !a.cfg.NoMinimize {
+	if !noMin {
 		f |= funcMinimize
 	}
-	if !a.cfg.NoMaximize {
+	if !noMax {
 		f |= funcMaximize
 	}
-	if !a.cfg.NoClose {
+	if !noClose {
 		f |= funcClose
 	}
 	C.giodeMotifFunctions((*C.Display)(x.Display), C.Window(x.Window), C.long(f))

@@ -1,8 +1,6 @@
 //go:build !(darwin && !ios)
 
-package giode
+package menubar
 
 // Native menu bars are macOS's; elsewhere apps show menus in the window.
-func (a *App) setNativeMenuBar([]menuBarSpec) {}
-
-func (a *App) menuBarView() {}
+func Set(specJSON, appName string) {}

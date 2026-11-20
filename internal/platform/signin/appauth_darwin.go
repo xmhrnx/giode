@@ -1,6 +1,6 @@
 //go:build darwin
 
-package giode
+package signin
 
 /*
 #cgo CFLAGS: -fmodules -fobjc-arc -x objective-c
@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	"github.com/xmhrnx/giode/auth"
+	"github.com/xmhrnx/giode/internal/platform"
 )
 
 // authResult is how an ASWebAuthenticationSession ended.
@@ -48,17 +49,18 @@ func giodeAuthDone(id C.int, s *C.char, kind C.int) {
 	}
 }
 
-func (a *App) openSignIn(ctx context.Context, u string) error { return a.OpenURL(ctx, u) }
+// OpenPage: the browser, which the caller opens.
+func OpenPage(ctx context.Context, h platform.Host, u string) error { return platform.ErrNotSupported }
 
-// authSession runs ASWebAuthenticationSession, the sign-in sheet that
+// Session runs ASWebAuthenticationSession, the sign-in sheet that
 // shares Safari's cookies and passkeys, on authURL until it redirects to
 // scheme. https redirects (iOS 17.4 and macOS 14.4 match those too) go
 // through the browser and the app's universal link instead.
-func (a *App) authSession(ctx context.Context, authURL, scheme string, ephemeral bool) (*url.URL, error) {
+func Session(ctx context.Context, h platform.Host, authURL, scheme string, ephemeral bool) (*url.URL, error) {
 	if scheme == "" || strings.EqualFold(scheme, "http") || strings.EqualFold(scheme, "https") {
 		return nil, auth.ErrUnsupported
 	}
-	view := a.authAnchorView()
+	view := anchorView(h)
 	ch := make(chan authResult, 1)
 	authSessions.Lock()
 	authSessions.next++

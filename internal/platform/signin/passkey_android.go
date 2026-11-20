@@ -1,4 +1,4 @@
-package giode
+package signin
 
 import (
 	"context"
@@ -9,20 +9,21 @@ import (
 
 	"github.com/xmhrnx/giode/auth"
 	"github.com/xmhrnx/giode/internal/mobile"
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/internal/webauthn"
 )
 
-func (a *App) passkeyCreate(ctx context.Context, c webauthn.Creation, raw []byte) ([]byte, error) {
-	return a.androidPasskey(ctx, true, raw, c.User.Name, c.User.DisplayName)
+func PasskeyCreate(ctx context.Context, h platform.Host, c webauthn.Creation, raw []byte) ([]byte, error) {
+	return androidPasskey(ctx, h, true, raw, c.User.Name, c.User.DisplayName)
 }
 
-func (a *App) passkeyGet(ctx context.Context, r webauthn.Request, raw []byte) ([]byte, error) {
-	return a.androidPasskey(ctx, false, raw, "", "")
+func PasskeyGet(ctx context.Context, h platform.Host, r webauthn.Request, raw []byte) ([]byte, error) {
+	return androidPasskey(ctx, h, false, raw, "", "")
 }
 
-func (a *App) androidPasskey(ctx context.Context, create bool, raw []byte, user, display string) ([]byte, error) {
+func androidPasskey(ctx context.Context, h platform.Host, create bool, raw []byte, user, display string) ([]byte, error) {
 	var ch <-chan mobile.PasskeyResult
-	err := a.onAndroidMain(ctx, func(view uintptr) error {
+	err := platform.OnAndroidMain(ctx, h, func(view uintptr) error {
 		var err error
 		ch, err = mobile.Passkey(app.JavaVM(), app.AppContext(), view, create, string(raw), user, display)
 		return err

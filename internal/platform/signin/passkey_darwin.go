@@ -1,6 +1,6 @@
 //go:build darwin
 
-package giode
+package signin
 
 /*
 #include <stdint.h>
@@ -18,6 +18,7 @@ import (
 	"unsafe"
 
 	"github.com/xmhrnx/giode/auth"
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/internal/webauthn"
 )
 
@@ -58,14 +59,14 @@ func giodePasskeyDone(id, kind C.int, bufs *unsafe.Pointer, lens *C.int, n C.int
 	ch <- d
 }
 
-func (a *App) passkeyCreate(ctx context.Context, c webauthn.Creation, _ []byte) ([]byte, error) {
+func PasskeyCreate(ctx context.Context, h platform.Host, c webauthn.Creation, _ []byte) ([]byte, error) {
 	challenge, _ := webauthn.Decode(c.Challenge)
 	userID, _ := webauthn.Decode(c.User.ID)
 	name := c.User.Name
 	if name == "" {
 		name = c.User.DisplayName
 	}
-	d, err := a.applePasskey(ctx, true, c.RP.ID, challenge, name, userID,
+	d, err := applePasskey(ctx, h, true, c.RP.ID, challenge, name, userID,
 		webauthn.IDs(c.ExcludeCredentials), c.AuthenticatorSelection.UserVerification)
 	if err != nil {
 		return nil, err
@@ -74,9 +75,9 @@ func (a *App) passkeyCreate(ctx context.Context, c webauthn.Creation, _ []byte) 
 	return webauthn.Registration{CredentialID: d.bufs[0], ClientDataJSON: d.bufs[1], AttestationObject: d.bufs[2]}.JSON(), nil
 }
 
-func (a *App) passkeyGet(ctx context.Context, r webauthn.Request, _ []byte) ([]byte, error) {
+func PasskeyGet(ctx context.Context, h platform.Host, r webauthn.Request, _ []byte) ([]byte, error) {
 	challenge, _ := webauthn.Decode(r.Challenge)
-	d, err := a.applePasskey(ctx, false, r.RPID, challenge, "", nil, webauthn.IDs(r.AllowCredentials), r.UserVerification)
+	d, err := applePasskey(ctx, h, false, r.RPID, challenge, "", nil, webauthn.IDs(r.AllowCredentials), r.UserVerification)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func (a *App) passkeyGet(ctx context.Context, r webauthn.Request, _ []byte) ([]b
 		Signature: d.bufs[3], UserHandle: d.bufs[4]}.JSON(), nil
 }
 
-func (a *App) applePasskey(ctx context.Context, create bool, rpID string, challenge []byte, user string, userID []byte, ids [][]byte, uv string) (passkeyDone, error) {
+func applePasskey(ctx context.Context, h platform.Host, create bool, rpID string, challenge []byte, user string, userID []byte, ids [][]byte, uv string) (passkeyDone, error) {
 	ch := make(chan passkeyDone, 1)
 	passkeyReqs.Lock()
 	passkeyReqs.next++
@@ -131,7 +132,7 @@ func (a *App) applePasskey(ctx context.Context, create bool, rpID string, challe
 		cr = 1
 	}
 	// giodePasskeyStart copies what it needs before returning.
-	C.giodePasskeyStart(C.uintptr_t(a.authAnchorView()), C.int(id), cr, cstrs[0], ch0, C.int(len(challenge)),
+	C.giodePasskeyStart(C.uintptr_t(anchorView(h)), C.int(id), cr, cstrs[0], ch0, C.int(len(challenge)),
 		cstrs[1], uid, C.int(len(userID)), idBuf, lens, C.int(len(ids)), cstrs[2])
 	var d passkeyDone
 	select {

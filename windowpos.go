@@ -5,6 +5,7 @@ import (
 	"image"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
 // Rect is an area of the desktop in dp: X and Y are its top left
@@ -38,7 +39,7 @@ const (
 
 // errNoWindowYet is returned for window placement before the window
 // exists.
-var errNoWindowYet = errors.New("giode: the window isn't shown yet")
+var errNoWindowYet = window.ErrNoWindowYet
 
 // frameGeom is a frame's size in pixels and scale.
 type frameGeom struct {
@@ -60,13 +61,22 @@ func (a *App) scale() float32 {
 // work area. Wayland doesn't tell apps where their windows are:
 // there it returns ErrNotSupported. Safe to call from any goroutine.
 func (a *App) Screen() (Screen, error) {
-	return a.platformScreen()
+	s, err := window.ScreenOf(a.NativeView(), a.scale())
+	if errors.Is(err, window.ErrFillsScreen) {
+		return a.windowScreen()
+	}
+	return Screen{Bounds: Rect(s.Bounds), WorkArea: Rect(s.WorkArea), Scale: s.Scale}, err
 }
 
 // Frame returns the window's area on the desktop in dp, its title bar
 // and borders included. See Screen for where it's supported.
 func (a *App) Frame() (Rect, error) {
-	return a.platformFrame()
+	r, err := window.Frame(a.NativeView(), a.scale())
+	if errors.Is(err, window.ErrFillsScreen) {
+		s, err := a.windowScreen()
+		return s.Bounds, err
+	}
+	return Rect(r), err
 }
 
 // SetPosition moves the window so its top left corner (of the title
@@ -76,7 +86,7 @@ func (a *App) Frame() (Rect, error) {
 // themselves. Safe to call from any goroutine; the move happens
 // shortly after.
 func (a *App) SetPosition(x, y float32) error {
-	return a.platformSetPosition(x, y)
+	return window.SetPosition(a.NativeView(), x, y, a.scale())
 }
 
 // MoveTo moves the window to a corner of its screen's work area (or
@@ -114,7 +124,7 @@ func (a *App) MoveTo(c Corner, margin float32) error {
 // goroutine.
 func (a *App) SetAlwaysOnTop(on bool) {
 	a.topMost.Store(on)
-	if !a.platformSetTopMost(on) {
+	if !window.SetTopMost(a.NativeView(), on) {
 		a.window.Option(app.TopMost(on))
 	}
 }

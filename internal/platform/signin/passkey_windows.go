@@ -1,4 +1,4 @@
-package giode
+package signin
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sys/windows"
 
 	"github.com/xmhrnx/giode/auth"
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/internal/webauthn"
 )
 
@@ -172,8 +173,8 @@ func utf16OrNil(s string) *uint16 {
 	return p
 }
 
-func (a *App) passkeyHWND() uintptr {
-	if ev, ok := a.NativeView().(app.Win32ViewEvent); ok {
+func passkeyHWND(h platform.Host) uintptr {
+	if ev, ok := h.NativeView().(app.Win32ViewEvent); ok {
 		return ev.HWND
 	}
 	return 0
@@ -221,7 +222,7 @@ func waError(hr uintptr) error {
 	return fmt.Errorf("passkey: %s (0x%08x)", name, uint32(hr))
 }
 
-func (a *App) passkeyCreate(ctx context.Context, c webauthn.Creation, _ []byte) ([]byte, error) {
+func PasskeyCreate(ctx context.Context, h platform.Host, c webauthn.Creation, _ []byte) ([]byte, error) {
 	userID, _ := webauthn.Decode(c.User.ID)
 	if len(userID) == 0 {
 		return nil, errors.New("passkey: empty user.id")
@@ -266,7 +267,7 @@ func (a *App) passkeyCreate(ctx context.Context, c webauthn.Creation, _ []byte) 
 		opts.TimeoutMS = 300000
 	}
 	var out *waAttestation
-	hwnd := a.passkeyHWND()
+	hwnd := passkeyHWND(h)
 	err := waCall(ctx, &cancelID, func() uintptr {
 		hr, _, _ := procWAMakeCredential.Call(hwnd, uintptr(unsafe.Pointer(&rp)), uintptr(unsafe.Pointer(&user)),
 			uintptr(unsafe.Pointer(&cose)), uintptr(unsafe.Pointer(&cd)), uintptr(unsafe.Pointer(&opts)),
@@ -289,7 +290,7 @@ func (a *App) passkeyCreate(ctx context.Context, c webauthn.Creation, _ []byte) 
 	}.JSON(), nil
 }
 
-func (a *App) passkeyGet(ctx context.Context, r webauthn.Request, _ []byte) ([]byte, error) {
+func PasskeyGet(ctx context.Context, h platform.Host, r webauthn.Request, _ []byte) ([]byte, error) {
 	clientJSON := webauthn.ClientData("webauthn.get", r.Challenge, r.RPID)
 	cd := waClientData{Version: 1, JSONLen: uint32(len(clientJSON)), JSON: &clientJSON[0], HashAlgID: waSHA256}
 	allow, allowCreds := waCredList(webauthn.IDs(r.AllowCredentials))
@@ -305,7 +306,7 @@ func (a *App) passkeyGet(ctx context.Context, r webauthn.Request, _ []byte) ([]b
 	}
 	rpID := utf16OrNil(r.RPID)
 	var out *waAssertion
-	hwnd := a.passkeyHWND()
+	hwnd := passkeyHWND(h)
 	err := waCall(ctx, &cancelID, func() uintptr {
 		hr, _, _ := procWAGetAssertion.Call(hwnd, uintptr(unsafe.Pointer(rpID)), uintptr(unsafe.Pointer(&cd)),
 			uintptr(unsafe.Pointer(&opts)), uintptr(unsafe.Pointer(&out)))

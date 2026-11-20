@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
 // handleViewEvent records the platform view and applies what needs
@@ -18,17 +19,17 @@ func (a *App) handleViewEvent(ev app.ViewEvent) {
 	a.viewMu.Unlock()
 	a.platformView(ev)
 	a.trayView(ev)
-	a.placementView(ev)
+	window.Placed(ev, a.topMost.Load())
 	a.startInTray(ev)
 	a.a11yView(ev)
 	if ev.Valid() {
 		a.menuBarView()
 	}
 	if a.cfg.Transparent && ev.Valid() {
-		a.transparentView()
+		window.MakeTransparent(a.host())
 	}
 	if (a.cfg.NoMinimize || a.cfg.NoMaximize || a.cfg.NoClose) && ev.Valid() {
-		a.windowButtonsView()
+		window.Buttons(a.host(), a.cfg.NoMinimize, a.cfg.NoMaximize, a.cfg.NoClose)
 	}
 	if pending && a.windowHidden.Load() {
 		a.hideNow()

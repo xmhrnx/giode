@@ -1,6 +1,6 @@
 //go:build linux && !android && !nox11
 
-package giode
+package window
 
 /*
 #cgo LDFLAGS: -lX11 -ldl
@@ -122,7 +122,7 @@ func x11Outer(dpy *C.Display, win C.Window) (x, y, w, h int) {
 func x11Frame(ev app.ViewEvent, s float32) (Rect, error) {
 	dpy, win, ok := x11Window(ev)
 	if !ok {
-		return Rect{}, errNoWindowYet
+		return Rect{}, ErrNoWindowYet
 	}
 	x, y, w, h := x11Outer(dpy, win)
 	return pxRect(x, y, w, h, s), nil
@@ -131,7 +131,7 @@ func x11Frame(ev app.ViewEvent, s float32) (Rect, error) {
 func x11SetPosition(ev app.ViewEvent, x, y, s float32) error {
 	dpy, win, ok := x11Window(ev)
 	if !ok {
-		return errNoWindowYet
+		return ErrNoWindowYet
 	}
 	// With the default (north west) gravity, window managers place the
 	// frame's corner at the position.
@@ -143,7 +143,7 @@ func x11SetPosition(ev app.ViewEvent, x, y, s float32) error {
 func x11Screen(ev app.ViewEvent, s float32) (Screen, error) {
 	dpy, win, ok := x11Window(ev)
 	if !ok {
-		return Screen{}, errNoWindowYet
+		return Screen{}, ErrNoWindowYet
 	}
 	ox, oy, ow, oh := x11Outer(dpy, win)
 	root := C.XDefaultRootWindow(dpy)

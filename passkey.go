@@ -3,6 +3,7 @@ package giode
 import (
 	"context"
 
+	"github.com/xmhrnx/giode/internal/platform/signin"
 	"github.com/xmhrnx/giode/internal/webauthn"
 )
 
@@ -26,7 +27,7 @@ func (a *App) CreatePasskey(ctx context.Context, options []byte) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	return a.passkeyCreate(ctx, c, raw)
+	return signin.PasskeyCreate(ctx, a.host(), c, raw)
 }
 
 // SignInWithPasskey signs in with a passkey: the platform shows the
@@ -43,5 +44,5 @@ func (a *App) SignInWithPasskey(ctx context.Context, options []byte) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	return a.passkeyGet(ctx, r, raw)
+	return signin.PasskeyGet(ctx, a.host(), r, raw)
 }

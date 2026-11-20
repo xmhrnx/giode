@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/xmhrnx/giode/auth"
+	"github.com/xmhrnx/giode/internal/platform/signin"
 )
 
 // authState holds the app's sign-in sessions and the sign-ins waiting
@@ -90,7 +91,11 @@ func (a *App) Auth(p auth.Provider) *auth.Session {
 type appAuthHost struct{ a *App }
 
 func (h appAuthHost) OpenBrowser(ctx context.Context, u string) error {
-	return h.a.openSignIn(ctx, u)
+	// A Custom Tab on Android; the browser elsewhere.
+	if err := signin.OpenPage(ctx, h.a.host(), u); !errors.Is(err, ErrNotSupported) {
+		return err
+	}
+	return h.a.OpenURL(ctx, u)
 }
 
 func (h appAuthHost) WaitForURL(ctx context.Context, match func(*url.URL) bool) (*url.URL, error) {
@@ -121,7 +126,7 @@ func (h appAuthHost) WaitForURL(ctx context.Context, match func(*url.URL) bool) 
 }
 
 func (h appAuthHost) AuthSession(ctx context.Context, authURL, scheme string, ephemeral bool) (*url.URL, error) {
-	return h.a.authSession(ctx, authURL, scheme, ephemeral)
+	return signin.Session(ctx, h.a.host(), authURL, scheme, ephemeral)
 }
 
 func (h appAuthHost) SecretGet(name string) ([]byte, error) { return SecureStore.Get(name) }

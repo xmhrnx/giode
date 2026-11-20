@@ -2,10 +2,12 @@ package giode
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
 	"gioui.org/io/key"
 
+	"github.com/xmhrnx/giode/internal/platform/menubar"
 	"github.com/xmhrnx/giode/shortcut"
 )
 
@@ -207,3 +209,39 @@ func (a *App) menuQuit() {
 		}
 	})
 }
+
+func init() {
+	menubar.OnClick = func(id int) {
+		if a := currentApp.Load(); a != nil {
+			a.menuBarClicked(id)
+		}
+	}
+	menubar.OnQuit = func() {
+		if a := currentApp.Load(); a != nil {
+			a.menuQuit()
+		}
+	}
+}
+
+// setNativeMenuBar hands the menu bar to the system's (macOS's); other
+// platforms show menus in the window.
+func (a *App) setNativeMenuBar(specs []menuBarSpec) {
+	if a.cfg.MenuBarApp {
+		return // no app menu in the menu bar
+	}
+	js, _ := json.Marshal(specs)
+	a.menuBarJSON.Store(string(js))
+	a.applyNativeMenuBar()
+}
+
+// applyNativeMenuBar installs the menu bar; again once the window
+// exists, after Gio's launch installed its own.
+func (a *App) applyNativeMenuBar() {
+	if js, _ := a.menuBarJSON.Load().(string); js != "" {
+		menubar.Set(js, a.Title())
+	}
+}
+
+// menuBarView puts the menu bar back once the window exists: Gio's
+// launch installs its own menu.
+func (a *App) menuBarView() { a.applyNativeMenuBar() }

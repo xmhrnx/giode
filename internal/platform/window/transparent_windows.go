@@ -1,8 +1,9 @@
-package giode
+package window
 
 import (
 	"unsafe"
 
+	"github.com/xmhrnx/giode/internal/platform"
 	"golang.org/x/sys/windows"
 )
 
@@ -23,8 +24,10 @@ type dwmBlurBehind struct {
 	transitionOnMaximized int32
 }
 
-func (a *App) transparentView() {
-	hwnd := a.NativeHandle()
+// MakeTransparent lets the window show through where the UI is
+// transparent.
+func MakeTransparent(h platform.Host) {
+	hwnd := h.NativeHandle()
 	if hwnd == 0 || procDwmEnableBlurBehindWindow.Find() != nil {
 		return
 	}

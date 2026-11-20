@@ -1,6 +1,6 @@
 //go:build windows
 
-package giode
+package window
 
 import (
 	"unsafe"
@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	user32                    = windows.NewLazySystemDLL("user32.dll")
 	dwmapi                    = windows.NewLazySystemDLL("dwmapi.dll")
 	procDwmGetWindowAttribute = dwmapi.NewProc("DwmGetWindowAttribute")
 	procGetWindowRect         = user32.NewProc("GetWindowRect")
@@ -36,25 +37,22 @@ type monitorInfo struct {
 	Flags         uint32
 }
 
-func (a *App) hwnd() uintptr {
-	if ev, ok := a.NativeView().(app.Win32ViewEvent); ok {
+func hwndOf(view app.ViewEvent) uintptr {
+	if ev, ok := view.(app.Win32ViewEvent); ok {
 		return ev.HWND
 	}
 	return 0
 }
 
 // winScale is the window's pixels per dp: its monitor's DPI over 96,
-// as Gio's.
-func winScale(hwnd uintptr) float32 {
+// as Gio's, else the last frame's.
+func winScale(hwnd uintptr, frameScale float32) float32 {
 	if procGetDpiForWindow.Find() == nil {
 		if dpi, _, _ := procGetDpiForWindow.Call(hwnd); dpi != 0 {
 			return float32(dpi) / 96
 		}
 	}
-	if a := currentApp.Load(); a != nil {
-		return a.scale()
-	}
-	return 1
+	return frameScale
 }
 
 // visibleFrame is the window's rectangle without the invisible resize
@@ -77,21 +75,21 @@ func dpRect(r winRect, s float32) Rect {
 	return Rect{X: float32(r.Left) / s, Y: float32(r.Top) / s, Width: float32(r.Right-r.Left) / s, Height: float32(r.Bottom-r.Top) / s}
 }
 
-func (a *App) platformFrame() (Rect, error) {
-	h := a.hwnd()
+func Frame(view app.ViewEvent, scale float32) (Rect, error) {
+	h := hwndOf(view)
 	if h == 0 {
-		return Rect{}, errNoWindowYet
+		return Rect{}, ErrNoWindowYet
 	}
 	vis, _, _ := visibleFrame(h)
-	return dpRect(vis, winScale(h)), nil
+	return dpRect(vis, winScale(h, scale)), nil
 }
 
-func (a *App) platformSetPosition(x, y float32) error {
-	h := a.hwnd()
+func SetPosition(view app.ViewEvent, x, y, scale float32) error {
+	h := hwndOf(view)
 	if h == 0 {
-		return errNoWindowYet
+		return ErrNoWindowYet
 	}
-	s := winScale(h)
+	s := winScale(h, scale)
 	_, dx, dy := visibleFrame(h)
 	// Asynchronous: the window's thread may be waiting for this one.
 	procSetWindowPos.Call(h, 0, uintptr(int32(x*s+0.5)-dx), uintptr(int32(y*s+0.5)-dy), 0, 0,
@@ -99,21 +97,23 @@ func (a *App) platformSetPosition(x, y float32) error {
 	return nil
 }
 
-func (a *App) platformScreen() (Screen, error) {
-	h := a.hwnd()
+func ScreenOf(view app.ViewEvent, scale float32) (Screen, error) {
+	h := hwndOf(view)
 	if h == 0 {
-		return Screen{}, errNoWindowYet
+		return Screen{}, ErrNoWindowYet
 	}
 	mon, _, _ := procMonitorFromWindow.Call(h, monitorDefaultToNearest)
 	mi := monitorInfo{Size: uint32(unsafe.Sizeof(monitorInfo{}))}
 	if ok, _, err := procGetMonitorInfoW.Call(mon, uintptr(unsafe.Pointer(&mi))); ok == 0 {
 		return Screen{}, err
 	}
-	s := winScale(h)
+	s := winScale(h, scale)
 	return Screen{Bounds: dpRect(mi.Monitor, s), WorkArea: dpRect(mi.Work, s), Scale: s}, nil
 }
 
-// platformSetTopMost leaves always on top to Gio.
-func (a *App) platformSetTopMost(on bool) bool { return false }
+// SetTopMost leaves always on top to Gio.
+func SetTopMost(view app.ViewEvent, on bool) bool { return false }
 
-func (a *App) placementView(ev app.ViewEvent) {}
+func Placed(view app.ViewEvent, topMost bool) {}
+
+func ClientOrigin(view app.ViewEvent) (x, y int, ok bool) { return 0, 0, false }

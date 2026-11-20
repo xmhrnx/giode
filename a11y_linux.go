@@ -17,6 +17,7 @@ import (
 	"github.com/godbus/dbus/v5"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
 // Screen readers on Linux (Orca) through AT-SPI: the app connects to the
@@ -240,7 +241,7 @@ func connectATSPI(a *App, t *a11yTree, addr string) (*atspiBridge, error) {
 	}
 	b := newATSPIBridge(a, t, conn)
 	if a != nil {
-		b.origin = func() (int, int, bool) { return x11ClientOrigin(a.NativeView()) }
+		b.origin = func() (int, int, bool) { return window.ClientOrigin(a.NativeView()) }
 	}
 	if err := b.export(); err != nil {
 		conn.Close()
