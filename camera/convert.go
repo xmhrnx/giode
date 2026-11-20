@@ -159,6 +159,21 @@ func grayFromRGBA(img *image.RGBA, long int) *image.Gray {
 	return g
 }
 
+// scaleRGBA copies img, scaled down to long on its long side.
+func scaleRGBA(img *image.RGBA, long int) *image.RGBA {
+	w, h := img.Rect.Dx(), img.Rect.Dy()
+	gw, gh := analysisSize(w, h, long)
+	out := image.NewRGBA(image.Rect(0, 0, gw, gh))
+	for y := 0; y < gh; y++ {
+		sy := y * h / gh
+		for x := 0; x < gw; x++ {
+			sx := x * w / gw
+			copy(out.Pix[y*out.Stride+x*4:y*out.Stride+x*4+4], img.Pix[sy*img.Stride+sx*4:])
+		}
+	}
+	return out
+}
+
 func clamp8(v int) uint8 {
 	if v < 0 {
 		return 0

@@ -241,3 +241,32 @@ func TestVideo(t *testing.T) {
 		t.Errorf("pixel %v", got)
 	}
 }
+
+func TestVP8Call(t *testing.T) {
+	a, err := New(context.Background(), nil, Config{loopback: true, VideoCodecs: []VideoCodec{VP8}, SendVideo: true, VideoFPS: 20})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+	b, err := New(context.Background(), nil, Config{loopback: true, VideoCodecs: []VideoCodec{VP8}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	connect(t, a, b, false, nil, nil)
+	frame := testPicture(320, 240)
+	deadline := time.Now().Add(5 * time.Second)
+	for b.RemoteVideo().Size() != image.Pt(320, 240) {
+		if time.Now().After(deadline) {
+			t.Fatalf("no video: stats %+v / %+v", a.Stats(), b.Stats())
+		}
+		if err := a.SendVideo(frame); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	// The red corner survives the trip.
+	if got := b.RemoteVideo().Snapshot().RGBAAt(300, 20); got.R < 190 || got.G > 70 || got.B > 80 {
+		t.Errorf("pixel %v", got)
+	}
+}

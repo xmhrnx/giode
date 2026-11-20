@@ -1,7 +1,7 @@
-// Command call rings itself and, once answered, runs a voice call over
-// WebRTC between two peers inside the app: the microphone goes out
-// through one, comes back through the other and plays on the speaker,
-// so you hear yourself as the other side would. On phones the ring is
+// Command call rings itself and, once answered, runs a video call over
+// WebRTC between two peers inside the app: the microphone and camera go
+// out through one, come back through the other and play on the speaker
+// and screen, so you hear and see yourself as the other side would. On phones the ring is
 // the system's incoming call screen (telecom); on computers the app
 // shows its own. Signaling is a function call here; a real app sends
 // the offer, answer and candidates through its server.
@@ -14,13 +14,16 @@ import (
 	"time"
 
 	"github.com/xmhrnx/giode"
+	"github.com/xmhrnx/giode/camera"
 	"github.com/xmhrnx/giode/rtc"
 	"github.com/xmhrnx/giode/telecom"
+	"github.com/xmhrnx/giode/video"
 )
 
 func main() {
 	var (
 		app     *giode.App
+		cam     *camera.Camera
 		caller  *rtc.Call // the far end: sends the microphone
 		callee  *rtc.Call // this end: plays what arrives
 		callID  string
@@ -30,6 +33,10 @@ func main() {
 		started time.Time
 	)
 	hangUp := func() {
+		if cam != nil {
+			cam.Close()
+			cam = nil
+		}
 		if caller != nil {
 			caller.Close()
 			callee.Close()
@@ -46,12 +53,13 @@ func main() {
 			defer cancel()
 			// Both peers are on this device: host candidates are enough,
 			// with no STUN server.
-			a, err := rtc.New(ctx, app, rtc.Config{Microphone: true})
+			video := []rtc.VideoCodec{rtc.VP8}
+			a, err := rtc.New(ctx, app, rtc.Config{Microphone: true, VideoCodecs: video, SendVideo: true, VideoFPS: 15})
 			if err != nil {
 				app.Post(func() { status = err.Error() })
 				return
 			}
-			b, err := rtc.New(ctx, app, rtc.Config{Speaker: true, OnState: func(s rtc.State) {
+			b, err := rtc.New(ctx, app, rtc.Config{Speaker: true, VideoCodecs: video, OnState: func(s rtc.State) {
 				app.Post(func() {
 					if s == rtc.StateConnected {
 						started = time.Now()
@@ -82,6 +90,22 @@ func main() {
 				}
 				caller, callee = a, b
 				caller.SetMuted(muted)
+				// The camera, if there is one: its frames go out as VP8.
+				go func() {
+					c, err := camera.Open(context.Background(), app, camera.Options{
+						Facing: camera.Front, Color: true, AnalysisSize: 480, AnalysisRate: 15,
+						OnFrame: func(f camera.Frame) { a.SendVideo(f.RGBA) },
+					})
+					if err == nil {
+						app.Post(func() {
+							if caller == a {
+								cam = c
+							} else {
+								c.Close()
+							}
+						})
+					}
+				}()
 			})
 		}()
 	}
@@ -115,7 +139,7 @@ func main() {
 		hangUp()
 	})
 
-	app = giode.New(giode.Config{Title: "Call", Size: image.Pt(420, 300), Background: "theme.background"})
+	app = giode.New(giode.Config{Title: "Call", Size: image.Pt(480, 560), Background: "theme.background"})
 	telecom.Setup(app, telecom.Handler{
 		OnAnswer: func(string) { connect() },
 		OnEnd:    func(string) { hangUp() },
@@ -143,10 +167,15 @@ func main() {
 		if caller != nil && !started.IsZero() && callee.State() == rtc.StateConnected {
 			line = "Connected " + time.Since(started).Round(time.Second).String() + " · " + caller.AudioCodec()
 		}
-		return giode.Stack(giode.Styles{Width: -1, Height: -1, Padding: giode.UniformInset(20), Gap: 14},
+		items := []giode.Element{
 			giode.Text(line, giode.Styles{Color: "theme.muted"}),
 			giode.Row(giode.Styles{Gap: 8}, row...),
-		)
+		}
+		if callee != nil && callee.RemoteVideo().Size().X > 0 {
+			items = append(items, giode.Box(giode.Styles{FlexGrow: 1, Width: -1, BorderRadius: 12, Overflow: giode.OverflowHidden},
+				callee.RemoteVideo().View(video.ViewOptions{Fit: video.Cover, Label: "The other side's camera"})))
+		}
+		return giode.Stack(giode.Styles{Width: -1, Height: -1, Padding: giode.UniformInset(20), Gap: 14}, items...)
 	})
 	if err != nil {
 		log.Fatal(err)

@@ -433,7 +433,8 @@ cam.Focus(f32.Pt(0.5, 0.3))
 of your choosing) and returns `camera.ErrPermissionDenied` when refused. Frames arrive
 upright whichever way the device is held; the front camera's are mirrored. The preview is
 drawn by Giode, so anything can be laid over it. `Options` sets the camera
-(`Back`/`Front`), the analysis size and rate, and `OnError` for errors while running
+(`Back`/`Front`), the analysis size and rate, `Color` for color frames too (`f.RGBA`, for
+encoding into a [call](rtc.md) or a recording), and `OnError` for errors while running
 (another app took the camera). On Android it uses Camera2 and closes the camera while the
 app is in the background, reopening it on return; the package adds the camera permission
 to the manifest. On iOS and macOS it uses AVFoundation; iOS needs `ios.usage.camera`.

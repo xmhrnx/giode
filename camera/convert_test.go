@@ -135,3 +135,19 @@ func equal(a, b [][]int) bool {
 	}
 	return true
 }
+
+func TestScaleRGBA(t *testing.T) {
+	src := image.NewRGBA(image.Rect(0, 0, 40, 20))
+	for x := 20; x < 40; x++ {
+		for y := 0; y < 20; y++ {
+			src.Pix[y*src.Stride+x*4] = 200
+		}
+	}
+	out := scaleRGBA(src, 10)
+	if out.Rect.Dx() != 10 || out.Rect.Dy() != 5 {
+		t.Fatalf("size %v", out.Rect)
+	}
+	if out.Pix[0] != 0 || out.Pix[9*4] != 200 {
+		t.Errorf("pixels %v %v", out.Pix[0], out.Pix[9*4])
+	}
+}

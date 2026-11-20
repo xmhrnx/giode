@@ -120,6 +120,13 @@ type I420 struct {
 	BT709 bool
 }
 
+// RGBA converts f to an RGBA image.
+func (f I420) RGBA() *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, f.Width, f.Height))
+	convertI420(img, f)
+	return img
+}
+
 // PushI420 converts f and shows it.
 func (s *Surface) PushI420(f I420) {
 	dst := s.buffer(f.Width, f.Height)

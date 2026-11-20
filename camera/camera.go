@@ -78,6 +78,9 @@ type Options struct {
 	// OnFrame receives analysis frames on its own goroutine; nil for
 	// none. Use App.Post to hand results to the UI.
 	OnFrame func(Frame)
+	// Color adds the color picture to analysis frames (Frame.RGBA), for
+	// encoding into a video call or a recording.
+	Color bool
 	// OnError receives errors the camera reports while running (another
 	// app took it, the hardware failed), from any goroutine. They're
 	// logged when it's nil.
@@ -89,6 +92,10 @@ type Frame struct {
 	// Image is the frame's brightness, upright, AnalysisSize on its long
 	// side. It belongs to the callback: keep it, it isn't reused.
 	Image *image.Gray
+	// RGBA is the color picture at the same size, as the preview shows
+	// it (the front camera mirrored), with Options.Color; nil otherwise.
+	// It belongs to the callback too.
+	RGBA *image.RGBA
 	// Time is when the frame arrived.
 	Time time.Time
 }
@@ -300,10 +307,14 @@ func (c *Camera) convert() {
 		} else {
 			gray = grayFromY(f, c.opts.AnalysisSize)
 		}
+		var rgba *image.RGBA
+		if c.opts.Color {
+			rgba = scaleRGBA(img, c.opts.AnalysisSize)
+		}
 		c.analysis.Store(true)
 		go func() {
 			defer c.analysis.Store(false)
-			c.opts.OnFrame(Frame{Image: gray, Time: now})
+			c.opts.OnFrame(Frame{Image: gray, RGBA: rgba, Time: now})
 		}()
 	}
 }
