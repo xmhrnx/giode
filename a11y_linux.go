@@ -259,10 +259,6 @@ func newATSPIBridge(a *App, t *a11yTree, conn *dbus.Conn) *atspiBridge {
 }
 
 func (b *atspiBridge) export() error {
-	// An empty cache: clients then ask the objects themselves.
-	if err := b.conn.Export(atspiCache{}, "/org/a11y/atspi/cache", "org.a11y.atspi.Cache"); err != nil {
-		return err
-	}
 	for iface, v := range map[string]any{
 		"org.a11y.atspi.Accessible":       atspiAccessible{b},
 		"org.a11y.atspi.Component":        atspiComponent{b},
@@ -276,7 +272,11 @@ func (b *atspiBridge) export() error {
 			return err
 		}
 	}
-	return nil
+	// An empty cache: clients then ask the objects themselves. Exported
+	// last, at a path of its own: adding the path takes godbus's handler
+	// lock, which orders the subtree exports above before any call that
+	// looks them up.
+	return b.conn.Export(atspiCache{}, "/org/a11y/atspi/cache", "org.a11y.atspi.Cache")
 }
 
 // enable starts recording the tree, once a client wants it.

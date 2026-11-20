@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/godbus/dbus/v5"
@@ -18,7 +19,7 @@ import (
 // and answers with code.
 type fakeOpenURI struct {
 	conn *dbus.Conn
-	code uint32
+	code atomic.Uint32
 	got  chan string
 }
 
@@ -30,7 +31,7 @@ func (p *fakeOpenURI) OpenFile(sender dbus.Sender, parent string, fd dbus.UnixFD
 	token, _ := opts["handle_token"].Value().(string)
 	s := strings.TrimPrefix(strings.ReplaceAll(string(sender), ".", "_"), ":")
 	handle := dbus.ObjectPath("/org/freedesktop/portal/desktop/request/" + s + "/" + token)
-	go p.conn.Emit(handle, "org.freedesktop.portal.Request.Response", p.code, map[string]dbus.Variant{})
+	go p.conn.Emit(handle, "org.freedesktop.portal.Request.Response", p.code.Load(), map[string]dbus.Variant{})
 	return handle, nil
 }
 
@@ -61,12 +62,12 @@ func TestPortalOpenFile(t *testing.T) {
 	if got := <-p.got; got != "hello" {
 		t.Errorf("the portal read %q", got)
 	}
-	p.code = 1
+	p.code.Store(1)
 	if err := a.OpenWith(context.Background(), path); !errors.Is(err, ErrCanceled) {
 		t.Errorf("dismissed chooser: %v", err)
 	}
 	<-p.got
-	p.code = 2
+	p.code.Store(2)
 	if err := a.OpenWith(context.Background(), path); err == nil {
 		t.Error("no app: no error")
 	}
