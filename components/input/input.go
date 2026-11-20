@@ -54,6 +54,10 @@ type Input struct {
 	// fieldOrigin and fieldSize are where the field was laid out, in
 	// window coordinates once the frame's layout is done.
 	fieldOrigin, fieldSize image.Point
+	// textOrigin is where the text was laid out, in the window, and
+	// lineHeight its size, for CaretRect.
+	textOrigin image.Point
+	lineHeight int
 }
 
 // New returns an Input with the given placeholder. The styles

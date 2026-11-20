@@ -562,3 +562,33 @@ func TestRegisterFontUsesBitmaps(t *testing.T) {
 		}
 	}
 }
+
+// A glyph the rasterizer can't draw (here, of a face it doesn't know,
+// as a system emoji font is) leaves the rest of the line an image.
+func TestComposeRun_KeepsImageAroundUnknownGlyph(t *testing.T) {
+	fonts.UseGofont()
+	sh := fonts.Shaper()
+	sh.LayoutString(params(16), "Hi there")
+	var glyphs []text.Glyph
+	for {
+		g, ok := sh.NextGlyph()
+		if !ok {
+			break
+		}
+		glyphs = append(glyphs, g)
+	}
+	if len(glyphs) < 4 {
+		t.Fatalf("%d glyphs", len(glyphs))
+	}
+	odd := glyphs[1]
+	odd.ID |= text.GlyphID(500) << (gidBits + sizeBits) // a face index past the known ones
+	glyphs[1] = odd
+	g0 := glyphs[0]
+	img := composeRun(sh, glyphs, color.NRGBA{A: 255}, color.NRGBA{}, (g0.X - g0.Offset.X).Floor(), int(g0.Y))
+	if img.vector || img.empty {
+		t.Fatalf("vector %v empty %v: the line fell back whole", img.vector, img.empty)
+	}
+	if len(img.rest) != 1 || img.rest[0] != 1 {
+		t.Errorf("rest %v, want [1]", img.rest)
+	}
+}

@@ -29,6 +29,9 @@ in this conversation; the API is alpha and changes. Map:
 | Sign-in with Google, Microsoft, Okta, any OpenID provider; passkeys | `references/auth.md` |
 | Rich text editing, chat composers, mentions, Markdown in and out | `references/components/richeditor.md` |
 | Charts: line, bar, pie, funnel, gauge, heatmap, sparklines | `references/components/charts.md` |
+| Combobox (async), MultiSelect and tag input, @mentions in a field, emoji picker | `references/components/selection.md` |
+| Command palette (Mod+K) | `references/components/palette.md` |
+| Form validation, required markers, error summary, unsaved changes | `references/forms.md` |
 | Microphone and speaker streams, devices, voice processing for calls | `references/audio.md` |
 | Screen capture and screen sharing | `references/screencap.md` |
 | Showing video frames: remote video, decoded streams, self view | `references/video.md` |

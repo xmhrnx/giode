@@ -14,6 +14,7 @@ import (
 	"github.com/xmhrnx/giode/components/checkbox"
 	"github.com/xmhrnx/giode/components/chip"
 	"github.com/xmhrnx/giode/components/colorpicker"
+	"github.com/xmhrnx/giode/components/combobox"
 	"github.com/xmhrnx/giode/components/copybutton"
 	"github.com/xmhrnx/giode/components/datagrid"
 	"github.com/xmhrnx/giode/components/datepicker"
@@ -21,6 +22,7 @@ import (
 	"github.com/xmhrnx/giode/components/doctabs"
 	"github.com/xmhrnx/giode/components/drawer"
 	"github.com/xmhrnx/giode/components/dropdown"
+	"github.com/xmhrnx/giode/components/emojipicker"
 	"github.com/xmhrnx/giode/components/icon"
 	"github.com/xmhrnx/giode/components/iconbutton"
 	"github.com/xmhrnx/giode/components/imageutil"
@@ -32,6 +34,7 @@ import (
 	"github.com/xmhrnx/giode/components/menu"
 	"github.com/xmhrnx/giode/components/numberinput"
 	"github.com/xmhrnx/giode/components/pagination"
+	"github.com/xmhrnx/giode/components/palette"
 	"github.com/xmhrnx/giode/components/progress"
 	"github.com/xmhrnx/giode/components/richedit"
 	"github.com/xmhrnx/giode/components/scroll"
@@ -1311,3 +1314,34 @@ const (
 	TextAnchorBottom      = elements.TextAnchorBottom
 	TextAnchorBottomRight = elements.TextAnchorBottomRight
 )
+
+// --- Selection inputs and command surfaces ---------------------------------
+
+var (
+	// Combobox is a searchable field that picks one option, from a list
+	// or an asynchronous source; see combobox.New.
+	Combobox = combobox.New
+	// MultiSelect picks several options as chips; with Creatable it's a
+	// tag input. See combobox.NewMulti.
+	MultiSelect = combobox.NewMulti
+	// Mentions adds @-style suggestions at the caret of a text field;
+	// see combobox.NewMentions.
+	Mentions = combobox.NewMentions
+	// CommandPalette is a Mod+K search over the app's commands; see
+	// palette.New.
+	CommandPalette = palette.New
+	// EmojiPicker is a searchable emoji grid with skin tones and
+	// recents; see emojipicker.New.
+	EmojiPicker = emojipicker.New
+	// FuzzyMatch scores a fuzzy match of query in s; see combobox.Match.
+	FuzzyMatch = combobox.Match
+)
+
+// ComboOption is a Combobox, MultiSelect or Mentions option.
+type ComboOption = combobox.Option
+
+// ComboSource fetches options for a query, for options on a server.
+type ComboSource = combobox.Source
+
+// PaletteCommand is a CommandPalette command.
+type PaletteCommand = palette.Command

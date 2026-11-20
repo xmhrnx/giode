@@ -184,12 +184,15 @@ type runKey struct {
 }
 
 // runImage is a line of glyphs drawn into an image, placed off from the
-// run's origin. vector marks a run that has to be drawn as paths.
+// run's origin. vector marks a run that has to be drawn as paths; rest
+// are the glyphs the image lacks (color emoji and other glyphs of
+// fonts the rasterizer doesn't know), drawn by Gio over it.
 type runImage struct {
 	op     paint.ImageOp
 	off    image.Point
 	empty  bool
 	vector bool
+	rest   []int
 	bytes  int
 	used   uint64
 }
@@ -229,12 +232,21 @@ func drawRunKeyed(ops *op.Ops, sh *text.Shaper, glyphs []text.Glyph, col color.N
 		drawVector(ops, sh, glyphs, col)
 		return
 	}
-	if img.empty {
-		return
+	if !img.empty {
+		t := op.Offset(image.Pt(ox+img.off.X, oy+img.off.Y)).Push(ops)
+		img.op.Add(ops)
+		paint.PaintOp{}.Add(ops)
+		t.Pop()
 	}
-	defer op.Offset(image.Pt(ox+img.off.X, oy+img.off.Y)).Push(ops).Pop()
-	img.op.Add(ops)
-	paint.PaintOp{}.Add(ops)
+	if len(img.rest) > 0 {
+		// Only the glyphs the image lacks go the slow way: an emoji
+		// doesn't turn its whole line into paths.
+		rest := make([]text.Glyph, len(img.rest))
+		for i, gi := range img.rest {
+			rest[i] = glyphs[gi]
+		}
+		drawVector(ops, sh, rest, col)
+	}
 }
 
 // drawVector draws the glyphs as Gio's widgets do.
@@ -351,7 +363,8 @@ func composeRun(sh *text.Shaper, glyphs []text.Glyph, col, bg color.NRGBA, ox, o
 	}
 	ps := make([]placed, 0, len(glyphs))
 	var bounds image.Rectangle
-	for _, g := range glyphs {
+	var rest []int
+	for gi, g := range glyphs {
 		ax := g.X - g.Offset.X
 		ix := ax.Floor()
 		sub := uint8((ax - fixed.I(ix) + 64/subpixels/2) / (64 / subpixels))
@@ -360,7 +373,8 @@ func composeRun(sh *text.Shaper, glyphs []text.Glyph, col, bg color.NRGBA, ox, o
 		}
 		b, ok := rasterGlyph(fs, g.ID, sub)
 		if !ok {
-			return &runImage{vector: true}
+			rest = append(rest, gi)
+			continue
 		}
 		if b.img == nil {
 			continue
@@ -369,8 +383,11 @@ func composeRun(sh *text.Shaper, glyphs []text.Glyph, col, bg color.NRGBA, ox, o
 		ps = append(ps, placed{b, at})
 		bounds = bounds.Union(image.Rectangle{Min: at, Max: at.Add(b.img.Rect.Size())})
 	}
+	if len(rest) == len(glyphs) {
+		return &runImage{vector: true}
+	}
 	if bounds.Empty() {
-		return &runImage{empty: true}
+		return &runImage{empty: true, rest: rest}
 	}
 	cov := make([]uint16, bounds.Dx()*bounds.Dy())
 	w := bounds.Dx()
@@ -407,7 +424,7 @@ func composeRun(sh *text.Shaper, glyphs []text.Glyph, col, bg color.NRGBA, ox, o
 	}
 	imgOp := paint.NewImageOp(out)
 	imgOp.Filter = paint.FilterNearest
-	return &runImage{op: imgOp, off: bounds.Min, bytes: len(out.Pix)}
+	return &runImage{op: imgOp, off: bounds.Min, bytes: len(out.Pix), rest: rest}
 }
 
 func putU64(b []byte, v uint64) {

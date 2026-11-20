@@ -1175,3 +1175,32 @@ const (
 	TextAnchorBottom      = ui.TextAnchorBottom
 	TextAnchorBottomRight = ui.TextAnchorBottomRight
 )
+
+var (
+	// Combobox is a searchable field that picks one option, from a list
+	// or an asynchronous source; see combobox.New.
+	Combobox = ui.Combobox
+	// MultiSelect picks several options as chips; with Creatable it's a
+	// tag input. See combobox.NewMulti.
+	MultiSelect = ui.MultiSelect
+	// Mentions adds @-style suggestions at the caret of a text field;
+	// see combobox.NewMentions.
+	Mentions = ui.Mentions
+	// CommandPalette is a Mod+K search over the app's commands; see
+	// palette.New.
+	CommandPalette = ui.CommandPalette
+	// EmojiPicker is a searchable emoji grid with skin tones and
+	// recents; see emojipicker.New.
+	EmojiPicker = ui.EmojiPicker
+	// FuzzyMatch scores a fuzzy match of query in s; see combobox.Match.
+	FuzzyMatch = ui.FuzzyMatch
+)
+
+// ComboOption is a Combobox, MultiSelect or Mentions option.
+type ComboOption = ui.ComboOption
+
+// ComboSource fetches options for a query, for options on a server.
+type ComboSource = ui.ComboSource
+
+// PaletteCommand is a CommandPalette command.
+type PaletteCommand = ui.PaletteCommand

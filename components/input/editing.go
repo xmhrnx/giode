@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
+	"image"
 	"runtime"
 )
 
@@ -77,6 +78,15 @@ func (i *Input) SetCaret(pos int) {
 func (i *Input) Selection() (start, end int) {
 	a, b := i.editor.Selection()
 	return min(a, b), max(a, b)
+}
+
+// CaretRect is where the caret was last drawn, in the window: for a
+// popover that follows it, such as mention suggestions.
+func (i *Input) CaretRect() image.Rectangle {
+	c := i.editor.CaretCoords()
+	x, y := i.textOrigin.X+int(c.X), i.textOrigin.Y+int(c.Y)
+	asc := i.lineHeight * 9 / 10
+	return image.Rect(x, y-asc, x+1, y+i.lineHeight/4)
 }
 
 // SetSelection selects the runes [start, end), clamped to the content,

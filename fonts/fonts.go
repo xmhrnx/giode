@@ -269,9 +269,6 @@ var fallbacks []string
 // substitutes, which can be a heavier face of another font. With no
 // family, Gio uses the registered ones already. The caller holds mu.
 func withFallbacks(f font.Font) font.Font {
-	if f.Typeface == "" {
-		return f
-	}
 	if fallbacks == nil {
 		fallbacks = []string{}
 		seen := map[font.Typeface]bool{}
@@ -295,16 +292,32 @@ func withFallbacks(f font.Font) font.Font {
 			add(c.Font.Typeface)
 		}
 	}
-	primary := quoteFamily(string(f.Typeface))
-	list := primary
+	primary := ""
+	list := ""
+	if f.Typeface != "" {
+		primary = quoteFamily(string(f.Typeface))
+		list = primary
+	}
 	for _, fb := range fallbacks {
 		if fb != primary {
-			list += ", " + fb
+			if list != "" {
+				list += ", "
+			}
+			list += fb
 		}
 	}
-	f.Typeface = font.Typeface(list)
+	// The platforms' color emoji fonts last: Gio's own system fallback
+	// doesn't reach them, leaving emoji as empty boxes.
+	for _, e := range emojiFamilies {
+		list += ", " + e
+	}
+	f.Typeface = font.Typeface(strings.TrimPrefix(list, ", "))
 	return f
 }
+
+// emojiFamilies are the color emoji fonts of Android and Linux, Apple
+// systems, Windows and the common Linux alternatives.
+var emojiFamilies = []string{"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Twemoji", "JoyPixels"}
 
 // quoteFamily quotes a family name for a Gio family list.
 func quoteFamily(s string) string {

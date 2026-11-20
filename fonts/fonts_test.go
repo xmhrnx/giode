@@ -140,7 +140,8 @@ func TestSetDefaultFont(t *testing.T) {
 		t.Errorf("an explicit family resolves to %+v", got)
 	}
 	SetDefaultFont("")
-	if got := Resolve(font.Font{}); got.Typeface != "" {
+	// The Go fonts, then the emoji fonts after them.
+	if got := Resolve(font.Font{}); Primary(got) != "Go" || !strings.Contains(string(got.Typeface), "Noto Color Emoji") {
 		t.Errorf("after SetDefaultFont(\"\"), no family resolves to %+v, want the Go fonts' default", got)
 	}
 }
