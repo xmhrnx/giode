@@ -139,6 +139,7 @@ func (c *Control) layoutSelf(gtx layout.Context) layout.Dimensions {
 				}
 				return elements.Box(styles.Styles{Width: -1, Height: -1, Justify: properties.JustifyCenter, Align: properties.AlignCenter}, segment(i, true)).Layout(gtx)
 			}))
+			kit.FocusRing(gtx, &c.clicks[i], d.Size, gtx.Dp(6))
 			elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticRadio, Label: c.options[i], Value: boolString(i == c.selected), Selected: i == c.selected, Checked: checkOf(i == c.selected), Pos: i + 1, Count: len(c.options), Target: &c.clicks[i]}, d.Size)
 		}()
 	}

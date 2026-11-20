@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"gioui.org/gesture"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
@@ -38,12 +40,17 @@ type Slider struct {
 	cache   *elements.MemoCache
 	build   func() elements.Element
 	watched elements.Watch[drawn]
+	// focused is keyboard focus: arrows, Page Up/Down, Home and End
+	// change the value.
+	focused bool
+	rtl     bool
 }
 
 // drawn is what a Slider draws from its own fields.
 type drawn struct {
-	value float32
-	st    styles.Styles
+	value   float32
+	st      styles.Styles
+	focused bool
 }
 
 // CacheSafe reports true: what it draws comes from its own fields,
@@ -52,7 +59,7 @@ func (s *Slider) CacheSafe() bool { return true }
 
 // watch is what it draws from its own fields.
 func (s *Slider) watch() drawn {
-	return drawn{s.value, s.st}
+	return drawn{s.value, s.st, s.focused}
 }
 
 // New returns a Slider. The styles argument is optional: Color is
@@ -115,8 +122,58 @@ func (s *Slider) update(gtx layout.Context) {
 			// so requiring a grab made clicking the track do nothing.
 			// Press only arrives when the click lands on the slider, and
 			// a drag another handler grabs arrives as Cancel instead.
+			if ev.Kind == pointer.Press {
+				gtx.Execute(key.FocusCmd{Tag: s})
+			}
 			v := s.valueFromX(float32(ev.Position.X), s.lastWidth, s.lastPadding)
 			if v != s.value {
+				s.value = v
+				changed = true
+			}
+		}
+	}
+	for {
+		ev, ok := gtx.Event(
+			key.FocusFilter{Target: s},
+			key.Filter{Focus: s, Name: key.NameLeftArrow}, key.Filter{Focus: s, Name: key.NameRightArrow},
+			key.Filter{Focus: s, Name: key.NameUpArrow}, key.Filter{Focus: s, Name: key.NameDownArrow},
+			key.Filter{Focus: s, Name: key.NamePageUp}, key.Filter{Focus: s, Name: key.NamePageDown},
+			key.Filter{Focus: s, Name: key.NameHome}, key.Filter{Focus: s, Name: key.NameEnd},
+		)
+		if !ok {
+			break
+		}
+		switch e := ev.(type) {
+		case key.FocusEvent:
+			s.focused = e.Focus
+		case key.Event:
+			if e.State != key.Press {
+				continue
+			}
+			v := s.value
+			left, right := float32(-0.01), float32(0.01)
+			if s.rtl {
+				left, right = right, left
+			}
+			switch e.Name {
+			case key.NameLeftArrow:
+				v += left
+			case key.NameRightArrow:
+				v += right
+			case key.NameUpArrow:
+				v += 0.01
+			case key.NameDownArrow:
+				v -= 0.01
+			case key.NamePageUp:
+				v += 0.1
+			case key.NamePageDown:
+				v -= 0.1
+			case key.NameHome:
+				v = 0
+			case key.NameEnd:
+				v = 1
+			}
+			if v = clamp01(v); v != s.value {
 				s.value = v
 				changed = true
 			}
@@ -147,7 +204,10 @@ func (s *Slider) layoutSelf(gtx layout.Context) layout.Dimensions {
 		s.build = func() elements.Element { return uncached }
 		s.watched.Snap = s.watch
 	}
-	return s.cache.LayoutOwn(gtx, s.build, &s.watched)
+	dims := s.cache.LayoutOwn(gtx, s.build, &s.watched)
+	// The ring goes outside the slider's clip, around what it drew.
+	kit.FocusRing(gtx, s, dims.Size, dims.Size.Y/2)
+	return dims
 }
 
 // layoutUncached lays it out without the cache.
@@ -170,14 +230,16 @@ func (s *Slider) layoutUncached(gtx layout.Context) layout.Dimensions {
 	kit.BlockDragHere(gtx)
 	s.drag.Add(gtx.Ops)
 	s.hover.Add(gtx.Ops)
+	event.Op(gtx.Ops, s)
+	s.rtl = kit.RTL(gtx)
 	s.lastWidth, s.lastPadding = float32(size.X), m.padding
 	s.update(gtx)
 	hovered := s.hovered
 	if s.pass == nil {
 		s.pass = func(gtx layout.Context) bool {
-			h, d, v := s.hovered, s.drag.Dragging(), s.value
+			h, d, v, f := s.hovered, s.drag.Dragging(), s.value, s.focused
 			s.update(gtx)
-			return h != s.hovered || d != s.drag.Dragging() || v != s.value
+			return h != s.hovered || d != s.drag.Dragging() || v != s.value || f != s.focused
 		}
 	}
 	kit.HandleInput(s.pass)
@@ -199,7 +261,8 @@ func (s *Slider) layoutUncached(gtx layout.Context) layout.Dimensions {
 		kit.MarkLive()
 	}
 	elements.RecordSemantic(gtx, elements.SemanticNode{
-		Kind: elements.SemanticSlider, Value: strconv.FormatFloat(float64(s.value), 'f', 3, 32), Target: s,
+		Focused: s.focused,
+		Kind:    elements.SemanticSlider, Value: strconv.FormatFloat(float64(s.value), 'f', 3, 32), Target: s,
 		Min: 0, Max: 1, Now: float64(s.value),
 	}, size)
 	return layout.Dimensions{Size: size}

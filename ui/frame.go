@@ -6,6 +6,7 @@ import (
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
+	"github.com/xmhrnx/giode/components/kit"
 
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/elements/dnd"
@@ -37,6 +38,8 @@ func Frame(gtx layout.Context, view Element) (needsAnotherFrame bool) {
 	if gtx.Locale == (system.Locale{}) {
 		gtx.Locale = system.Locale{Language: i18n.Locale(), Direction: i18n.Direction()}
 	}
+	// Presses first: focus they give this frame shows no focus ring.
+	drainPresses(gtx)
 	if view != nil {
 		view.Layout(gtx)
 	}
@@ -73,14 +76,24 @@ var releases int
 // press without its release - and believes the button is still held,
 // so the next press reaches no widget. App has its own such listener.
 func keepReleases(gtx layout.Context) {
-	for {
-		if _, ok := gtx.Source.Event(pointer.Filter{Target: &releases, Kinds: pointer.Release}); !ok {
-			break
-		}
-	}
 	ps := pointer.PassOp{}.Push(gtx.Ops)
 	cl := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, &releases)
 	cl.Pop()
 	ps.Pop()
+}
+
+// drainPresses reads the window-wide listener's presses and releases
+// (see keepReleases), noting presses for focus rings (kit.FocusVisible).
+func drainPresses(gtx layout.Context) {
+	for {
+		ev, ok := gtx.Source.Event(pointer.Filter{Target: &releases, Kinds: pointer.Press | pointer.Release})
+		if !ok {
+			break
+		}
+		if e, ok := ev.(pointer.Event); ok && e.Kind == pointer.Press {
+			// Focus that follows comes from the pointer: no focus ring.
+			kit.NotePointerPress()
+		}
+	}
 }

@@ -187,6 +187,16 @@ func (g *SemanticContainer) End(gtx layout.Context, size image.Point) {
 	RecordSemantic(gtx, g.node, size)
 }
 
+// EndAt is End for a container whose window rectangle is r, for a
+// component placing its parts itself (a grid's rows).
+func (g *SemanticContainer) EndAt(gtx layout.Context, r image.Rectangle) {
+	if g == nil || !g.on || semantics == nil {
+		return
+	}
+	g.node.Bounds = r
+	g.End(gtx, r.Size())
+}
+
 // ID is the group's node ID, "" when no tree is recorded.
 func (g *SemanticContainer) ID() string {
 	if g == nil {

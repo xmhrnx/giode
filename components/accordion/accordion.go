@@ -152,6 +152,7 @@ func (a *Accordion) header(it *item, st styles.Styles) elements.Element {
 		if it.expanded {
 			exp = elements.Expanded
 		}
+		kit.FocusRing(gtx, &it.click, dims.Size, 0)
 		elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: it.label, Expanded: exp, Target: headerActor{a, it}}, dims.Size)
 		return dims
 	})

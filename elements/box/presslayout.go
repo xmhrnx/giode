@@ -6,6 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements/internal/base"
@@ -75,6 +76,10 @@ func (p *Pressable) layoutSelf(gtx layout.Context) layout.Dimensions {
 		cl.Pop()
 	}
 	call.Add(gtx.Ops)
+	if p.focusable && !p.disabled {
+		// The keyboard's focus shows as a ring around it.
+		kit.FocusRing(gtx, p, dims.Size, gtx.Dp(unit.Dp(p.st.BorderRadius)))
+	}
 
 	// Enclosing caches deliver input through the pass; without one
 	// (or in an opaque subtree), stay live while interacting.

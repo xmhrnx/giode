@@ -84,6 +84,7 @@ func (s *Select) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if s.open {
 		exp = elements.Expanded
 	}
+	kit.FocusRing(gtx, &s.field, fieldDims.Size, gtx.Dp(6))
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticSelect, Label: s.Value(), Value: s.Value(), Expanded: exp, Target: s}, fieldDims.Size)
 
 	if s.open && len(s.options) > 0 {

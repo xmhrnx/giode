@@ -226,6 +226,7 @@ func (b *Button) layoutUncached(gtx layout.Context) layout.Dimensions {
 		// cached subtree.
 		kit.MarkLive()
 	}
-	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: b.label, Disabled: b.inert(), Target: b}, dims.Size)
+	kit.FocusRing(gtx, &b.clickable, dims.Size, gtx.Dp(6))
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: b.label, Disabled: b.inert(), Focused: gtx.Source.Focused(&b.clickable), Target: b}, dims.Size)
 	return dims
 }

@@ -38,7 +38,8 @@ func (b *Button) layoutSelf(gtx layout.Context) layout.Dimensions {
 	if !kit.HandleInput(b.pass) && (gtx.Source.Focused(&b.clickable) || b.clickable.Pressed()) {
 		kit.MarkLive()
 	}
-	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: b.label, Target: b}, dims.Size)
+	kit.FocusRing(gtx, &b.clickable, dims.Size, gtx.Dp(6))
+	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: b.label, Focused: gtx.Source.Focused(&b.clickable), Target: b}, dims.Size)
 	return dims
 }
 

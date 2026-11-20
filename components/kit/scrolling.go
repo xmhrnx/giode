@@ -14,6 +14,7 @@ var (
 // frame (elements.BeginFrame does).
 func NextFrame() {
 	frames++
+	frameCount.Add(1)
 }
 
 // NoteScrolling records that a scroll gesture is moving content this

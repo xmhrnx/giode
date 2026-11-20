@@ -212,6 +212,7 @@ func (s *Switch) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if s.on {
 		chk = elements.Checked
 	}
+	kit.FocusRing(gtx, &s.click, dims.Size, dims.Size.Y/2)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticSwitch, Label: s.label, Value: value, Checked: chk, Disabled: s.disabled, Target: s}, dims.Size)
 	return dims
 }

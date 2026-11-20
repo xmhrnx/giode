@@ -164,6 +164,8 @@ type DataGrid struct {
 	// copyNext is text a menu's Copy item put on the clipboard next
 	// frame.
 	copyNext string
+	// label names the table for screen readers (Label).
+	label string
 
 	// Filtering (see filter.go).
 	filterRow bool
@@ -369,6 +371,13 @@ func (g *DataGrid) Columns() []Column {
 		out[i].Width = int(g.widths[i] + 0.5)
 	}
 	return out
+}
+
+// Label names the table for screen readers ("Deals"). It returns g for
+// chaining.
+func (g *DataGrid) Label(s string) *DataGrid {
+	g.label = s
+	return g
 }
 
 // Freeze keeps the first n columns in place while the others scroll

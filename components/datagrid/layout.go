@@ -160,6 +160,7 @@ func (g *DataGrid) layoutSelf(gtx layout.Context) layout.Dimensions {
 		pop()
 		off.Pop()
 	}
+	g.recordTable(gtx)
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticScroll, Target: g}, size)
 	return layout.Dimensions{Size: size}
 }

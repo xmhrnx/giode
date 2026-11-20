@@ -176,6 +176,7 @@ func (c *Checkbox) layoutUncached(gtx layout.Context) layout.Dimensions {
 	if c.bool.Value {
 		chk = elements.Checked
 	}
+	kit.FocusRing(gtx, &c.bool, dims.Size, gtx.Dp(4))
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticCheckbox, Label: c.label, Value: value, Checked: chk, Focused: gtx.Source.Focused(&c.bool), Target: c}, dims.Size)
 	return dims
 }
