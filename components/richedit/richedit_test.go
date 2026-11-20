@@ -386,3 +386,14 @@ func TestContextMenu(t *testing.T) {
 		t.Error("menu not open")
 	}
 }
+
+func TestMenuFromKeyboard(t *testing.T) {
+	e := New("")
+	e.SetText("hi")
+	h := newHarness(e)
+	h.key(key.NameF10, key.ModShift)
+	h.frame()
+	if !e.menu.Opened() {
+		t.Error("Shift+F10 didn't open the menu")
+	}
+}

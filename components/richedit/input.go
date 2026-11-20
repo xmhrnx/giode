@@ -71,6 +71,8 @@ func (e *RichEditor) update(gtx layout.Context) bool {
 	if e.sugg.open || e.cell.on {
 		filters = append(filters, key.Filter{Focus: e, Name: key.NameEscape})
 	}
+	// Shift+F10 opens the context menu at the caret.
+	filters = append(filters, key.Filter{Focus: e, Name: key.NameF10, Required: key.ModShift})
 	changed := false
 	for {
 		ev, ok := gtx.Event(filters...)
@@ -192,7 +194,7 @@ func (e *RichEditor) onKey(gtx layout.Context, ev key.Event) {
 	if e.sugg.open && e.suggestKey(ev) {
 		return
 	}
-	if e.cell.on && e.cellKey(gtx, ev) {
+	if e.cell.on && ev.Name != key.NameF10 && e.cellKey(gtx, ev) {
 		return
 	}
 	if e.cell.on {
@@ -200,6 +202,10 @@ func (e *RichEditor) onKey(gtx layout.Context, ev key.Event) {
 		e.cell.on = false
 	}
 	ro := e.readOnly
+	if ev.Name == key.NameF10 {
+		e.openMenuAtCaret()
+		return
+	}
 	switch ev.Name {
 	case key.NameReturn, key.NameEnter:
 		if !ro {
@@ -663,4 +669,23 @@ func abs(v int) int {
 		return -v
 	}
 	return v
+}
+
+// openMenuAtCaret opens the context menu below the caret, for keyboard
+// users.
+func (e *RichEditor) openMenuAtCaret() {
+	m := e.ContextMenu()
+	if m == nil {
+		return
+	}
+	e.updateMenu()
+	r, ok := e.cellCaretRect()
+	if !ok {
+		r, ok = e.caretRect(e.st.Sel.Head)
+	}
+	p := image.Pt(0, 0)
+	if ok {
+		p = image.Pt(r.Min.X, r.Max.Y-int(e.offY))
+	}
+	m.OpenAtWindow(e.origin.Add(p))
 }

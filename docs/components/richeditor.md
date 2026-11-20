@@ -61,6 +61,7 @@ block.
 | Ctrl+Shift+7, 8, 9 | numbered, bulleted, checklist |
 | Tab, Shift+Tab | nest and unnest list items; a tab in code |
 | Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y | undo, redo |
+| Shift+F10 | the context menu at the caret: table rows and columns, Turn into, Insert |
 | arrows, Home, End, Page Up/Down | move, with Ctrl (Alt on Apple) by word, with Shift selecting |
 
 On Apple platforms Ctrl is Cmd. Input methods compose inside it (Chinese, Japanese, Korean,
