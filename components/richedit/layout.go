@@ -9,6 +9,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/gesture"
+	"gioui.org/io/clipboard"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
@@ -59,6 +60,12 @@ func (e *RichEditor) layoutSelf(gtx layout.Context) layout.Dimensions {
 		kit.WriteClipboard(gtx, e.copyNext)
 		e.copyNext = ""
 	}
+	if e.pendingRead {
+		e.pendingRead = false
+		gtx.Execute(clipboard.ReadCmd{Tag: e})
+		e.wantFocus = true
+	}
+	e.updateMenu()
 	elements.TrackPosition(&e.origin)
 
 	doc := e.st.Doc
@@ -183,7 +190,7 @@ func (e *RichEditor) layoutSelf(gtx layout.Context) layout.Dimensions {
 		}
 	}
 	// The caret.
-	if e.focused && !e.readOnly && sel.Empty() {
+	if e.focused && !e.readOnly && sel.Empty() && !e.cell.on {
 		if r, ok := e.caretRect(sel.Head); ok {
 			since := gtx.Now.Sub(e.blink)
 			if since < 500*time.Millisecond || (since/(530*time.Millisecond))%2 == 0 || kit.ReducedMotion() {
@@ -214,7 +221,18 @@ func (e *RichEditor) layoutSelf(gtx layout.Context) layout.Dimensions {
 		st.Pop()
 	}
 
-	e.updateIME(gtx)
+	if e.cell.on {
+		if _, ok := e.cellSpans(); !ok {
+			e.cell.on = false
+		}
+	}
+	if e.cell.on {
+		if gtx.Focused(e) && !e.readOnly {
+			e.cellIME(gtx)
+		}
+	} else {
+		e.updateIME(gtx)
+	}
 	e.layoutSuggestions(gtx)
 	kit.NoteFocusable(e)
 	kit.FocusRing(gtx, e, e.size, gtx.Dp(4))
@@ -298,6 +316,15 @@ func (e *RichEditor) layoutTops() {
 
 // revealCaret scrolls the caret into view.
 func (e *RichEditor) revealCaret(gtx layout.Context, h int) {
+	if r, ok := e.cellCaretRect(); ok {
+		margin := gtx.Dp(8)
+		if float32(r.Min.Y-margin) < e.offY {
+			e.offY = float32(r.Min.Y - margin)
+		} else if float32(r.Max.Y+margin) > e.offY+float32(h) {
+			e.offY = float32(r.Max.Y + margin - h)
+		}
+		return
+	}
 	p := e.st.Sel.Head
 	if p.Block >= len(e.tops) {
 		return
@@ -527,6 +554,9 @@ func (e *RichEditor) paintTable(gtx layout.Context, b *richdoc.Block, v *blockVi
 			e.paintText(gtx, cell.laid, spans, cell.src, cell.chips, g, pal, false)
 			o.Pop()
 		}
+	}
+	if e.cell.on && e.laid[e.cell.block] == v {
+		e.paintCellCaret(gtx, v, pal, pad)
 	}
 }
 

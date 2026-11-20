@@ -31,8 +31,9 @@ type pointerState struct {
 	lastPos   image.Point
 	clicks    int
 	// unit is what a drag extends by: 0 characters, 1 words, 2 blocks.
-	unit   int
-	anchor richdoc.Selection
+	unit     int
+	anchor   richdoc.Selection
+	cellDrag bool
 }
 
 // lastCopy is the text last copied from an editor and its rich content,
@@ -64,10 +65,10 @@ func (e *RichEditor) update(gtx layout.Context) bool {
 	for _, n := range []key.Name{"A", "C", "X", "V", "Z", "Y", "B", "I", "U", "K", "E", "1", "2", "3", "4", "5", "6", "0", "7", "8", "9"} {
 		filters = append(filters, key.Filter{Focus: e, Name: n, Required: key.ModShortcut, Optional: key.ModShift | key.ModAlt})
 	}
-	if e.sugg.open || e.tabbable() {
+	if e.sugg.open || e.tabbable() || e.cell.on {
 		filters = append(filters, key.Filter{Focus: e, Name: key.NameTab, Optional: key.ModShift})
 	}
-	if e.sugg.open {
+	if e.sugg.open || e.cell.on {
 		filters = append(filters, key.Filter{Focus: e, Name: key.NameEscape})
 	}
 	changed := false
@@ -99,7 +100,12 @@ func (e *RichEditor) update(gtx layout.Context) bool {
 		case key.SnippetEvent:
 			// The whole block is always the snippet.
 		case key.SelectionEvent:
-			if b := e.ime.block; b >= 0 && b < len(e.st.Doc.Blocks) {
+			if e.cell.on && e.ime.block == -2 {
+				if spans, ok := e.cellSpans(); ok {
+					n := richdoc.SpansLen(spans)
+					e.cell.anchor, e.cell.head = min(max(ev.Start, 0), n), min(max(ev.End, 0), n)
+				}
+			} else if b := e.ime.block; b >= 0 && b < len(e.st.Doc.Blocks) {
 				n := e.st.Doc.BlockLen(b)
 				e.st.Select(richdoc.Selection{
 					Anchor: richdoc.Pos{Block: b, Offset: min(max(ev.Start, 0), n)},
@@ -112,7 +118,11 @@ func (e *RichEditor) update(gtx layout.Context) bool {
 			b, err := io.ReadAll(io.LimitReader(r, 8<<20))
 			r.Close()
 			if err == nil && !e.readOnly {
-				e.paste(string(b))
+				if e.cell.on {
+					e.cellText(string(b))
+				} else {
+					e.paste(string(b))
+				}
 			}
 		case pointer.Event:
 			e.onPointer(gtx, ev)
@@ -139,6 +149,14 @@ func (e *RichEditor) onEdit(gtx layout.Context, ev key.EditEvent) {
 		return
 	}
 	text := ev.Text
+	if e.cell.on {
+		if text == "\n" {
+			e.cellKey(gtx, key.Event{Name: key.NameReturn, State: key.Press})
+		} else {
+			e.cellEdit(ev)
+		}
+		return
+	}
 	if text == "\n" {
 		e.enter(gtx, false, false)
 		return
@@ -173,6 +191,13 @@ func (e *RichEditor) onKey(gtx layout.Context, ev key.Event) {
 	word := ev.Modifiers.Contain(key.ModShortcutAlt)
 	if e.sugg.open && e.suggestKey(ev) {
 		return
+	}
+	if e.cell.on && e.cellKey(gtx, ev) {
+		return
+	}
+	if e.cell.on {
+		// Undo and the like act on the document; the cell's caret goes.
+		e.cell.on = false
 	}
 	ro := e.readOnly
 	switch ev.Name {
@@ -479,6 +504,17 @@ func (e *RichEditor) onPointer(gtx layout.Context, ev pointer.Event) {
 		if e.ptr.touch {
 			return // a tap places the caret on release, so swipes scroll
 		}
+		if b, r, c, o, ok := e.cellAt(content); ok {
+			if e.cell.on && e.cell.block == b && e.cell.row == r && e.cell.col == c && ev.Modifiers.Contain(key.ModShift) {
+				e.cell.head = o
+			} else {
+				e.enterCell(b, r, c, o)
+			}
+			e.ptr.dragging = false
+			e.ptr.cellDrag = true
+			return
+		}
+		e.cell.on = false
 		p := e.hit(content)
 		// Links open with the shortcut key, or any click when read-only.
 		if url := e.linkAt(p); url != "" && (e.readOnly || ev.Modifiers.Contain(key.ModShortcut)) {
@@ -519,6 +555,12 @@ func (e *RichEditor) onPointer(gtx layout.Context, ev pointer.Event) {
 		if ev.Position.Sub(e.ptr.start).X*ev.Position.Sub(e.ptr.start).X+ev.Position.Sub(e.ptr.start).Y*ev.Position.Sub(e.ptr.start).Y > float32(gtx.Dp(6)*gtx.Dp(6)) {
 			e.ptr.moved = true
 		}
+		if e.ptr.cellDrag && e.cell.on {
+			if b, r, c, o, ok := e.cellAt(content); ok && b == e.cell.block && r == e.cell.row && c == e.cell.col {
+				e.cell.head = o
+			}
+			return
+		}
 		if !e.ptr.dragging {
 			return
 		}
@@ -540,6 +582,13 @@ func (e *RichEditor) onPointer(gtx layout.Context, ev pointer.Event) {
 		}
 	case pointer.Release, pointer.Cancel:
 		if e.ptr.touch && ev.Kind == pointer.Release && !e.ptr.moved {
+			if b, r, c, o, ok := e.cellAt(content); ok {
+				e.enterCell(b, r, c, o)
+				gtx.Execute(key.SoftKeyboardCmd{Show: true})
+				e.ptr.dragging = false
+				return
+			}
+			e.cell.on = false
 			p := e.hit(content)
 			now := gtx.Now
 			if url := e.linkAt(p); url != "" && e.readOnly && e.onLinkClick != nil {
@@ -553,6 +602,7 @@ func (e *RichEditor) onPointer(gtx layout.Context, ev pointer.Event) {
 			e.ptr.lastClick = now
 		}
 		e.ptr.dragging = false
+		e.ptr.cellDrag = false
 	}
 }
 

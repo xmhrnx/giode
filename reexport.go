@@ -624,6 +624,23 @@ type CalendarMode = ui.CalendarMode
 // CalendarViewElement is CalendarView's type.
 type CalendarViewElement = ui.CalendarViewElement
 
+// RichEditor creates a rich text editor; see richedit.RichEditor. Its
+// document model is package richdoc.
+var RichEditor = ui.RichEditor
+
+// RichEditorElement is RichEditor's type.
+type RichEditorElement = ui.RichEditorElement
+
+// RichSuggestion is an entry of a RichEditor suggestion list.
+type RichSuggestion = ui.RichSuggestion
+
+// What Enter does in a RichEditor.
+const (
+	RichSubmitNone     = ui.RichSubmitNone
+	RichSubmitEnter    = ui.RichSubmitEnter
+	RichSubmitShortcut = ui.RichSubmitShortcut
+)
+
 const (
 	CalendarMonth  = ui.CalendarMonth
 	CalendarWeek   = ui.CalendarWeek

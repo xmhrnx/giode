@@ -14,6 +14,7 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/op/paint"
 
+	"github.com/xmhrnx/giode/components/menu"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/richdoc"
 	"github.com/xmhrnx/giode/styles"
@@ -104,6 +105,11 @@ type RichEditor struct {
 	taskBoxes   []taskBox
 	pendingRead bool
 	changed     bool
+	cell        cellCaret
+	menu        *menu.Menu
+	menuBuilt   bool
+	menuFor     menuKey
+	tools       []*toolButton
 }
 
 // New returns an empty editor with a placeholder. The styles set its

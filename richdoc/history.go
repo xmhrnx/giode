@@ -43,7 +43,7 @@ func (h *History) Record(tx *Tx) {
 	}
 	if len(ops) > 0 {
 		e := entry{ops: ops, before: before, after: after, label: tx.Label}
-		if n := len(h.undo); n > 0 && (e.label == "type" || e.label == "delete") {
+		if n := len(h.undo); n > 0 && (e.label == "type" || e.label == "delete" || e.label == "cell") {
 			prev := &h.undo[n-1]
 			if prev.label == e.label && prev.after == e.before && now.Sub(h.last) < time.Second {
 				prev.ops = append(prev.ops, e.ops...)

@@ -508,3 +508,22 @@ func mustJSON(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
 }
+
+func TestTableEdits(t *testing.T) {
+	s := NewState(docOf(para(txt("a")), Block{Kind: Table, Cells: [][][]Span{{{txt("h1")}, {txt("h2")}}, {{txt("x")}, nil}}}))
+	check(t, s, func() *Tx { return s.SetCell(1, 1, 1, []Span{bold("y")}) })
+	check(t, s, func() *Tx { return s.InsertRow(1, 2) })
+	check(t, s, func() *Tx { return s.InsertColumn(1, 0) })
+	tb := s.Doc.Blocks[1]
+	if len(tb.Cells) != 3 || len(tb.Cells[0]) != 3 || SpansText(tb.Cells[1][2]) != "y" {
+		t.Fatalf("table %s", mustJSON(tb))
+	}
+	check(t, s, func() *Tx { return s.DeleteColumn(1, 0) })
+	check(t, s, func() *Tx { return s.DeleteRow(1, 2) })
+	if got := s.Doc.Markdown(); got != "a\n\n| h1 | h2 |\n| --- | --- |\n| x | **y** |" {
+		t.Errorf("markdown %q", got)
+	}
+	if got := ReplaceSpans([]Span{txt("hello")}, 1, 3, []Span{txt("EY")}); SpansText(got) != "hEYlo" {
+		t.Errorf("replace %v", got)
+	}
+}

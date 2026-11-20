@@ -32,6 +32,7 @@ import (
 	"github.com/xmhrnx/giode/components/numberinput"
 	"github.com/xmhrnx/giode/components/pagination"
 	"github.com/xmhrnx/giode/components/progress"
+	"github.com/xmhrnx/giode/components/richedit"
 	"github.com/xmhrnx/giode/components/scroll"
 	"github.com/xmhrnx/giode/components/segmented"
 	"github.com/xmhrnx/giode/components/sheet"
@@ -702,6 +703,23 @@ type CalendarMode = calendarview.Mode
 
 // CalendarViewElement is CalendarView's type.
 type CalendarViewElement = calendarview.CalendarView
+
+// RichEditor creates a rich text editor; see richedit.RichEditor. Its
+// document model is package richdoc.
+var RichEditor = richedit.New
+
+// RichEditorElement is RichEditor's type.
+type RichEditorElement = richedit.RichEditor
+
+// RichSuggestion is an entry of a RichEditor suggestion list.
+type RichSuggestion = richedit.Suggestion
+
+// What Enter does in a RichEditor.
+const (
+	RichSubmitNone     = richedit.SubmitNone
+	RichSubmitEnter    = richedit.SubmitEnter
+	RichSubmitShortcut = richedit.SubmitShortcut
+)
 
 const (
 	CalendarMonth  = calendarview.Month

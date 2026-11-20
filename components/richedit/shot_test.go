@@ -16,6 +16,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
+	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/richdoc"
 	"github.com/xmhrnx/giode/styles/properties"
@@ -31,7 +32,7 @@ func TestShot(t *testing.T) {
 		t.Setenv("EGL_PLATFORM", "surfaceless")
 	}
 	fonts.UseGofont()
-	shot := func(name string, w, h int, e *RichEditor) {
+	shot := func(name string, w, h int, e elements.Element) {
 		win, err := headless.NewWindow(w, h)
 		if err != nil {
 			t.Skipf("no offscreen renderer: %v", err)
@@ -63,7 +64,20 @@ func TestShot(t *testing.T) {
 	e.Focus()
 	e.Select(richdoc.Selection{Anchor: richdoc.Pos{Block: 1, Offset: 5}, Head: richdoc.Pos{Block: 1, Offset: 30}})
 	shot("richedit", 720, 1500, e)
+	tb := New("")
+	tb.SetText("toolbar")
+	tb.OnLinkEdit(func(string, func(string)) {})
+	tb.Select(richdoc.Selection{Head: richdoc.Pos{Offset: 7}})
+	tb.ToggleMark(richdoc.Bold)
+	shot("richedit-toolbar", 720, 90, tbWrap{tb})
 	empty := New("Message #general")
 	shot("richedit-empty", 600, 120, empty)
 	_ = color.NRGBA{}
+}
+
+type tbWrap struct{ e *RichEditor }
+
+func (w tbWrap) Layout(gtx layout.Context) layout.Dimensions {
+	d := w.e.Toolbar().Layout(gtx)
+	return d
 }

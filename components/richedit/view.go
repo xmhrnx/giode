@@ -107,6 +107,7 @@ type blockView struct {
 	src   []int
 	// Tables: the cells' text and boxes.
 	cells [][]cellView
+	cellPad int
 	// Images: the picture's size.
 	img image.Point
 	// The list marker.
@@ -380,6 +381,7 @@ func (v *blockView) layoutTable(gtx layout.Context, e *RichEditor, b *richdoc.Bl
 		return
 	}
 	pad := gtx.Dp(8)
+	v.cellPad = pad
 	colW := width / cols
 	y := 0
 	v.cells = make([][]cellView, len(b.Cells))

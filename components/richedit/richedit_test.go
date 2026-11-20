@@ -61,6 +61,9 @@ func (h *harness) frame() {
 func (h *harness) typeText(s string) {
 	for _, r := range s {
 		p := h.e.st.Sel.Head.Offset
+		if h.e.cell.on {
+			p = h.e.cell.head
+		}
 		h.r.Queue(key.EditEvent{Range: key.Range{Start: p, End: p}, Text: string(r)})
 		h.frame()
 	}
@@ -320,3 +323,66 @@ func BenchmarkTypingFrame(b *testing.B) {
 }
 
 func unitMetric() unit.Metric { return unit.Metric{PxPerDp: 1, PxPerSp: 1} }
+
+func TestTableCells(t *testing.T) {
+	e := New("")
+	e.SetMarkdown("Intro\n\n| A | B |\n| --- | --- |\n| 1 | 2 |")
+	h := newHarness(e)
+	v := e.laid[1]
+	if v == nil || len(v.cells) != 2 {
+		t.Fatalf("table view %+v", v)
+	}
+	// Click the second header cell, type, Tab on to the next row.
+	r := v.cells[0][1].rect.Add(image.Pt(0, e.tops[1]))
+	h.click(f32.Pt(float32(r.Max.X-4), float32(r.Min.Y+r.Dy()/2)))
+	if !e.cell.on || e.cell.row != 0 || e.cell.col != 1 || e.cell.head != 1 {
+		t.Fatalf("cell caret %+v", e.cell)
+	}
+	h.typeText("eta")
+	h.key(key.NameTab, 0)
+	h.typeText("x")
+	h.key(key.NameTab, 0)
+	h.key(key.NameTab, 0) // past the last cell: a new row
+	h.typeText("new")
+	if got := e.Markdown(); got != "Intro\n\n| A | Beta |\n| --- | --- |\n| 1x | 2 |\n| new |  |" {
+		t.Errorf("markdown %q", got)
+	}
+	// Select the cell's text and bold it.
+	h.key(key.NameHome, key.ModShift)
+	h.key("B", key.ModShortcut)
+	if got := e.Doc().Blocks[1].Cells[2][0]; len(got) != 1 || !got[0].Marks.Bold {
+		t.Errorf("bold cell %+v", got)
+	}
+	// Escape leaves the cell with the table selected; Delete removes it.
+	h.key(key.NameEscape, 0)
+	if e.cell.on || e.Selection().Empty() {
+		t.Errorf("escape: %+v %+v", e.cell, e.Selection())
+	}
+	h.key(key.NameDeleteBackward, 0)
+	if got := e.Markdown(); got != "Intro" {
+		t.Errorf("after deleting the table %q", got)
+	}
+	h.key("Z", key.ModShortcut)
+	if len(e.Doc().Blocks) != 2 {
+		t.Errorf("undo: %s", e.Markdown())
+	}
+}
+
+func TestContextMenu(t *testing.T) {
+	e := New("")
+	e.SetText("hello")
+	h := newHarness(e)
+	if e.ContextMenu() == nil || e.menu == nil {
+		t.Fatal("no menu")
+	}
+	// A right-click opens it; clicks still place the caret.
+	h.r.Queue(
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: f32.Pt(5, 10), Buttons: pointer.ButtonSecondary},
+		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: f32.Pt(5, 10)},
+	)
+	h.frame()
+	h.frame()
+	if !e.menu.Opened() {
+		t.Error("menu not open")
+	}
+}
