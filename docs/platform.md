@@ -29,7 +29,7 @@ File dialogs, sharing, the Back button and background/foreground callbacks are i
 | `camera` package (live preview) | Camera2 | AVFoundation, Info.plist key | AVFoundation | Media Foundation | Video4Linux | – |
 | `audio` package (streams) | AudioRecord, AudioTrack | audio units, Info.plist key | audio units | WASAPI | PulseAudio, PipeWire | – |
 | `ocr` package | ML Kit (CLI builds) | Vision | Vision | Windows.Media.Ocr | Tesseract (installed) | – |
-| `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | – | – | – |
+| `biometric` package | BiometricPrompt (9+) | Face ID / Touch ID | Touch ID | Windows Hello | fprintd | – |
 | `printing` package | print service (PDF) | print panel | print panel | Print verb | – | – |
 | `dictate.Start` | ✓ | Info.plist keys | – | – | – | – |
 | `Share` (`ShareFiles` too) | share sheet | share sheet | reveal / clipboard | reveal / clipboard | reveal / clipboard | – |
@@ -503,7 +503,11 @@ if biometric.Available() != biometric.None {
 
 Android uses BiometricPrompt (Android 9 or later; the package adds `USE_BIOMETRIC` to the
 manifest); iOS and macOS use LocalAuthentication. Face ID needs `ios.usage.faceid`;
-without it `Authenticate` returns an error instead of letting iOS end the app. Errors:
+without it `Authenticate` returns an error instead of letting iOS end the app. Windows uses
+Windows Hello (a face, a fingerprint, or the PIN, which it always offers), over the app's
+window on Windows 11. Linux uses fprintd's default fingerprint reader for the current user;
+fprintd shows no prompt, so show one in the app ("Touch the sensor") while `Authenticate`
+waits, and cancel its context to stop. Errors:
 `ErrCanceled`, `ErrNotEnrolled`, `ErrLockout`, `ErrFailed`. The prompt only says the
 check passed; keep secrets in `SecureSet` and use the check to decide when to read them.
 

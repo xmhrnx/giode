@@ -152,34 +152,57 @@ var iidAsyncInfo = ParseGUID("00000036-0000-0000-c000-000000000046")
 // returns its result (GetResults, slot 8). It releases op.
 func Await(op *Obj, timeout time.Duration) (*Obj, error) {
 	defer op.Release()
+	if err := wait(op, timeout); err != nil {
+		return nil, err
+	}
+	return op.Out(8)
+}
+
+// AwaitInt32 waits for an IAsyncOperation of an enum or 32-bit number
+// and returns its result. It releases op.
+func AwaitInt32(op *Obj, timeout time.Duration) (int32, error) {
+	defer op.Release()
+	if err := wait(op, timeout); err != nil {
+		return 0, err
+	}
+	var v int32
+	err := op.Call(8, uintptr(unsafe.Pointer(&v)))
+	return v, err
+}
+
+// wait polls op's status until it completes.
+func wait(op *Obj, timeout time.Duration) error {
 	info, err := op.Query(iidAsyncInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer info.Release()
 	deadline := time.Now().Add(timeout)
 	for {
 		var status int32
 		if err := info.Call(7, uintptr(unsafe.Pointer(&status))); err != nil {
-			return nil, err
+			return err
 		}
 		switch status {
 		case 1: // Completed
-			return op.Out(8)
+			return nil
 		case 2:
-			return nil, errors.New("winrt: operation canceled")
+			return ErrCanceled
 		case 3:
 			var code uint32
 			info.Call(8, uintptr(unsafe.Pointer(&code)))
-			return nil, HRESULT(code)
+			return HRESULT(code)
 		}
 		if time.Now().After(deadline) {
 			info.Call(9) // Cancel
-			return nil, errors.New("winrt: operation timed out")
+			return errors.New("winrt: operation timed out")
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+// ErrCanceled is returned for a canceled operation.
+var ErrCanceled = errors.New("winrt: operation canceled")
 
 var (
 	threadOnce sync.Once

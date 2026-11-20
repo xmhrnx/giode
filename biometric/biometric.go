@@ -8,8 +8,11 @@
 // Android uses BiometricPrompt (Android 9 or later); iOS and macOS use
 // LocalAuthentication (Face ID, Touch ID or Optic ID). On iOS, Face ID
 // needs ios.usage.faceid in giode.toml (NSFaceIDUsageDescription).
-// Elsewhere Available reports None and Authenticate returns
-// giode.ErrNotSupported.
+// Windows uses Windows Hello (face, fingerprint or the device's PIN),
+// over the app's window on Windows 11. Linux uses fprintd's fingerprint
+// reader, which shows nothing: the app shows its own "Touch the sensor"
+// while Authenticate waits. On the web Available reports None and
+// Authenticate returns giode.ErrNotSupported.
 //
 // The check runs in the system's own sheet and tells the app only that
 // it passed: it doesn't identify the user, and it doesn't protect data
