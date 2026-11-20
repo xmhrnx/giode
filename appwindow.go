@@ -73,6 +73,8 @@ type App struct {
 	// motionCheck asks the reduced-motion watcher to check now.
 	motionCheck chan struct{}
 	motion      atomic.Int32
+	// a11y is the tree a screen reader bridge reads, nil without one.
+	a11y *a11yTree
 
 	// explorer shows the file dialogs; it sees every window event.
 	explorer *explorer.Explorer
@@ -201,6 +203,7 @@ func New(cfg Config) *App {
 	a.rendererErr = setupRenderer(cfg)
 	installFileDrag(a)
 	installExporter(a)
+	installA11y(a)
 	// Until the first frame, the window shows the app's background
 	// (theme tokens resolved now) rather than the platform's white.
 	setNativeBackground(properties.CalcColor(cfg.Background), true)

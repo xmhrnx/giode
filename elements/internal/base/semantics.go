@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"sync"
+	"sync/atomic"
 
 	"gioui.org/layout"
 )
@@ -116,15 +117,15 @@ func RecordSemanticLabeled(gtx layout.Context, kind SemanticKind, label, value s
 
 // semanticsWanted is set while something reads the tree every frame:
 // an accessibility bridge for an active screen reader.
-var semanticsWanted bool
+var semanticsWanted atomic.Bool
 
 // SetSemanticsWanted makes the app record the semantic tree every
 // frame (true) or only when automation asks (false). Accessibility
-// bridges set it while a screen reader is on.
-func SetSemanticsWanted(on bool) { semanticsWanted = on }
+// bridges set it while a screen reader is on, from any goroutine.
+func SetSemanticsWanted(on bool) { semanticsWanted.Store(on) }
 
 // SemanticsWanted reports whether a bridge reads the tree.
-func SemanticsWanted() bool { return semanticsWanted }
+func SemanticsWanted() bool { return semanticsWanted.Load() }
 
 // SemanticContainer is a container node being laid out: the nodes recorded
 // until End become its children (their Parent is its ID).

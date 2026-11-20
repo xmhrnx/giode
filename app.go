@@ -146,7 +146,8 @@ func (a *App) runLoop(view func() Element) error {
 			a.runUICalls()
 			gtx := a.frameContext(&ops, e)
 			a.applyHideKeyboard(gtx)
-			if a.mcp != nil {
+			recordTree := a.mcp != nil || elements.SemanticsWanted()
+			if recordTree {
 				elements.BeginSemantics()
 			}
 			if a.cfg.Underlay == nil {
@@ -171,8 +172,11 @@ func (a *App) runLoop(view func() Element) error {
 				a.window.Invalidate()
 			}
 			var nodes []elements.SemanticNode
-			if a.mcp != nil {
+			if recordTree {
 				nodes = elements.EndSemantics()
+				if a.a11y != nil && elements.SemanticsWanted() {
+					a.a11y.update(nodes)
+				}
 			}
 			if a.cfg.ShowFrameTimes {
 				a.layoutFrameTimes(gtx)

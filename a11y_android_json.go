@@ -1,0 +1,251 @@
+package giode
+
+import (
+	"context"
+	"encoding/json"
+	"image"
+	"time"
+
+	"gioui.org/f32"
+	"gioui.org/io/pointer"
+
+	"github.com/xmhrnx/giode/elements"
+)
+
+// Android's AccessibilityNodeInfo action IDs.
+const (
+	androidActionFocus          = 1
+	androidActionClick          = 16
+	androidActionScrollForward  = 4096
+	androidActionScrollBackward = 8192
+	androidActionExpand         = 262144
+	androidActionCollapse       = 524288
+	androidActionSetText        = 2097152
+)
+
+// androidNode is a node as giode's patched GioView reads it to fill an
+// AccessibilityNodeInfo.
+type androidNode struct {
+	ID       int32   `json:"id"`
+	Parent   int32   `json:"parent"`
+	Children []int32 `json:"children,omitempty"`
+	L        int     `json:"l"`
+	T        int     `json:"t"`
+	R        int     `json:"r"`
+	B        int     `json:"b"`
+	Class    string  `json:"cls,omitempty"`
+	Text     string  `json:"text,omitempty"`
+	Desc     string  `json:"desc,omitempty"`
+	Hint     string  `json:"hint,omitempty"`
+	State    string  `json:"state,omitempty"`
+	Error    string  `json:"error,omitempty"`
+	Pane     string  `json:"pane,omitempty"`
+
+	Checkable bool `json:"checkable,omitempty"`
+	Checked   bool `json:"checked,omitempty"`
+	Selected  bool `json:"selected,omitempty"`
+	Disabled  bool `json:"disabled,omitempty"`
+	Focusable bool `json:"focusable,omitempty"`
+	Focused   bool `json:"focused,omitempty"`
+	Clickable bool `json:"clickable,omitempty"`
+	Scroll    bool `json:"scrollable,omitempty"`
+	Heading   bool `json:"heading,omitempty"`
+	Editable  bool `json:"editable,omitempty"`
+	Password  bool `json:"password,omitempty"`
+	Important bool `json:"important,omitempty"`
+	// Live is 0, 1 polite, 2 assertive.
+	Live int `json:"live,omitempty"`
+
+	Range bool    `json:"range,omitempty"`
+	Min   float64 `json:"min,omitempty"`
+	Max   float64 `json:"max,omitempty"`
+	Now   float64 `json:"now,omitempty"`
+
+	// Item is a place in a list: Row from 0 when ItemSet.
+	ItemSet bool `json:"item,omitempty"`
+	Row     int  `json:"row,omitempty"`
+
+	Actions []int `json:"actions,omitempty"`
+}
+
+// androidClass is the Android widget class TalkBack describes a kind as.
+func androidClass(k elements.SemanticKind) string {
+	switch k {
+	case elements.SemanticButton, elements.SemanticMenuItem:
+		return "android.widget.Button"
+	case elements.SemanticCheckbox:
+		return "android.widget.CheckBox"
+	case elements.SemanticSwitch:
+		return "android.widget.Switch"
+	case elements.SemanticRadio:
+		return "android.widget.RadioButton"
+	case elements.SemanticInput:
+		return "android.widget.EditText"
+	case elements.SemanticSlider:
+		return "android.widget.SeekBar"
+	case elements.SemanticProgress:
+		return "android.widget.ProgressBar"
+	case elements.SemanticSelect, elements.SemanticComboBox:
+		return "android.widget.Spinner"
+	case elements.SemanticTab:
+		return "android.app.ActionBar$Tab"
+	case elements.SemanticImage:
+		return "android.widget.ImageView"
+	case elements.SemanticScroll:
+		return "android.widget.ScrollView"
+	case elements.SemanticList, elements.SemanticTree, elements.SemanticMenu:
+		return "android.widget.ListView"
+	case elements.SemanticTable:
+		return "android.widget.GridView"
+	case elements.SemanticTabList:
+		return "android.widget.TabWidget"
+	case elements.SemanticText, elements.SemanticHeading, elements.SemanticStatus, elements.SemanticAlert, elements.SemanticLink:
+		return "android.widget.TextView"
+	}
+	return "android.view.View"
+}
+
+// androidJSON describes node k (0 the root) for the patched GioView.
+func (t *a11yTree) androidJSON(k int32) string {
+	n, parent, children, ok := t.node(k)
+	if !ok {
+		return ""
+	}
+	out := androidNode{ID: k, Parent: parent, Children: children}
+	if k != 0 {
+		t.mu.Lock()
+		focusable := t.focusable(n, k)
+		t.mu.Unlock()
+		fillAndroidNode(&out, n, focusable)
+	}
+	b, _ := json.Marshal(out)
+	return string(b)
+}
+
+func fillAndroidNode(out *androidNode, n elements.SemanticNode, focusable bool) {
+	r := n.Bounds
+	out.L, out.T, out.R, out.B = r.Min.X, r.Min.Y, r.Max.X, r.Max.Y
+	out.Class = androidClass(n.Kind)
+	out.Disabled = n.Disabled
+	out.Focused = n.Focused
+	out.Selected = n.Selected
+	out.Important = focusable
+	out.Focusable = focusable && actionable(n)
+	switch n.Kind {
+	case elements.SemanticInput:
+		out.Editable = true
+		out.Text = n.Value
+		out.Hint = n.Label
+		if n.Required {
+			out.Hint += ", required"
+		}
+	default:
+		out.Text = n.Label
+		if out.Text == "" {
+			out.Text = n.Value
+		}
+	}
+	out.Desc = n.Description
+	if n.Invalid {
+		out.Error = n.Description
+		if out.Error == "" {
+			out.Error = "Invalid"
+		}
+	}
+	if n.Checked != elements.NotCheckable {
+		out.Checkable = true
+		out.Checked = n.Checked == elements.Checked
+		if n.Checked == elements.Mixed {
+			out.State = "partially checked"
+		}
+	}
+	switch n.Expanded {
+	case elements.Expanded:
+		out.State = "expanded"
+	case elements.Collapsed:
+		out.State = "collapsed"
+	}
+	if n.Busy {
+		out.State = "busy"
+	}
+	if n.Kind == elements.SemanticHeading {
+		out.Heading = true
+	}
+	if n.Kind == elements.SemanticDialog {
+		out.Pane = n.Label
+	}
+	switch n.Live {
+	case elements.LivePolite:
+		out.Live = 1
+	case elements.LiveAssertive:
+		out.Live = 2
+	}
+	if n.Kind == elements.SemanticAlert && out.Live == 0 {
+		out.Live = 2
+	}
+	if n.Kind == elements.SemanticSlider || (n.Kind == elements.SemanticProgress && !n.Busy) {
+		out.Range, out.Min, out.Max, out.Now = true, n.Min, n.Max, n.Now
+	}
+	if n.Pos > 0 {
+		out.ItemSet, out.Row = true, n.Pos-1
+	}
+	activate, scroll, setText, focus := a11yActions(n)
+	if activate {
+		out.Clickable = true
+		out.Actions = append(out.Actions, androidActionClick)
+	}
+	if n.Expanded == elements.Collapsed {
+		out.Actions = append(out.Actions, androidActionExpand)
+	}
+	if n.Expanded == elements.Expanded {
+		out.Actions = append(out.Actions, androidActionCollapse)
+	}
+	if scroll {
+		out.Scroll = true
+		out.Actions = append(out.Actions, androidActionScrollForward, androidActionScrollBackward)
+	}
+	if setText && n.Kind == elements.SemanticInput {
+		out.Actions = append(out.Actions, androidActionSetText)
+	}
+	if focus {
+		out.Actions = append(out.Actions, androidActionFocus)
+	}
+}
+
+// androidAction maps an Android action ID to a11yAction.
+func androidAction(id int) a11yAction {
+	switch id {
+	case androidActionClick:
+		return a11yActivate
+	case androidActionScrollForward:
+		return a11yScrollForward
+	case androidActionScrollBackward:
+		return a11yScrollBackward
+	case androidActionSetText:
+		return a11ySetText
+	case androidActionExpand:
+		return a11yExpand
+	case androidActionCollapse:
+		return a11yCollapse
+	case androidActionFocus:
+		return a11yFocus
+	}
+	return 0
+}
+
+// a11yTap taps the middle of r, as a finger would, for a node with no
+// component to call. It needs giode's Gio patches.
+func a11yTap(a *App, r image.Rectangle) bool {
+	c := r.Min.Add(r.Size().Div(2))
+	p := f32.Pt(float32(c.X), float32(c.Y))
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		for _, k := range []pointer.Kind{pointer.Press, pointer.Release} {
+			if injectEvent(ctx, a, pointer.Event{Kind: k, Source: pointer.Touch, Position: p, Time: time.Since(inputEpoch)}) != nil {
+				return
+			}
+		}
+	}()
+	return true
+}

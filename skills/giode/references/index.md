@@ -59,6 +59,7 @@ and the [FAQ](faq.md) answers the common questions.
 - [Reports and donations](support.md)
 - [Elements](elements.md)
 - [Style properties](styles.md)
+- [Accessibility](accessibility.md)
 - [Components](components/)
 - [Global state](state.md)
 - [Routing](routing.md)

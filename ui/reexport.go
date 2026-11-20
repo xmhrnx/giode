@@ -116,6 +116,77 @@ type (
 	MemoCache    = elements.MemoCache
 	SemanticNode = elements.SemanticNode
 	SemanticKind = elements.SemanticKind
+	// CheckState, ExpandState and LiveMode are accessibility states of a
+	// SemanticNode; SemanticContainer is a container being laid out.
+	CheckState        = elements.CheckState
+	ExpandState       = elements.ExpandState
+	LiveMode          = elements.LiveMode
+	SemanticContainer = elements.SemanticContainer
+)
+
+// Semantic roles, for SemanticNode.Kind; see accessibility.md.
+const (
+	SemanticText         = elements.SemanticText
+	SemanticButton       = elements.SemanticButton
+	SemanticInput        = elements.SemanticInput
+	SemanticCheckbox     = elements.SemanticCheckbox
+	SemanticSlider       = elements.SemanticSlider
+	SemanticSelect       = elements.SemanticSelect
+	SemanticTab          = elements.SemanticTab
+	SemanticMenuItem     = elements.SemanticMenuItem
+	SemanticLink         = elements.SemanticLink
+	SemanticImage        = elements.SemanticImage
+	SemanticScroll       = elements.SemanticScroll
+	SemanticCustom       = elements.SemanticCustom
+	SemanticHeading      = elements.SemanticHeading
+	SemanticSwitch       = elements.SemanticSwitch
+	SemanticRadio        = elements.SemanticRadio
+	SemanticProgress     = elements.SemanticProgress
+	SemanticGroup        = elements.SemanticGroup
+	SemanticList         = elements.SemanticList
+	SemanticListItem     = elements.SemanticListItem
+	SemanticTable        = elements.SemanticTable
+	SemanticRow          = elements.SemanticRow
+	SemanticCell         = elements.SemanticCell
+	SemanticColumnHeader = elements.SemanticColumnHeader
+	SemanticDialog       = elements.SemanticDialog
+	SemanticAlert        = elements.SemanticAlert
+	SemanticStatus       = elements.SemanticStatus
+	SemanticMenu         = elements.SemanticMenu
+	SemanticMenuBar      = elements.SemanticMenuBar
+	SemanticTabList      = elements.SemanticTabList
+	SemanticTabPanel     = elements.SemanticTabPanel
+	SemanticTree         = elements.SemanticTree
+	SemanticTreeItem     = elements.SemanticTreeItem
+	SemanticComboBox     = elements.SemanticComboBox
+	SemanticToolbar      = elements.SemanticToolbar
+	SemanticRegion       = elements.SemanticRegion
+)
+
+// Accessibility states (SemanticNode.Checked, Expanded, Live).
+const (
+	NotCheckable  = elements.NotCheckable
+	Unchecked     = elements.Unchecked
+	Checked       = elements.Checked
+	Mixed         = elements.Mixed
+	NotExpandable = elements.NotExpandable
+	Collapsed     = elements.Collapsed
+	Expanded      = elements.Expanded
+	LiveOff       = elements.LiveOff
+	LivePolite    = elements.LivePolite
+	LiveAssertive = elements.LiveAssertive
+)
+
+var (
+	// Accessible lays an element out and adjusts the nodes it reports
+	// to screen readers (a text as a heading); AccessibleGroup makes it
+	// a container (a region, a list, a toolbar).
+	Accessible      = elements.Accessible
+	AccessibleGroup = elements.AccessibleGroup
+	// RecordSemantic reports a custom component's node;
+	// BeginSemanticGroup starts a container around its content.
+	RecordSemantic     = elements.RecordSemantic
+	BeginSemanticGroup = elements.BeginSemanticGroup
 )
 
 // Watch tracks the fields a component caching its own output draws

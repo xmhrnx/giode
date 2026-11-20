@@ -87,6 +87,77 @@ type (
 	MemoCache        = ui.MemoCache
 	SemanticNode     = ui.SemanticNode
 	SemanticKind     = ui.SemanticKind
+	// CheckState, ExpandState and LiveMode are accessibility states of a
+	// SemanticNode; SemanticContainer is a container being laid out.
+	CheckState        = ui.CheckState
+	ExpandState       = ui.ExpandState
+	LiveMode          = ui.LiveMode
+	SemanticContainer = ui.SemanticContainer
+)
+
+// Semantic roles, for SemanticNode.Kind; see accessibility.md.
+const (
+	SemanticText         = ui.SemanticText
+	SemanticButton       = ui.SemanticButton
+	SemanticInput        = ui.SemanticInput
+	SemanticCheckbox     = ui.SemanticCheckbox
+	SemanticSlider       = ui.SemanticSlider
+	SemanticSelect       = ui.SemanticSelect
+	SemanticTab          = ui.SemanticTab
+	SemanticMenuItem     = ui.SemanticMenuItem
+	SemanticLink         = ui.SemanticLink
+	SemanticImage        = ui.SemanticImage
+	SemanticScroll       = ui.SemanticScroll
+	SemanticCustom       = ui.SemanticCustom
+	SemanticHeading      = ui.SemanticHeading
+	SemanticSwitch       = ui.SemanticSwitch
+	SemanticRadio        = ui.SemanticRadio
+	SemanticProgress     = ui.SemanticProgress
+	SemanticGroup        = ui.SemanticGroup
+	SemanticList         = ui.SemanticList
+	SemanticListItem     = ui.SemanticListItem
+	SemanticTable        = ui.SemanticTable
+	SemanticRow          = ui.SemanticRow
+	SemanticCell         = ui.SemanticCell
+	SemanticColumnHeader = ui.SemanticColumnHeader
+	SemanticDialog       = ui.SemanticDialog
+	SemanticAlert        = ui.SemanticAlert
+	SemanticStatus       = ui.SemanticStatus
+	SemanticMenu         = ui.SemanticMenu
+	SemanticMenuBar      = ui.SemanticMenuBar
+	SemanticTabList      = ui.SemanticTabList
+	SemanticTabPanel     = ui.SemanticTabPanel
+	SemanticTree         = ui.SemanticTree
+	SemanticTreeItem     = ui.SemanticTreeItem
+	SemanticComboBox     = ui.SemanticComboBox
+	SemanticToolbar      = ui.SemanticToolbar
+	SemanticRegion       = ui.SemanticRegion
+)
+
+// Accessibility states (SemanticNode.Checked, Expanded, Live).
+const (
+	NotCheckable  = ui.NotCheckable
+	Unchecked     = ui.Unchecked
+	Checked       = ui.Checked
+	Mixed         = ui.Mixed
+	NotExpandable = ui.NotExpandable
+	Collapsed     = ui.Collapsed
+	Expanded      = ui.Expanded
+	LiveOff       = ui.LiveOff
+	LivePolite    = ui.LivePolite
+	LiveAssertive = ui.LiveAssertive
+)
+
+var (
+	// Accessible lays an element out and adjusts the nodes it reports
+	// to screen readers (a text as a heading); AccessibleGroup makes it
+	// a container (a region, a list, a toolbar).
+	Accessible      = ui.Accessible
+	AccessibleGroup = ui.AccessibleGroup
+	// RecordSemantic reports a custom component's node;
+	// BeginSemanticGroup starts a container around its content.
+	RecordSemantic     = ui.RecordSemantic
+	BeginSemanticGroup = ui.BeginSemanticGroup
 )
 
 // Watch tracks the fields a component caching its own output draws
