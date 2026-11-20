@@ -16,6 +16,7 @@ func (a *App) host() platform.Host { return appHost{a} }
 func (h appHost) NativeHandle() uintptr     { return h.a.NativeHandle() }
 func (h appHost) NativeView() app.ViewEvent { return h.a.NativeView() }
 func (h appHost) Post(f func())             { h.a.Post(f) }
+func (h appHost) Window() *app.Window       { return h.a.window }
 func (h appHost) RunOnWindow(f func())      { h.a.window.Run(f) }
 func (h appHost) Title() string             { return h.a.Title() }
 func (h appHost) Logf(level platform.Level, format string, args ...any) {

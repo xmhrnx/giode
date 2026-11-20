@@ -25,6 +25,8 @@ type Host interface {
 	// NativeView is the window's view event (giode.App.NativeView), or
 	// nil.
 	NativeView() app.ViewEvent
+	// Window is the app's Gio window.
+	Window() *app.Window
 	// Post runs f on the UI goroutine.
 	Post(f func())
 	// RunOnWindow runs f on the window's own thread (Gio's Window.Run)

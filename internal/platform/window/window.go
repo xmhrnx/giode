@@ -23,3 +23,11 @@ var ErrNoWindowYet = errors.New("giode: the window isn't shown yet")
 // ErrFillsScreen means the window is the screen (Android, iOS, the
 // web): the caller works the screen out from its frames.
 var ErrFillsScreen = errors.New("giode: the window fills the screen")
+
+// Hooks answer the window's delegate (macOS's, native_macos.m): whether a close
+// is vetoed or hides the window instead, that it hid, and the Dock
+// icon's click.
+var Hooks struct {
+	VetoClose, HideOnClose func() bool
+	HiddenOnClose, Reopen  func()
+}

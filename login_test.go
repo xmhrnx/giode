@@ -1,6 +1,10 @@
 package giode
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/xmhrnx/giode/internal/platform/systray"
+)
 
 func TestTraySetters(t *testing.T) {
 	a := New(Config{Title: "t", CloseToTray: true})
@@ -15,7 +19,7 @@ func TestTraySetters(t *testing.T) {
 	if a.closesToTray() {
 		t.Error("closesToTray after SetCloseToTray(false)")
 	}
-	if a.minimizesToTray() != traySupported {
+	if a.minimizesToTray() != systray.Supported {
 		t.Error("minimizesToTray doesn't follow SetMinimizeToTray")
 	}
 }
@@ -26,11 +30,11 @@ func TestStartInTray(t *testing.T) {
 	if StartInTrayNever.startsInTray() || StartInTrayAtLogin.startsInTray() {
 		t.Error("starts in tray without a login launch")
 	}
-	if StartInTrayAlways.startsInTray() != traySupported {
+	if StartInTrayAlways.startsInTray() != systray.Supported {
 		t.Error("StartInTrayAlways")
 	}
 	launchedAtLogin.Store(true)
-	if !LaunchedAtLogin() || StartInTrayAtLogin.startsInTray() != traySupported {
+	if !LaunchedAtLogin() || StartInTrayAtLogin.startsInTray() != systray.Supported {
 		t.Error("StartInTrayAtLogin at login")
 	}
 }

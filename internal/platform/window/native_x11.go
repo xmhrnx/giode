@@ -1,6 +1,6 @@
 //go:build linux && !android && !nox11
 
-package giode
+package window
 
 /*
 #cgo LDFLAGS: -lX11

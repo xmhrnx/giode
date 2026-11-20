@@ -8,6 +8,7 @@ import (
 
 	"gioui.org/f32"
 	"github.com/xmhrnx/giode/internal/platform/shell"
+	"github.com/xmhrnx/giode/internal/platform/window"
 	"golang.org/x/sys/windows"
 )
 
@@ -185,3 +186,36 @@ func readDrop(hdrop uintptr) []string {
 // installFileDrag has nothing to do before the window exists on
 // Windows: enableFileDrop sets drops up with the window handle.
 func installFileDrag(a *App) {}
+
+// trayWndProc handles the window messages the tray changes: closing and
+// minimizing hide the window instead. It reports whether it handled msg.
+func trayWndProc(a *App, hwnd, msg, wparam uintptr) bool {
+	switch {
+	case msg == wmClose && a.vetoClose():
+		return true
+	case msg == wmClose && a.closesToTray():
+		window.HideHWND(hwnd)
+		a.windowHiddenNatively()
+		return true
+	case msg == wmSysCommand && wparam&0xFFF0 == scMinimize && a.minimizesToTray():
+		window.HideHWND(hwnd)
+		a.windowHiddenNatively()
+		return true
+	}
+	return false
+}
+
+const (
+	wmClose      = 0x0010
+	wmSysCommand = 0x0112
+	scMinimize   = 0xF020
+)
+
+func init() {
+	// A tray option turned on subclasses the window, if it isn't yet.
+	windowHook = func(a *App) {
+		if hwnd := a.NativeHandle(); hwnd != 0 {
+			a.enableFileDrop(hwnd)
+		}
+	}
+}

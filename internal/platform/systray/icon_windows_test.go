@@ -1,10 +1,12 @@
 //go:build windows
 
-package giode
+package systray
 
 import (
 	"bytes"
 	"encoding/binary"
+	"image"
+	"image/png"
 	"testing"
 )
 
@@ -22,4 +24,14 @@ func TestPNGToICO(t *testing.T) {
 	if pngToICO([]byte("not a png")) != nil {
 		t.Error("garbage converted")
 	}
+}
+
+func testPNG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewNRGBA(image.Rect(0, 0, 32, 32))
+	var b bytes.Buffer
+	if err := png.Encode(&b, img); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
 }

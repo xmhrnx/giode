@@ -1,11 +1,11 @@
 //go:build linux && !android && !nowayland
 
-package giode
+package window
 
 import "gioui.org/app"
 
 // isWayland reports whether the window is a Wayland one.
-func (a *App) isWayland() bool {
-	_, ok := a.NativeView().(app.WaylandViewEvent)
+func isWayland(view app.ViewEvent) bool {
+	_, ok := view.(app.WaylandViewEvent)
 	return ok
 }

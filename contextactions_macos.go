@@ -18,6 +18,8 @@ func installContextActions(string, string, []ContextAction) error { return nil }
 func uninstallContextActions(string) error                        { return nil }
 
 // registerServices makes the app the provider of its Services.
+func init() { launchHook = (*App).registerServices }
+
 func (a *App) registerServices() {
 	if a.cfg.OnContextAction != nil {
 		C.giodeRegisterServices()

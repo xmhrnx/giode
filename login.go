@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/xmhrnx/giode/internal/platform/login"
+	"github.com/xmhrnx/giode/internal/platform/systray"
 )
 
 // AppID is the app's reverse-DNS ID from giode.toml (app.id): the giode
@@ -67,9 +68,9 @@ const (
 func (s StartInTray) startsInTray() bool {
 	switch s {
 	case StartInTrayAlways:
-		return traySupported
+		return systray.Supported
 	case StartInTrayAtLogin:
-		return traySupported && LaunchedAtLogin()
+		return systray.Supported && LaunchedAtLogin()
 	}
 	return false
 }

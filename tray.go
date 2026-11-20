@@ -1,9 +1,13 @@
 package giode
 
 import (
+	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/systray"
+	"github.com/xmhrnx/giode/internal/platform/window"
 )
 
 // Tray is the app's icon in the system tray: the notification area on
@@ -95,7 +99,7 @@ func TraySubmenu(label string, items ...TrayItem) TrayItem {
 // TraySupported reports whether this platform has a system tray giode
 // can use: Windows, macOS and Linux.
 func TraySupported() bool {
-	return traySupported
+	return systray.Supported
 }
 
 // Tray returns the app's tray icon, created hidden on first use.
@@ -174,13 +178,13 @@ func (t *Tray) Remove() {
 	t.removed = true
 	t.mu.Unlock()
 	if started {
-		trayRemove()
+		systray.Remove()
 	}
 }
 
 // update starts the tray or applies the current state to it.
 func (t *Tray) update() {
-	if !traySupported {
+	if !systray.Supported {
 		return
 	}
 	t.mu.Lock()
@@ -191,7 +195,7 @@ func (t *Tray) update() {
 	if !t.started {
 		t.started = true
 		t.mu.Unlock()
-		trayStart(t)
+		systray.Start(t.onReady)
 		return
 	}
 	ready := t.ready
@@ -355,12 +359,12 @@ func (a *App) Quit() {
 // closesToTray reports whether a close request should hide the window
 // instead.
 func (a *App) closesToTray() bool {
-	return a.closeToTray.Load() && traySupported && !a.quitting.Load()
+	return a.closeToTray.Load() && systray.Supported && !a.quitting.Load()
 }
 
 // minimizesToTray reports whether minimizing should hide the window.
 func (a *App) minimizesToTray() bool {
-	return a.minimizeToTray.Load() && traySupported
+	return a.minimizeToTray.Load() && systray.Supported
 }
 
 // SetCloseToTray turns Config.CloseToTray on or off while the app
@@ -416,5 +420,106 @@ func (a *App) windowHiddenNatively() {
 func (a *App) leftScreen() {
 	if a.WindowState() != WindowMinimized && a.cfg.OnBackground != nil {
 		a.Post(a.cfg.OnBackground)
+	}
+}
+
+// trayApply shows s in the platform tray.
+func trayApply(t *Tray, s trayState) {
+	var tapped func()
+	if s.customClick || runtime.GOOS != "darwin" {
+		tapped = t.clicked
+	}
+	// Otherwise macOS menu bar items open their menu on a click.
+	systray.Apply(s.icon, s.template, s.title, s.tooltip, tapped, trayItems(s.items), t.app.Post)
+}
+
+func trayItems(items []TrayItem) []systray.Item {
+	out := make([]systray.Item, len(items))
+	for i, it := range items {
+		out[i] = systray.Item{Label: it.Label, Tooltip: it.Tooltip, Checkable: it.Checkable, Checked: it.Checked,
+			Disabled: it.Disabled, Separator: it.Separator, Items: trayItems(it.Items), OnClick: it.OnClick}
+	}
+	return out
+}
+
+// --- Native window ----------------------------------------------------------
+
+func (a *App) hideNativeWindow() bool { return window.Hide(a.host()) }
+func (a *App) showNativeWindow()      { window.Show(a.host()) }
+
+// raiseNative raises the window through the platform where Gio can't
+// (Windows), reporting false where it goes through Gio.
+func (a *App) raiseNative() bool { return window.Raise(a.host()) }
+
+// platformInit sets the window up before the app finishes launching.
+func (a *App) platformInit() {
+	if a.cfg.MenuBarApp {
+		window.MenuBarApp()
+	}
+	window.Init(a.host(), a.cfg.Transparent, func() bool {
+		if a.vetoClose() {
+			return false
+		}
+		if a.closesToTray() {
+			a.HideWindow()
+			return false
+		}
+		return true
+	})
+	if launchHook != nil {
+		launchHook(a)
+	}
+}
+
+// launchHook, where set, runs at platformInit (macOS's Services).
+var launchHook func(*App)
+
+// windowHook, where set, runs when a tray option turns on and the
+// window exists (Windows subclasses the window for them).
+var windowHook func(*App)
+
+// trayView sets up closing and Dock re-opening once the window exists.
+func (a *App) trayView(app.ViewEvent) {
+	window.Shown(a.host(), a.closeToTray.Load() || a.cfg.OnCloseRequest != nil || a.cfg.NoClose)
+}
+
+// applyTrayOptions applies CloseToTray and MinimizeToTray once turned on.
+func (a *App) applyTrayOptions() {
+	if a.closeToTray.Load() {
+		window.InterceptClose(a.host())
+	}
+	if windowHook != nil {
+		windowHook(a)
+	}
+	a.warnTrayLimits()
+}
+
+// trayCloseWarned limits the CloseToTray warning to once.
+var trayCloseWarned atomic.Bool
+
+func (a *App) warnTrayLimits() {
+	if a.closeToTray.Load() && window.CloseNeedsPatch && trayCloseWarned.CompareAndSwap(false, true) {
+		a.logf(LogLevelWarning, "giode: CloseToTray on Linux needs giode build's Gio patches; closing the window quits")
+	}
+}
+
+func init() {
+	window.Hooks.VetoClose = func() bool {
+		a := currentApp.Load()
+		return a != nil && a.vetoClose()
+	}
+	window.Hooks.HideOnClose = func() bool {
+		a := currentApp.Load()
+		return a != nil && a.closesToTray()
+	}
+	window.Hooks.HiddenOnClose = func() {
+		if a := currentApp.Load(); a != nil {
+			a.windowHiddenNatively()
+		}
+	}
+	window.Hooks.Reopen = func() {
+		if a := currentApp.Load(); a != nil && a.windowHidden.Load() {
+			a.ShowWindow()
+		}
 	}
 }
