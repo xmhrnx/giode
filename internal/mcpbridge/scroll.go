@@ -1,4 +1,4 @@
-package giode
+package mcpbridge
 
 import (
 	"context"
@@ -23,8 +23,8 @@ type scroller interface {
 const maxScrollSteps = 60
 
 // scroll implements the ui_scroll tool.
-func (b *mcpBridge) scroll(ctx context.Context, a *App, id string, dx, dy int, until string) (any, error) {
-	nodes, size, err := b.snapshot(ctx, a)
+func (b *Bridge) scroll(ctx context.Context, id string, dx, dy int, until string) (any, error) {
+	nodes, size, err := b.snapshot(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,14 +37,14 @@ func (b *mcpBridge) scroll(ctx context.Context, a *App, id string, dx, dy int, u
 		if dx == 0 && dy == 0 {
 			return nil, fmt.Errorf("give dx or dy to scroll by, or until to scroll to a node")
 		}
-		if err := b.scrollBy(ctx, a, c, float32(dx), float32(dy)); err != nil {
+		if err := b.scrollBy(ctx, c, float32(dx), float32(dy)); err != nil {
 			return nil, err
 		}
 		// The offset is clamped to the content on the next layout.
-		if err := b.afterFrame(ctx, a, func(*op.Ops, image.Point) {}); err != nil {
+		if err := b.afterFrame(ctx, func(*op.Ops, image.Point) {}); err != nil {
 			return nil, err
 		}
-		x, y, err := b.scrollOffset(ctx, a, c)
+		x, y, err := b.scrollOffset(ctx, c)
 		if err != nil {
 			return nil, err
 		}
@@ -68,7 +68,7 @@ func (b *mcpBridge) scroll(ctx context.Context, a *App, id string, dx, dy int, u
 				return map[string]any{"visible": false, "node": reportNode(target),
 					"reason": "it's outside the window and no scroll area can bring it in"}, nil
 			}
-			moved, err := b.scrollAndCheck(ctx, a, c, delta)
+			moved, err := b.scrollAndCheck(ctx, c, delta)
 			if err != nil {
 				return nil, err
 			}
@@ -82,7 +82,7 @@ func (b *mcpBridge) scroll(ctx context.Context, a *App, id string, dx, dy int, u
 				return nil, fmt.Errorf("no node matches %q, and %w", until, err)
 			}
 			page := float32(dir) * float32(c.Bounds.Intersect(win).Dy()) * 0.8
-			moved, err := b.scrollAndCheck(ctx, a, c, image.Pt(0, int(page)))
+			moved, err := b.scrollAndCheck(ctx, c, image.Pt(0, int(page)))
 			if err != nil {
 				return nil, err
 			}
@@ -95,7 +95,7 @@ func (b *mcpBridge) scroll(ctx context.Context, a *App, id string, dx, dy int, u
 					"reason": fmt.Sprintf("no node matches %q; scrolled to the %s without finding one", until, where)}, nil
 			}
 		}
-		if nodes, size, err = b.snapshot(ctx, a); err != nil {
+		if nodes, size, err = b.snapshot(ctx); err != nil {
 			return nil, err
 		}
 		win = image.Rectangle{Max: size}
@@ -103,39 +103,39 @@ func (b *mcpBridge) scroll(ctx context.Context, a *App, id string, dx, dy int, u
 }
 
 // scrollAndCheck scrolls c by delta and reports whether it moved.
-func (b *mcpBridge) scrollAndCheck(ctx context.Context, a *App, c elements.SemanticNode, delta image.Point) (bool, error) {
-	x0, y0, err := b.scrollOffset(ctx, a, c)
+func (b *Bridge) scrollAndCheck(ctx context.Context, c elements.SemanticNode, delta image.Point) (bool, error) {
+	x0, y0, err := b.scrollOffset(ctx, c)
 	if err != nil {
 		return false, err
 	}
-	if err := b.scrollBy(ctx, a, c, float32(delta.X), float32(delta.Y)); err != nil {
+	if err := b.scrollBy(ctx, c, float32(delta.X), float32(delta.Y)); err != nil {
 		return false, err
 	}
 	// The offset is clamped on the next layout.
-	if err := b.afterFrame(ctx, a, func(*op.Ops, image.Point) {}); err != nil {
+	if err := b.afterFrame(ctx, func(*op.Ops, image.Point) {}); err != nil {
 		return false, err
 	}
-	x1, y1, err := b.scrollOffset(ctx, a, c)
+	x1, y1, err := b.scrollOffset(ctx, c)
 	if err != nil {
 		return false, err
 	}
 	return int(x1) != int(x0) || int(y1) != int(y0), nil
 }
 
-func (b *mcpBridge) scrollBy(ctx context.Context, a *App, c elements.SemanticNode, dx, dy float32) error {
+func (b *Bridge) scrollBy(ctx context.Context, c elements.SemanticNode, dx, dy float32) error {
 	s, ok := c.Target.(scroller)
 	if !ok {
 		return fmt.Errorf("scroll area %q can't be scrolled by automation", c.ID)
 	}
-	return a.RunOnUI(ctx, func() { s.ScrollBy(dx, dy) })
+	return b.h.RunOnUI(ctx, func() { s.ScrollBy(dx, dy) })
 }
 
-func (b *mcpBridge) scrollOffset(ctx context.Context, a *App, c elements.SemanticNode) (x, y float32, err error) {
+func (b *Bridge) scrollOffset(ctx context.Context, c elements.SemanticNode) (x, y float32, err error) {
 	s, ok := c.Target.(scroller)
 	if !ok {
 		return 0, 0, fmt.Errorf("scroll area %q can't be scrolled by automation", c.ID)
 	}
-	err = a.RunOnUI(ctx, func() { x, y = s.ScrollOffset() })
+	err = b.h.RunOnUI(ctx, func() { x, y = s.ScrollOffset() })
 	return x, y, err
 }
 

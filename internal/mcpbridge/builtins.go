@@ -1,4 +1,4 @@
-package giode
+package mcpbridge
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/xmhrnx/giode/styles/properties"
 )
 
-func (b *mcpBridge) registerBuiltins(a *App) {
+func (b *Bridge) registerBuiltins() {
 	ctxFor := func(ctx context.Context) (context.Context, context.CancelFunc) {
 		return context.WithTimeout(ctx, b.opts.Timeout)
 	}
@@ -31,7 +31,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 		}) (any, error) {
 			ctx, cancel := ctxFor(ctx)
 			defer cancel()
-			nodes, size, err := b.snapshot(ctx, a)
+			nodes, size, err := b.snapshot(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -52,7 +52,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 				})
 			}
 			return map[string]any{
-				"window": map[string]any{"title": a.Title(), "width": size.X, "height": size.Y, "theme": string(properties.CurrentMode())},
+				"window": map[string]any{"title": b.h.Title(), "width": size.X, "height": size.Y, "theme": string(properties.CurrentMode())},
 				"nodes":  out,
 			}, nil
 		})
@@ -74,7 +74,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 				b.takeCapture()
 				b.wantCapture.Store(true)
 			}
-			if err := b.afterFrame(ctx, a, func(ops *op.Ops, size image.Point) {
+			if err := b.afterFrame(ctx, func(ops *op.Ops, size image.Point) {
 				area := image.Rectangle{Max: size}
 				if in.ID != "" {
 					// The node as laid out in this frame.
@@ -131,9 +131,9 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 		func(ctx context.Context, in struct {
 			Reset bool `json:"reset,omitempty" description:"Discard the frames measured so far, after reporting them"`
 		}) (any, error) {
-			st := a.FrameStats()
+			st := b.h.FrameStats()
 			if in.Reset {
-				a.ResetFrameStats()
+				b.h.ResetFrameStats()
 			}
 			t := func(ft FrameTiming) map[string]float64 {
 				m := func(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }
@@ -155,8 +155,8 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 		return
 	}
 
-	b.registerInputTools(a)
-	b.registerFileDragTool(a)
+	b.registerInputTools()
+	b.registerFileDragTool()
 
 	b.srv.AddTool(mcp.Func("ui_scroll", "Scrolls a scroll area by an amount, or until a node is fully visible. "+
 		"Without id it scrolls the main scroll area (the largest one not inside another). "+
@@ -169,7 +169,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 		}) (any, error) {
 			ctx, cancel := context.WithTimeout(ctx, 4*b.opts.Timeout)
 			defer cancel()
-			return b.scroll(ctx, a, in.ID, in.DX, in.DY, in.Until)
+			return b.scroll(ctx, in.ID, in.DX, in.DY, in.Until)
 		}))
 
 	b.srv.AddTool(mcp.Func("ui_click", "Clicks a node from ui_snapshot: a button, tab, menu item, or toggles a checkbox.",
@@ -191,7 +191,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 			}
 			ctx, cancel := ctxFor(ctx)
 			defer cancel()
-			if err := a.RunOnUI(ctx, act); err != nil {
+			if err := b.h.RunOnUI(ctx, act); err != nil {
 				return nil, err
 			}
 			return "clicked " + in.ID, nil
@@ -218,7 +218,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 			}
 			ctx, cancel := ctxFor(ctx)
 			defer cancel()
-			err := a.RunOnUI(ctx, func() {
+			err := b.h.RunOnUI(ctx, func() {
 				set(in.Text)
 				if s, ok := n.Target.(submitter); ok && in.Submit {
 					s.SubmitText()
@@ -278,7 +278,7 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 			}
 			ctx, cancel := ctxFor(ctx)
 			defer cancel()
-			if err := a.RunOnUI(ctx, act); err != nil {
+			if err := b.h.RunOnUI(ctx, act); err != nil {
 				return nil, err
 			}
 			return "set " + in.ID, nil
@@ -303,9 +303,9 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 		func(ctx context.Context, in struct {
 			Mode string `json:"mode" enum:"light,dark"`
 		}) (any, error) {
-			switch Mode(in.Mode) {
-			case ModeLight, ModeDark:
-				properties.SetMode(Mode(in.Mode))
+			switch properties.Mode(in.Mode) {
+			case properties.ModeLight, properties.ModeDark:
+				properties.SetMode(properties.Mode(in.Mode))
 				return "theme set to " + in.Mode, nil
 			}
 			return nil, fmt.Errorf("mode must be light or dark")
@@ -322,22 +322,22 @@ func (b *mcpBridge) registerBuiltins(a *App) {
 				if in.Width <= 0 || in.Height <= 0 {
 					return nil, fmt.Errorf("resize needs a positive width and height")
 				}
-				a.SetSize(in.Width, in.Height)
+				b.h.SetSize(in.Width, in.Height)
 				return fmt.Sprintf("window resized to %dx%d dp", in.Width, in.Height), nil
 			case "minimize":
-				a.Minimize()
+				b.h.Minimize()
 			case "maximize":
-				a.Maximize()
+				b.h.Maximize()
 			case "unmaximize":
-				a.Unmaximize()
+				b.h.Unmaximize()
 			case "fullscreen":
-				a.SetFullscreen(true)
+				b.h.SetFullscreen(true)
 			case "windowed":
-				a.SetFullscreen(false)
+				b.h.SetFullscreen(false)
 			case "center":
-				a.Center()
+				b.h.Center()
 			case "raise":
-				a.Raise()
+				b.h.Raise()
 			default:
 				return nil, fmt.Errorf("unknown action %q", in.Action)
 			}

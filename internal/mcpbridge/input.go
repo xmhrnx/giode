@@ -1,4 +1,4 @@
-package giode
+package mcpbridge
 
 import (
 	"context"
@@ -16,12 +16,9 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/op"
 
+	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/mcp"
 )
-
-// errInjectUnpatched is what ui_pointer and ui_key return in apps not
-// built against Gio patches that can deliver input.
-var errInjectUnpatched = errors.New("ui_pointer and ui_key need giode's Gio patches: build and run the app with an up to date giode CLI (giode upgrade, giode run)")
 
 // pointerState is the simulated mouse: where it is and what's held.
 type pointerState struct {
@@ -30,11 +27,12 @@ type pointerState struct {
 	buttons pointer.Buttons
 }
 
-var inputEpoch = time.Now()
+// InputEpoch is the time base of injected events.
+var InputEpoch = time.Now()
 
 // registerInputTools adds ui_pointer and ui_key, which deliver real
 // pointer and key events where ui_click and ui_type call components.
-func (b *mcpBridge) registerInputTools(a *App) {
+func (b *Bridge) registerInputTools() {
 	var ptr pointerState
 	b.srv.AddTool(mcp.Func("ui_pointer", "Sends mouse events to the window as a user's mouse would: move, press, release, click, "+
 		"double_click or scroll, at a node from ui_snapshot (its center) or at window coordinates in pixels. "+
@@ -82,7 +80,7 @@ func (b *mcpBridge) registerInputTools(a *App) {
 			}
 			ptr.buttons = buttons
 			ptr.pos = pos
-			if err := b.inject(ctx, a, evs...); err != nil {
+			if err := b.inject(ctx, evs...); err != nil {
 				return nil, err
 			}
 			res := map[string]any{"action": in.Action, "position": [2]int{int(pos.X), int(pos.Y)}, "buttons_held": ptr.buttons.String()}
@@ -123,7 +121,7 @@ func (b *mcpBridge) registerInputTools(a *App) {
 			default:
 				return nil, fmt.Errorf("unknown state %q: use press_release, press or release", in.State)
 			}
-			if err := b.inject(ctx, a, evs...); err != nil {
+			if err := b.inject(ctx, evs...); err != nil {
 				return nil, err
 			}
 			return fmt.Sprintf("sent %s%s", modPrefix(mods), name), nil
@@ -133,7 +131,7 @@ func (b *mcpBridge) registerInputTools(a *App) {
 // registerFileDragTool adds ui_file_drag, which drags files from the
 // file manager over the window: the events a real drag delivers, to
 // OnFileDrag, App.FileDrag and OnFileDrop.
-func (b *mcpBridge) registerFileDragTool(a *App) {
+func (b *Bridge) registerFileDragTool() {
 	var mu sync.Mutex
 	var pos f32.Point
 	b.srv.AddTool(mcp.Func("ui_file_drag", "Drags files over the window as from the file manager: enter, move, leave, or drop "+
@@ -146,7 +144,7 @@ func (b *mcpBridge) registerFileDragTool(a *App) {
 			Y      *float32 `json:"y,omitempty" description:"Window y in pixels"`
 			Paths  []string `json:"paths,omitempty" description:"Drop: the files' paths"`
 		}) (any, error) {
-			if !a.fileDragWanted() {
+			if !b.h.FileDragWanted() {
 				return nil, errors.New("the app takes no file drops: it sets neither Config.OnFileDrop nor OnFileDrag")
 			}
 			mu.Lock()
@@ -168,50 +166,50 @@ func (b *mcpBridge) registerFileDragTool(a *App) {
 					p.Y = *in.Y
 				}
 			}
-			_, dragging := a.FileDrag()
+			dragging := b.h.FileDragging()
 			switch in.Action {
 			case "enter":
-				a.deliverFileDrag(FileDragEnter, p)
+				b.h.FileDrag(filedrag.Enter, p)
 			case "move":
 				if !dragging {
-					a.deliverFileDrag(FileDragEnter, p)
+					b.h.FileDrag(filedrag.Enter, p)
 				}
-				a.deliverFileDrag(FileDragOver, p)
+				b.h.FileDrag(filedrag.Over, p)
 			case "leave":
-				a.deliverFileDrag(FileDragLeave, p)
+				b.h.FileDrag(filedrag.Leave, p)
 			case "drop":
 				if len(in.Paths) == 0 {
 					return nil, errors.New("give the dropped files' paths")
 				}
 				if !dragging {
-					a.deliverFileDrag(FileDragEnter, p)
-					a.deliverFileDrag(FileDragOver, p)
+					b.h.FileDrag(filedrag.Enter, p)
+					b.h.FileDrag(filedrag.Over, p)
 				}
-				a.deliverFileDrop(in.Paths, p)
+				b.h.FileDrop(in.Paths, p)
 			default:
 				return nil, fmt.Errorf("unknown action %q: use enter, move, leave or drop", in.Action)
 			}
 			pos = p
 			ctx, cancel := context.WithTimeout(ctx, b.opts.Timeout)
 			defer cancel()
-			if err := b.afterFrame(ctx, a, func(*op.Ops, image.Point) {}); err != nil {
+			if err := b.afterFrame(ctx, func(*op.Ops, image.Point) {}); err != nil {
 				return nil, err
 			}
-			_, dragging = a.FileDrag()
+			dragging = b.h.FileDragging()
 			return map[string]any{"action": in.Action, "position": [2]int{int(p.X), int(p.Y)}, "dragging": dragging}, nil
 		}))
 }
 
 // inject delivers events and waits for the frame that handles them.
-func (b *mcpBridge) inject(ctx context.Context, a *App, evs ...event.Event) error {
+func (b *Bridge) inject(ctx context.Context, evs ...event.Event) error {
 	ctx, cancel := context.WithTimeout(ctx, b.opts.Timeout)
 	defer cancel()
 	for _, e := range evs {
-		if err := injectEvent(ctx, a, e); err != nil {
+		if err := b.h.Inject(ctx, e); err != nil {
 			return err
 		}
 	}
-	return b.afterFrame(ctx, a, func(*op.Ops, image.Point) {})
+	return b.afterFrame(ctx, func(*op.Ops, image.Point) {})
 }
 
 // pointerEvents builds the events for a ui_pointer action at pos, from
@@ -221,7 +219,7 @@ func (b *mcpBridge) inject(ctx context.Context, a *App, evs ...event.Event) erro
 func pointerEvents(action string, prev, pos f32.Point, held, btn pointer.Buttons, mods key.Modifiers, dx, dy float32) ([]event.Event, pointer.Buttons, error) {
 	ev := func(kind pointer.Kind) pointer.Event {
 		return pointer.Event{Kind: kind, Source: pointer.Mouse, Position: pos, Buttons: held,
-			Modifiers: mods, Time: time.Since(inputEpoch)}
+			Modifiers: mods, Time: time.Since(InputEpoch)}
 	}
 	var evs []event.Event
 	if pos != prev || action == "move" {

@@ -84,7 +84,7 @@ func setupRenderer(cfg Config) error {
 // since an offscreen render of the UI alone lacks the underlay.
 func underlayFrameDone(t GPUTarget) {
 	if a := currentApp.Load(); a != nil && a.mcp != nil {
-		a.mcp.captureUnderlay(t)
+		a.mcp.CaptureUnderlay(t.API == GPUOpenGL, func() *image.RGBA { return readFramebuffer(t) })
 	}
 }
 

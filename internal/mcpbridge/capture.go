@@ -1,4 +1,4 @@
-package giode
+package mcpbridge
 
 import (
 	"bytes"
@@ -13,21 +13,21 @@ import (
 	"github.com/xmhrnx/giode/elements"
 )
 
-// captureUnderlay reads back a frame drawn over an underlay when a
+// CaptureUnderlay reads back a frame drawn over an underlay when a
 // screenshot asked for one. It runs on the render thread.
-func (b *mcpBridge) captureUnderlay(t GPUTarget) {
-	b.underlayGL.Store(t.API == GPUOpenGL)
-	if t.API != GPUOpenGL || !b.wantCapture.Swap(false) {
+func (b *Bridge) CaptureUnderlay(gl bool, read func() *image.RGBA) {
+	b.underlayGL.Store(gl)
+	if !gl || !b.wantCapture.Swap(false) {
 		return
 	}
-	img := readFramebuffer(t)
+	img := read()
 	b.mu.Lock()
 	b.captured = img
 	b.mu.Unlock()
 }
 
-// takeCapture returns the frame captureUnderlay read back, if any.
-func (b *mcpBridge) takeCapture() *image.RGBA {
+// takeCapture returns the frame CaptureUnderlay read back, if any.
+func (b *Bridge) takeCapture() *image.RGBA {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	img := b.captured
@@ -35,9 +35,9 @@ func (b *mcpBridge) takeCapture() *image.RGBA {
 	return img
 }
 
-// frameDone records the frame's semantic tree and runs after-frame
+// FrameDone records the frame's semantic tree and runs after-frame
 // callbacks; the frame loop calls it after presenting a frame.
-func (b *mcpBridge) frameDone(nodes []elements.SemanticNode, ops *op.Ops, size image.Point) {
+func (b *Bridge) FrameDone(nodes []elements.SemanticNode, ops *op.Ops, size image.Point) {
 	b.mu.Lock()
 	b.nodes = nodes
 	b.winSize = size
@@ -51,12 +51,12 @@ func (b *mcpBridge) frameDone(nodes []elements.SemanticNode, ops *op.Ops, size i
 
 // afterFrame queues fn to run on the UI goroutine right after the next
 // frame, requests that frame and waits.
-func (b *mcpBridge) afterFrame(ctx context.Context, a *App, fn func(ops *op.Ops, size image.Point)) error {
+func (b *Bridge) afterFrame(ctx context.Context, fn func(ops *op.Ops, size image.Point)) error {
 	done := make(chan struct{})
 	b.mu.Lock()
 	b.after = append(b.after, func(ops *op.Ops, size image.Point) { fn(ops, size); close(done) })
 	b.mu.Unlock()
-	a.invalidate()
+	b.h.Invalidate()
 	select {
 	case <-done:
 		return nil
@@ -66,8 +66,8 @@ func (b *mcpBridge) afterFrame(ctx context.Context, a *App, fn func(ops *op.Ops,
 }
 
 // snapshot waits for a fresh frame and returns its semantic tree.
-func (b *mcpBridge) snapshot(ctx context.Context, a *App) ([]elements.SemanticNode, image.Point, error) {
-	if err := b.afterFrame(ctx, a, func(*op.Ops, image.Point) {}); err != nil {
+func (b *Bridge) snapshot(ctx context.Context) ([]elements.SemanticNode, image.Point, error) {
+	if err := b.afterFrame(ctx, func(*op.Ops, image.Point) {}); err != nil {
 		return nil, image.Point{}, err
 	}
 	b.mu.Lock()
@@ -76,7 +76,7 @@ func (b *mcpBridge) snapshot(ctx context.Context, a *App) ([]elements.SemanticNo
 }
 
 // node finds a node of the last frame by id.
-func (b *mcpBridge) node(id string) (elements.SemanticNode, bool) {
+func (b *Bridge) node(id string) (elements.SemanticNode, bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	for _, n := range b.nodes {
@@ -89,7 +89,7 @@ func (b *mcpBridge) node(id string) (elements.SemanticNode, bool) {
 
 // screenshot renders the next frame's ops offscreen. It runs on the UI
 // goroutine.
-func (b *mcpBridge) screenshot(ops *op.Ops, size image.Point) (*image.RGBA, error) {
+func (b *Bridge) screenshot(ops *op.Ops, size image.Point) (*image.RGBA, error) {
 	if size.X <= 0 || size.Y <= 0 {
 		return nil, errors.New("window has no size")
 	}

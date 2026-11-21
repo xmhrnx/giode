@@ -78,7 +78,7 @@ func (a *App) Run(view func() Element) error {
 	a.watchMotion(ctx.Done())
 	a.watchA11yPrefs(ctx.Done())
 	if a.mcp != nil {
-		a.mcp.start(ctx, a)
+		a.mcp.Start(ctx)
 	}
 	go func() {
 		err := a.runLoop(view)
@@ -132,7 +132,7 @@ func (a *App) runLoop(view func() Element) error {
 				a.cfg.OnBeforeClose()
 			}
 			if a.mcp != nil {
-				a.mcp.release()
+				a.mcp.Release()
 			}
 			a.logf(LogLevelDebug, "giode: window closed")
 			return e.Err
@@ -198,7 +198,7 @@ func (a *App) runLoop(view func() Element) error {
 			a.frames.add(start, built, time.Now())
 			a.updateSystemBars()
 			if a.mcp != nil {
-				a.mcp.frameDone(nodes, &ops, e.Size)
+				a.mcp.FrameDone(nodes, &ops, e.Size)
 			}
 			if !ready {
 				ready = true

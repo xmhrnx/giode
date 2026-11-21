@@ -1,4 +1,4 @@
-package giode
+package mcpbridge
 
 import (
 	"strings"

@@ -19,6 +19,7 @@ import (
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/host"
 	"github.com/xmhrnx/giode/i18n"
+	"github.com/xmhrnx/giode/internal/mcpbridge"
 	"github.com/xmhrnx/giode/internal/platform/a11y"
 	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/internal/platform/giopatch"
@@ -91,7 +92,7 @@ type App struct {
 	// explorer shows the file dialogs; it sees every window event.
 	explorer *explorer.Explorer
 
-	mcp     *mcpBridge
+	mcp     *mcpbridge.Bridge
 	uiMu    sync.Mutex
 	uiCalls []func()
 
