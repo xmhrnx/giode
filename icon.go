@@ -43,9 +43,7 @@ func (a *App) platformView(ev app.ViewEvent) {
 	if a.icon != nil && !a.iconApplied && window.SetIcon(ev, a.icon) {
 		a.iconApplied = true
 	}
-	if viewHook != nil {
-		viewHook(a, ev)
-	}
+	window.Subclass(a.host(), ev, a.subclassOptions())
 	if a.fileDragWanted() {
 		if why := filedrag.ViewReady(ev); why != "" {
 			a.warnNoFileDrop(why)
@@ -53,9 +51,14 @@ func (a *App) platformView(ev app.ViewEvent) {
 	}
 }
 
-// viewHook, where set, runs as the native window appears (Windows
-// subclasses it).
-var viewHook func(*App, app.ViewEvent)
+// subclassOptions are the drops the window takes, for Windows' window
+// procedure.
+func (a *App) subclassOptions() window.SubclassOptions {
+	return window.SubclassOptions{
+		AcceptFiles: a.fileDragWanted(),
+		DragEvents:  a.cfg.OnFileDrag != nil || a.cfg.FileDropTargets,
+	}
+}
 
 // warnNoFileDrop logs, once, that file drops won't arrive.
 func (a *App) warnNoFileDrop(why string) {

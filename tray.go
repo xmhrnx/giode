@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"gioui.org/app"
+	"github.com/xmhrnx/giode/internal/platform/a11y"
 	"github.com/xmhrnx/giode/internal/platform/systray"
 	"github.com/xmhrnx/giode/internal/platform/window"
 )
@@ -474,10 +475,6 @@ func (a *App) platformInit() {
 // launchHook, where set, runs at platformInit (macOS's Services).
 var launchHook func(*App)
 
-// windowHook, where set, runs when a tray option turns on and the
-// window exists (Windows subclasses the window for them).
-var windowHook func(*App)
-
 // trayView sets up closing and Dock re-opening once the window exists.
 func (a *App) trayView(app.ViewEvent) {
 	window.Shown(a.host(), a.closeToTray.Load() || a.cfg.OnCloseRequest != nil || a.cfg.NoClose)
@@ -488,9 +485,9 @@ func (a *App) applyTrayOptions() {
 	if a.closeToTray.Load() {
 		window.InterceptClose(a.host())
 	}
-	if windowHook != nil {
-		windowHook(a)
-	}
+	// Windows: the window procedure that hides the window, if the
+	// window isn't subclassed yet.
+	window.Subclass(a.host(), a.NativeView(), a.subclassOptions())
 	a.warnTrayLimits()
 }
 
@@ -517,6 +514,18 @@ func init() {
 			a.windowHiddenNatively()
 		}
 	}
+	window.Hooks.MinimizeToTray = func() bool {
+		a := currentApp.Load()
+		return a != nil && a.minimizesToTray()
+	}
+	window.Hooks.GetObject = func(hwnd, wparam, lparam uintptr) (uintptr, bool) {
+		a := currentApp.Load()
+		if a == nil {
+			return 0, false
+		}
+		return a11y.GetObject(a.a11yHost(), hwnd, wparam, lparam)
+	}
+	window.Hooks.WindowGone = a11y.WindowGone
 	window.Hooks.Reopen = func() {
 		if a := currentApp.Load(); a != nil && a.windowHidden.Load() {
 			a.ShowWindow()

@@ -1,9 +1,13 @@
-package giode
+package picker
 
 import (
+	"bytes"
 	"encoding/binary"
 	"image"
-	"image/draw"
+	"image/jpeg"
+	"io"
+
+	"golang.org/x/image/draw"
 )
 
 // jpegOrientation reads the EXIF orientation tag (1 to 8) of a JPEG; 1
@@ -108,4 +112,31 @@ func applyOrientation(img image.Image, o int) image.Image {
 		}
 	}
 	return dst
+}
+
+// ToJPEG decodes an image and re-encodes it as JPEG, upright per its
+// EXIF orientation and scaled so its longer side is at most maxSide.
+func ToJPEG(r io.Reader, maxSide int) ([]byte, error) {
+	raw, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	img, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, err
+	}
+	// Turn it upright as the camera meant, as the phones' pickers do.
+	img = applyOrientation(img, jpegOrientation(raw))
+	b := img.Bounds()
+	if long := max(b.Dx(), b.Dy()); maxSide > 0 && long > maxSide {
+		w, h := b.Dx()*maxSide/long, b.Dy()*maxSide/long
+		dst := image.NewRGBA(image.Rect(0, 0, max(1, w), max(1, h)))
+		draw.CatmullRom.Scale(dst, dst.Bounds(), img, b, draw.Src, nil)
+		img = dst
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

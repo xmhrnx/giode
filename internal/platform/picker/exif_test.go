@@ -1,4 +1,4 @@
-package giode
+package picker
 
 import (
 	"bytes"
@@ -62,7 +62,7 @@ func TestToJPEGAppliesOrientation(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	jpeg.Encode(&buf, img, &jpeg.Options{Quality: 95})
-	out, err := toJPEG(bytes.NewReader(withOrientation(buf.Bytes(), 6, binary.BigEndian)), 0)
+	out, err := ToJPEG(bytes.NewReader(withOrientation(buf.Bytes(), 6, binary.BigEndian)), 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,20 +79,5 @@ func TestToJPEGAppliesOrientation(t *testing.T) {
 	}
 	if r, _, b, _ := got.At(10, 35).RGBA(); b>>8 < 200 || r>>8 > 60 {
 		t.Errorf("bottom isn't blue: r=%d b=%d", r>>8, b>>8)
-	}
-}
-
-func TestShareFilesMIME(t *testing.T) {
-	for _, tc := range []struct {
-		paths []string
-		want  string
-	}{
-		{[]string{"a.jpg", "b.jpg"}, "image/jpeg"},
-		{[]string{"a.jpg", "b.png"}, "image/*"},
-		{[]string{"a.jpg", "b.pdf"}, "*/*"},
-	} {
-		if got := (ShareFiles{Paths: tc.paths}).mimeType(); got != tc.want {
-			t.Errorf("%v: %s, want %s", tc.paths, got, tc.want)
-		}
 	}
 }

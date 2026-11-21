@@ -1,15 +1,12 @@
-//go:build windows
-
-package giode
+package window
 
 import (
 	"sync"
 
 	"gioui.org/app"
-	"github.com/xmhrnx/giode/internal/platform/a11y"
+	"github.com/xmhrnx/giode/internal/platform"
 	"github.com/xmhrnx/giode/internal/platform/filedrag"
 	"github.com/xmhrnx/giode/internal/platform/shell"
-	"github.com/xmhrnx/giode/internal/platform/window"
 	"golang.org/x/sys/windows"
 )
 
@@ -21,10 +18,6 @@ import (
 // message goes on to Gio's original procedure.
 
 var (
-	user32                          = windows.NewLazySystemDLL("user32.dll")
-	procPostMessageW                = user32.NewProc("PostMessageW")
-	procSetWindowLongPtrW           = user32.NewProc("SetWindowLongPtrW")
-	procGetWindowLongPtrW           = user32.NewProc("GetWindowLongPtrW")
 	procDefWindowProcW              = user32.NewProc("DefWindowProcW")
 	procCallWindowProcW             = user32.NewProc("CallWindowProcW")
 	procChangeWindowMessageFilterEx = user32.NewProc("ChangeWindowMessageFilterEx")
@@ -39,7 +32,7 @@ const (
 	msgfltAllow  = 1
 )
 
-// dropWindows maps subclassed windows to their app and original
+// dropWindows maps subclassed windows to their host and original
 // procedure. The window procedure is one callback for all windows:
 // Windows limits how many callbacks a process may create.
 var (
@@ -49,23 +42,30 @@ var (
 )
 
 type dropTarget struct {
-	app     *App
+	h       platform.Host
 	oldProc uintptr
 }
 
-// enableFileDrop subclasses hwnd to receive dropped files, and for
-// MinimizeToTray and CloseToTray, once.
+// SubclassOptions says which drops the window takes: WM_DROPFILES, and
+// drag enter, over and leave through OLE.
+type SubclassOptions struct {
+	AcceptFiles, DragEvents bool
+}
+
+// Subclass replaces the window's procedure, once, to receive dropped
+// files, close and minimize to the tray, drag out, the share sheet and
+// UI Automation.
 //
 // It runs on its own goroutine: the view event that delivers hwnd is
 // handled while Gio's window thread waits for the event goroutine, and
 // DragAcceptFiles sends (not posts) a style-change message to that
 // thread, which would deadlock if sent from the event goroutine.
-func (a *App) enableFileDrop(hwnd uintptr) {
-	// Always: dragging out of the window (Draggable.Export) runs from the
-	// window procedure too.
-	if hwnd == 0 {
+func Subclass(h platform.Host, view app.ViewEvent, opts SubclassOptions) {
+	w, ok := view.(app.Win32ViewEvent)
+	if !ok || w.HWND == 0 {
 		return
 	}
+	hwnd := w.HWND
 	dropMu.Lock()
 	if _, ok := dropWindows[hwnd]; ok {
 		dropMu.Unlock()
@@ -76,10 +76,10 @@ func (a *App) enableFileDrop(hwnd uintptr) {
 	old, _, _ := procGetWindowLongPtrW.Call(hwnd, gwlpWndProc)
 	if old == 0 {
 		dropMu.Unlock()
-		a.logf(LogLevelWarning, "giode: file drop unavailable: no window procedure")
+		h.Logf(platform.Warning, "giode: file drop unavailable: no window procedure")
 		return
 	}
-	dropWindows[hwnd] = &dropTarget{app: a, oldProc: old}
+	dropWindows[hwnd] = &dropTarget{h: h, oldProc: old}
 	dropMu.Unlock()
 
 	go func() {
@@ -93,14 +93,14 @@ func (a *App) enableFileDrop(hwnd uintptr) {
 			dropMu.Lock()
 			delete(dropWindows, hwnd)
 			dropMu.Unlock()
-			a.logf(LogLevelWarning, "giode: file drop unavailable: couldn't subclass the window")
+			h.Logf(platform.Warning, "giode: file drop unavailable: couldn't subclass the window")
 			return
 		}
-		if a.fileDragWanted() {
+		if opts.AcceptFiles {
 			filedrag.AcceptFiles(hwnd)
-			a.logf(LogLevelDebug, "giode: file drop enabled")
+			h.Logf(platform.Debug, "giode: file drop enabled")
 		}
-		if a.cfg.OnFileDrag != nil || a.cfg.FileDropTargets {
+		if opts.DragEvents {
 			// Drag enter, over and leave come through OLE, which takes
 			// over drops from apps at the same integrity level; from an
 			// unelevated Explorer to an elevated app WM_DROPFILES still
@@ -120,7 +120,9 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		if t != nil {
 			procSetWindowLongPtrW.Call(hwnd, gwlpWndProc, t.oldProc)
 			filedrag.RevokeOLE(hwnd)
-			a11y.WindowGone(hwnd)
+			if Hooks.WindowGone != nil {
+				Hooks.WindowGone(hwnd)
+			}
 		}
 	}
 	dropMu.Unlock()
@@ -128,7 +130,7 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		r, _, _ := procDefWindowProcW.Call(hwnd, msg, wparam, lparam)
 		return r
 	}
-	if trayWndProc(t.app, hwnd, msg, wparam) {
+	if trayWndProc(hwnd, msg, wparam) {
 		return 0
 	}
 	switch msg {
@@ -136,20 +138,20 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 		filedrag.DropFiles(wparam)
 		return 0
 	case filedrag.WMRegisterOLE:
-		a := t.app
-		filedrag.RegisterOLE(hwnd, func(format string, args ...any) { a.logf(LogLevelWarning, format, args...) })
+		h := t.h
+		filedrag.RegisterOLE(hwnd, func(format string, args ...any) { h.Logf(platform.Warning, format, args...) })
 		return 0
 	case filedrag.WMStartDrag:
-		filedrag.RunExport(t.app.host(), hwnd)
+		filedrag.RunExport(t.h, hwnd)
 		return 0
 	case shell.WMShare:
 		shell.RunShare(hwnd)
 		return 0
-	case a11y.WMGetObject:
+	case wmGetObject:
 		// UI Automation asking for the window's provider (lParam
 		// UiaRootObjectId, sign-extended or not).
-		if int32(uint32(lparam)) == a11y.UIARootObjectID {
-			if r, ok := a11y.GetObject(t.app.a11yHost(), hwnd, wparam, lparam); ok {
+		if int32(uint32(lparam)) == uiaRootObjectID && Hooks.GetObject != nil {
+			if r, ok := Hooks.GetObject(hwnd, wparam, lparam); ok {
 				return r
 			}
 		}
@@ -160,44 +162,43 @@ func dropWndProc(hwnd, msg, wparam, lparam uintptr) uintptr {
 
 // trayWndProc handles the window messages the tray changes: closing and
 // minimizing hide the window instead. It reports whether it handled msg.
-func trayWndProc(a *App, hwnd, msg, wparam uintptr) bool {
+func trayWndProc(hwnd, msg, wparam uintptr) bool {
+	ask := func(f func() bool) bool { return f != nil && f() }
+	hidden := func() {
+		HideHWND(hwnd)
+		if Hooks.HiddenOnClose != nil {
+			Hooks.HiddenOnClose()
+		}
+	}
 	switch {
-	case msg == wmClose && a.vetoClose():
+	case msg == wmClose && ask(Hooks.VetoClose):
 		return true
-	case msg == wmClose && a.closesToTray():
-		window.HideHWND(hwnd)
-		a.windowHiddenNatively()
+	case msg == wmClose && ask(Hooks.HideOnClose):
+		hidden()
 		return true
-	case msg == wmSysCommand && wparam&0xFFF0 == scMinimize && a.minimizesToTray():
-		window.HideHWND(hwnd)
-		a.windowHiddenNatively()
+	case msg == wmSysCommand && wparam&0xFFF0 == scMinimize && ask(Hooks.MinimizeToTray):
+		hidden()
 		return true
 	}
 	return false
 }
 
 const (
-	wmClose      = 0x0010
-	wmSysCommand = 0x0112
-	scMinimize   = 0xF020
+	wmClose         = 0x0010
+	wmSysCommand    = 0x0112
+	scMinimize      = 0xF020
+	wmGetObject     = 0x003D
+	uiaRootObjectID = -25
 )
 
+// Subclassed reports whether Subclass replaced hwnd's procedure.
+func Subclassed(hwnd uintptr) bool {
+	dropMu.Lock()
+	defer dropMu.Unlock()
+	_, ok := dropWindows[hwnd]
+	return ok
+}
+
 func init() {
-	viewHook = func(a *App, ev app.ViewEvent) {
-		if w, ok := ev.(app.Win32ViewEvent); ok && w.HWND != 0 {
-			a.enableFileDrop(w.HWND)
-		}
-	}
-	filedrag.Subclassed = func(hwnd uintptr) bool {
-		dropMu.Lock()
-		defer dropMu.Unlock()
-		_, ok := dropWindows[hwnd]
-		return ok
-	}
-	// A tray option turned on subclasses the window, if it isn't yet.
-	windowHook = func(a *App) {
-		if hwnd := a.NativeHandle(); hwnd != 0 {
-			a.enableFileDrop(hwnd)
-		}
-	}
+	filedrag.Subclassed = Subclassed
 }

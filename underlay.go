@@ -5,6 +5,7 @@ import (
 	"image"
 	"unsafe"
 
+	"github.com/xmhrnx/giode/internal/platform/giopatch"
 	"github.com/xmhrnx/giode/internal/platform/gl"
 )
 
@@ -64,8 +65,8 @@ const (
 )
 
 // errUnderlayUnpatched is what Run returns for Config.Underlay or
-// RendererOpenGL in an app not built against giode's patched Gio.
-var errUnderlayUnpatched = errors.New("giode: Config.Underlay and Config.Renderer need giode's Gio patches: build and run the app with giode build and giode run (which build against them with the giode_gio tag)")
+// Config.Renderer without giode's Gio patches.
+var errUnderlayUnpatched = giopatch.ErrUnderlayUnpatched
 
 // setupRenderer installs the underlay and renderer choice before the
 // window is created.
@@ -73,7 +74,7 @@ func setupRenderer(cfg Config) error {
 	if cfg.Underlay == nil && cfg.Renderer == RendererDefault {
 		return nil
 	}
-	if cfg.Renderer == RendererOpenGL && metalOnly {
+	if cfg.Renderer == RendererOpenGL && gl.MetalOnly {
 		return errors.New("giode: Config.Renderer OpenGL on macOS and iOS needs the nometal build tag: set renderer = \"opengl\" in giode.toml")
 	}
 	return installUnderlay(cfg.Underlay, cfg.UnderlayRelease, cfg.Renderer == RendererOpenGL)
@@ -92,4 +93,19 @@ func underlayFrameDone(t GPUTarget) {
 // goroutine: an underlay's new video frame is ready, say.
 func (a *App) Invalidate() {
 	a.invalidate()
+}
+
+// installUnderlay hands the underlay and its hooks to giode's patched
+// Gio.
+func installUnderlay(f func(GPUTarget), release func(), forceGL bool) error {
+	var draw, after func(giopatch.Target)
+	if f != nil {
+		draw = func(t giopatch.Target) {
+			f(gpuTarget(t.API, t.Framebuffer, t.Handle, t.Width, t.Height))
+		}
+		after = func(t giopatch.Target) {
+			underlayFrameDone(gpuTarget(t.API, t.Framebuffer, t.Handle, t.Width, t.Height))
+		}
+	}
+	return giopatch.SetUnderlay(draw, after, release, forceGL)
 }

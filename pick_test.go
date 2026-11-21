@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/xmhrnx/giode/internal/platform"
+	"github.com/xmhrnx/giode/internal/platform/picker"
 )
 
 func TestPickExtensions(t *testing.T) {
@@ -70,7 +71,7 @@ func TestToJPEG(t *testing.T) {
 	img.Set(10, 10, color.Black)
 	var buf bytes.Buffer
 	png.Encode(&buf, img)
-	out, err := toJPEG(&buf, 100)
+	out, err := picker.ToJPEG(&buf, 100)
 	if err != nil {
 		t.Fatal(err)
 	}

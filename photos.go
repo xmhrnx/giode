@@ -51,7 +51,7 @@ func (a *App) photosFromFiles(ctx context.Context, opts PhotoOptions, limit int)
 	}
 	var out []PickedFile
 	for _, f := range files {
-		data, err := toJPEG(f, opts.MaxSide)
+		data, err := picker.ToJPEG(f, opts.MaxSide)
 		f.Close()
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", f.Name, err)

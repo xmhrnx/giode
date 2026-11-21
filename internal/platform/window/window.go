@@ -30,4 +30,11 @@ var ErrFillsScreen = errors.New("giode: the window fills the screen")
 var Hooks struct {
 	VetoClose, HideOnClose func() bool
 	HiddenOnClose, Reopen  func()
+	// MinimizeToTray reports whether minimizing hides the window
+	// instead (Windows' window procedure).
+	MinimizeToTray func() bool
+	// GetObject answers UI Automation's WM_GETOBJECT for the window,
+	// and WindowGone lets go of its providers (Windows).
+	GetObject  func(hwnd, wparam, lparam uintptr) (uintptr, bool)
+	WindowGone func(hwnd uintptr)
 }
