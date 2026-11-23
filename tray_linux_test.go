@@ -99,20 +99,27 @@ func TestTray_StatusNotifier(t *testing.T) {
 
 	menu := conn.Object(bus, "/StatusNotifierItem/menu")
 	var labels map[string]int32
+	// The labels come from GetGroupProperties: systray's first
+	// GetLayout starts a goroutine that races with its own read of the
+	// menu version (in the library), which -race reports.
+	ids := make([]int32, 64)
+	for i := range ids {
+		ids[i] = int32(i)
+	}
 	for deadline := time.Now().Add(3 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
-		var rev uint32
-		var root menuLayout
-		if err := menu.Call("com.canonical.dbusmenu.GetLayout", 0, int32(0), int32(-1), []string{}).Store(&rev, &root); err != nil {
+		var props []struct {
+			ID    int32
+			Props map[string]dbus.Variant
+		}
+		if err := menu.Call("com.canonical.dbusmenu.GetGroupProperties", 0, ids, []string{}).Store(&props); err != nil {
 			t.Fatal(err)
 		}
 		labels = map[string]int32{}
-		for _, c := range root.Children {
-			var n menuLayout
-			if err := dbus.Store([]any{c.Value()}, &n); err != nil {
-				continue
-			}
-			if l, ok := n.Props["label"]; ok {
-				labels[l.Value().(string)] = n.ID
+		for _, p := range props {
+			if l, ok := p.Props["label"]; ok {
+				if s, ok := l.Value().(string); ok {
+					labels[s] = p.ID
+				}
 			}
 		}
 		if len(labels) >= 2 {
