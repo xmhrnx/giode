@@ -667,7 +667,55 @@ the `giode_gio` and `giode_gio2` tags); a plain `go build` gets an error from `R
 so. `UnderlayRelease`, the screenshot read-back and `GetProcAddress`'s use with the release
 need an up to date CLI (`giode upgrade`); with older ones `Run` returns an error naming the fix.
 
-## Native window handle
+## Portal windows
+
+`App.OpenPortal` opens a window of its own showing part of the app - a tool palette, a
+detached tab, an inspector on a second screen. It isn't bound to the main window's
+viewport, but it shares the app: its `State` values, theme, language and `Post`. Its
+view runs every frame as the main view does, and a `State` changed in either window
+redraws both.
+
+```go
+inspector := app.OpenPortal(giode.PortalOptions{
+	Title:   "Inspector",
+	Size:    image.Pt(360, 520),
+	Frame:   giode.PortalFrameTitleBar,
+	OnClose: func() { showInspector.Set(false) },
+}, func() giode.Element {
+	return inspectorView(selection.Get())
+})
+
+inspector.SetTitle("Inspector - " + name)
+inspector.Raise()
+inspector.Close()
+```
+
+`Frame` picks the frame around it:
+
+| Frame | |
+|---|---|
+| `PortalFrameApp` | Follows the main window: the platform's frame, or Giode's title bar when `Config.Frameless` is set. The default. |
+| `PortalFrameOS` | The platform's own title bar and borders. |
+| `PortalFrameTitleBar` | Frameless, with Giode's [TitleBar](components/titlebar.md) across the top: the title, a drag area and the window buttons in the app's theme. `PortalOptions.TitleBar` adjusts it (variant, menus, icon). |
+| `PortalFrameNone` | No frame at all: the view fills the window and draws its own chrome. |
+
+A view without a frame makes its own drag handle with `giode.WindowDragArea(content)`,
+wrapping the buttons inside it in `giode.NoWindowDrag` so they stay clickable.
+
+The other options are `MinSize`, `MaxSize`, `FixedSize`, `Background` (the app's by
+default), `AlwaysOnTop` and `Center`. `PortalWindow` has `Close`, `Closed`, `SetTitle`,
+`Title`, `Raise`, `Minimize`, `ToggleMaximize`, `Maximized`, `Focused`, `Invalidate` and
+`Window` (its `*app.Window`). Its methods are safe from any goroutine. `App.Portals` lists
+the open ones. Portals close with the app.
+
+The windows lay out their frames one at a time, so views and handlers in any window
+run as if on one UI goroutine. Each window has its own keyboard focus, shortcuts
+(`OnKey`, `Shortcuts` registered by its view) and dialogs. The main window alone has
+the menu bar, the tray, file drops and the MCP server.
+
+On Android, iOS and the web, where an app has one window, a portal covers the main
+window instead, under a title bar with its title and a close button, and Back closes it.
+
 
 `app.NativeHandle()` returns the native window handle: the `HWND` on Windows, the `NSView`
 on macOS, the X11 window or `wl_surface` on Linux. `app.NativeView()` returns Gio's full

@@ -96,6 +96,12 @@ type App struct {
 	uiMu    sync.Mutex
 	uiCalls []func()
 
+	// frameMu is held while a window's frame is laid out: the main
+	// window's and the portal windows' take turns (portal.go).
+	frameMu  sync.Mutex
+	portalMu sync.Mutex
+	portals  []*PortalWindow
+
 	// The tray icon (see Tray), and whether the window is hidden to it.
 	tray         *Tray
 	trayOnce     sync.Once
@@ -237,11 +243,11 @@ func New(cfg Config) *App {
 	if cfg.Center {
 		a.window.Perform(system.ActionCenter)
 	}
-	state.SetInvalidator(a.window.Invalidate)
+	state.SetInvalidator(a.invalidateAll)
 	if cfg.Logger != nil && cfg.LogLevel <= LogLevelDebug {
 		elements.SetDebugLogger(cfg.Logger.Printf)
 	}
-	properties.SetThemeChangeHook(a.window.Invalidate)
+	properties.SetThemeChangeHook(a.invalidateAll)
 	if cfg.MCP || os.Getenv("GIODE_MCP") == "1" {
 		a.mcp = newMCPBridge(a, cfg.MCPOptions)
 	}

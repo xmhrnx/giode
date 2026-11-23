@@ -145,11 +145,15 @@ func (a *App) runLoop(view func() Element) error {
 			// the window is hidden: run the queued calls now, and ask
 			// for a frame for what they changed (a visible window gets
 			// one; a hidden one just wakes again with nothing queued).
-			if a.runUICalls() {
+			a.frameMu.Lock()
+			ran := a.runUICalls()
+			a.frameMu.Unlock()
+			if ran {
 				a.window.Invalidate()
 			}
 		case app.FrameEvent:
 			a.throttleFrame()
+			a.frameMu.Lock()
 			start := time.Now()
 			a.frameGeom.Store(&frameGeom{pxPerDp: e.Metric.PxPerDp, size: e.Size})
 			a.runUICalls()
@@ -175,6 +179,7 @@ func (a *App) runLoop(view func() Element) error {
 				if a.ctxMenu != nil {
 					a.ctxMenu.Layout(gtx)
 				}
+				a.layoutInlinePortals(gtx)
 				return dims
 			})
 			if ui.Frame(gtx, root) {
@@ -194,6 +199,7 @@ func (a *App) runLoop(view func() Element) error {
 				a.layoutFrameTimes(gtx)
 			}
 			built := time.Now()
+			a.frameMu.Unlock()
 			e.Frame(gtx.Ops)
 			a.frames.add(start, built, time.Now())
 			a.updateSystemBars()

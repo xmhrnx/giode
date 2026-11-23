@@ -1379,3 +1379,14 @@ const (
 	KeyF11        = ui.KeyF11
 	KeyF12        = ui.KeyF12
 )
+
+// WindowDragArea makes content a handle that drags its window, like an
+// OS title bar: for a frameless window or portal drawing its own
+// chrome. On Windows it also maximizes on a double-click and snaps to
+// screen edges. Wrap buttons inside it in NoWindowDrag so they stay
+// clickable. TitleBar does both for you.
+var WindowDragArea = ui.WindowDragArea
+
+// NoWindowDrag keeps el, inside a WindowDragArea, from dragging the
+// window, so a press on it reaches it.
+var NoWindowDrag = ui.NoWindowDrag

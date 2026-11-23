@@ -3,6 +3,7 @@ package ui
 import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"github.com/xmhrnx/giode/components/accordion"
 	"github.com/xmhrnx/giode/components/appshell"
 	"github.com/xmhrnx/giode/components/autocomplete"
@@ -1529,3 +1530,29 @@ const (
 	KeyF11       = key.NameF11
 	KeyF12       = key.NameF12
 )
+
+// WindowDragArea makes content a handle that drags its window, like an
+// OS title bar: for a frameless window or portal drawing its own
+// chrome. On Windows it also maximizes on a double-click and snaps to
+// screen edges. Wrap buttons inside it in NoWindowDrag so they stay
+// clickable. TitleBar does both for you.
+func WindowDragArea(content Element) Element {
+	return elements.Raw(func(gtx layout.Context) layout.Dimensions {
+		m := op.Record(gtx.Ops)
+		dims := content.Layout(gtx)
+		c := m.Stop()
+		kit.DragArea(gtx, dims.Size)
+		c.Add(gtx.Ops)
+		return dims
+	})
+}
+
+// NoWindowDrag keeps el, inside a WindowDragArea, from dragging the
+// window, so a press on it reaches it.
+func NoWindowDrag(el Element) Element {
+	return elements.Raw(func(gtx layout.Context) layout.Dimensions {
+		dims := el.Layout(gtx)
+		kit.BlockDrag(gtx, dims.Size)
+		return dims
+	})
+}
