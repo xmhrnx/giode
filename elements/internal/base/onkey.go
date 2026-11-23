@@ -4,6 +4,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op"
 )
 
 // keyHandlers are the OnKey handlers registered this frame; namedKeys
@@ -141,6 +142,10 @@ func DispatchKeys(gtx layout.Context) {
 	dispatch := func(e key.Event) {
 		for i := len(handlers) - 1; i >= 0; i-- {
 			if handlers[i](e) {
+				// The frame is laid out already: what the handler
+				// changed shows in the next one, which nothing else
+				// would ask for until the next input.
+				gtx.Execute(op.InvalidateCmd{})
 				break
 			}
 		}

@@ -17,6 +17,7 @@ settings of desktop applications; unsupported platform features are ignored.
 | `OnFileDrop` | `func(paths []string)` | `nil` | Files dropped onto the window from the file manager, on the UI goroutine; see [File drop](#file-drop). |
 | `OnFileDrag` | `func(FileDrag)` | `nil` | Files dragged over the window: enter, over, leave, drop, with the position. |
 | `OnWindowStateChange` | `func(WindowState)` | `nil` | Runs when the window is minimized, maximized, made fullscreen or restored. |
+| `OnFocusChange` | `func(focused bool)` | `nil` | Runs on the UI goroutine when the window gains or loses the keyboard focus (another window or app comes to the front), instead of polling `App.Focused`. |
 | `Background` | `string` | `"#000000"` | Window background color (any CSS hex, or a theme token such as `"theme.background"`, which follows `SetMode`/`SetPalette`). |
 | `StatusBar` / `NavigationBar` | `string` | `Background` | Colors of Android's status and navigation bars. They follow theme changes, so the bars match a light or dark app. Ignored elsewhere. |
 | `Orientation` | `Orientation` | `OrientationAny` | Rotation on mobile: `OrientationAny`, `OrientationPortrait`, `OrientationLandscape`. Ignored on desktop. |

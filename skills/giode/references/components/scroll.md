@@ -32,6 +32,7 @@ giode.Box(giode.Styles{Height: 300}, scroller)
 | `FitContent(on bool) *Scroll` | The viewport hugs the content up to the available space instead of filling it - a sheet with three rows stays three rows tall. |
 | `Axis(a ScrollAxis) *Scroll` | `Vertical` (default), `Horizontal`, or `Vertical\|Horizontal`. A horizontal-only scroll is as tall as its content, like a row - for wide code and tables. |
 | `OffsetX() float32` / `ScrollToX(v float32)` | The horizontal offset. |
+| `ContentWidth() int` / `ViewportWidth() int` / `MaxOffsetX() int` | The content's and the viewport's widths and how far it scrolls sideways, as measured on the last frame. With `Vertical\|Horizontal`, a sideways wheel or trackpad swipe scrolls sideways and a horizontal scrollbar shows. An editor keeps its caret in view with `ScrollToX` and these. |
 | `OnScroll(fn func(offset, max float32)) *Scroll` | Called after the offset changes, with the offset and its maximum in px (horizontal ones for a horizontal-only scroll). |
 | `Styles(st Styles) *Scroll` | Replaces the styles from the next frame. |
 

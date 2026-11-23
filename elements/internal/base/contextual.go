@@ -248,6 +248,18 @@ func ContextClaimed(e pointer.Event) bool {
 // opened one may be replayed from a cache, scrolled away or gone.
 var openMenus []ContextMenu
 
+// ShowMenu has m laid out every frame while it's open, wherever it was
+// opened from, as an element's context menu is: a menu opened at a
+// click (Menu.OpenAtClick) needs no place in the view.
+func ShowMenu(m ContextMenu) {
+	for _, o := range openMenus {
+		if o == m {
+			return
+		}
+	}
+	openMenus = append(openMenus, m)
+}
+
 // DrainContextMenus lays out the context menus that show, before the
 // portals they draw through. The app (and ui.Frame) calls it once per
 // frame, after the view.

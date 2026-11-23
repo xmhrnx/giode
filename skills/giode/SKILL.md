@@ -175,7 +175,11 @@ after it in snake_case: `FileCard` in `file_card.go`, `SettingsDialog` in
 `settings_dialog.go`. The component's private helpers, option types and constants stay in
 its file; anything shared by several components moves to its own file (`theme.go`,
 `format.go`). Don't add a second component to an existing file, even a small one; create
-a new file.
+a new file. Go reads some file name endings as build constraints: a name ending in `_` and an
+OS or architecture (`_windows.go`, `_linux.go`, `_js.go`, `_ios.go`, `_android.go`,
+`_arm64.go`, and `_test.go`) builds only there, so a `NewWindow` dialog in
+`new_windows.go` or a `ChatAndroid` card in `chat_android.go` silently vanishes from
+other builds. Name such files differently (`new_window_dialog.go`, `android_chat.go`).
 
 **Project structure.** Separate the UI from the work it shows:
 

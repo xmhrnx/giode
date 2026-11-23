@@ -1298,6 +1298,25 @@ type (
 	RichSuggester  = ui.RichSuggester
 )
 
+// The handles the Input constructors and Scroll return, for struct
+// fields and function parameters: InputElement is a text field
+// (Input.Text), CheckboxElement, SelectElement, SliderElement,
+// SwitchElement, SegmentedElement, AutoCompleteElement,
+// NumberInputElement and ColorPickerElement the other Input fields,
+// ScrollElement a Scroll.
+type (
+	InputElement        = ui.InputElement
+	CheckboxElement     = ui.CheckboxElement
+	SelectElement       = ui.SelectElement
+	SliderElement       = ui.SliderElement
+	SwitchElement       = ui.SwitchElement
+	SegmentedElement    = ui.SegmentedElement
+	AutoCompleteElement = ui.AutoCompleteElement
+	NumberInputElement  = ui.NumberInputElement
+	ColorPickerElement  = ui.ColorPickerElement
+	ScrollElement       = ui.ScrollElement
+)
+
 // DataGridSliceSource is a data grid source over a slice of rows.
 type DataGridSliceSource[T any] = ui.DataGridSliceSource[T]
 
@@ -1406,4 +1425,23 @@ var Terminal = ui.Terminal
 type (
 	TerminalElement = ui.TerminalElement
 	TerminalPalette = ui.TerminalPalette
+)
+
+// SplitPane is two panes with a divider between them the user drags:
+// a sidebar and an editor, an editor and a terminal. Create it once
+// and lay it out every frame; see package splitpane.
+//
+//	split := giode.SplitPane(sidebar, editor).FirstSize(240)
+var SplitPane = ui.SplitPane
+
+// SplitPaneElement is the element SplitPane returns; SplitAxis how its
+// panes are placed.
+type (
+	SplitPaneElement = ui.SplitPaneElement
+	SplitAxis        = ui.SplitAxis
+)
+
+const (
+	SplitHorizontal = ui.SplitHorizontal
+	SplitVertical   = ui.SplitVertical
 )

@@ -93,6 +93,9 @@ func (a *App) handleConfig(cfg app.Config) {
 	if focusChanged && cfg.Focused {
 		a.checkSystemTheme()
 	}
+	if focusChanged && a.cfg.OnFocusChange != nil {
+		a.cfg.OnFocusChange(cfg.Focused)
+	}
 	if old == s && !focusChanged {
 		return
 	}

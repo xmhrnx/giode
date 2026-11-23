@@ -212,6 +212,9 @@ var (
 	// DrainContextMenus lays out the context menus elements opened;
 	// the app calls it every frame.
 	DrainContextMenus = base.DrainContextMenus
+	// ShowMenu lays a menu out every frame while it's open, wherever
+	// it was opened from.
+	ShowMenu = base.ShowMenu
 	// FrameNumber is the number of the frame being laid out.
 	FrameNumber = base.FrameNumber
 	// ContextClaimed reports whether an element opened its context

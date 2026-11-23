@@ -15,6 +15,7 @@ import (
 	"github.com/xmhrnx/giode/elements/internal/base"
 	"github.com/xmhrnx/giode/fonts"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 type textHarness struct {
@@ -141,5 +142,56 @@ func TestSelectable_TouchLongPress(t *testing.T) {
 	clickCopy(t, h)
 	if _, data, ok := h.r.WriteClipboard(); !ok || string(data) != "bold plain" {
 		t.Errorf("clipboard = %q, want the plain text", data)
+	}
+}
+
+// MaxLines cuts the paragraph; TextOverflowEllipsis ends it in "…".
+func TestRichText_MaxLines(t *testing.T) {
+	fonts.UseGofont()
+	long := "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen"
+	for _, tc := range []struct {
+		name string
+		st   styles.Styles
+		max  int
+	}{
+		{"none", styles.Styles{FontSize: 16, Width: 120}, 0},
+		{"two", styles.Styles{FontSize: 16, Width: 120, MaxLines: 2}, 2},
+		{"one ellipsis", styles.Styles{FontSize: 16, Width: 120, MaxLines: 1, TextOverflow: properties.TextOverflowEllipsis}, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var h0 int
+			h := &textHarness{now: time.Unix(0, 0), view: func() base.Element {
+				return RichText(tc.st, SpanText(long), SpanText(" bold tail", styles.Styles{FontWeight: properties.FontWeightBold}))
+			}}
+			h.frame()
+			h0 = h.dims.Size.Y
+			one := &textHarness{now: time.Unix(0, 0), view: func() base.Element {
+				return RichText(styles.Styles{FontSize: 16, Width: 120}, SpanText("one"))
+			}}
+			one.frame()
+			lines := (h0 + one.dims.Size.Y/2) / one.dims.Size.Y
+			if tc.max > 0 && lines != tc.max {
+				t.Errorf("%d lines (%dpx, a line %dpx), want %d", lines, h0, one.dims.Size.Y, tc.max)
+			}
+			if tc.max == 0 && lines < 4 {
+				t.Errorf("unlimited: %d lines", lines)
+			}
+		})
+	}
+}
+
+// Text and RichText take a fixed Width wherever they're laid out,
+// wrapping at it, as a Box does.
+func TestTextWidth(t *testing.T) {
+	fonts.UseGofont()
+	for _, el := range []base.Element{
+		Text("hi", styles.Styles{FontSize: 16, Width: 200}),
+		RichText(styles.Styles{FontSize: 16, Width: 200}, SpanText("hi")),
+	} {
+		h := &textHarness{now: time.Unix(0, 0), view: func() base.Element { return el }}
+		h.frame()
+		if h.dims.Size.X != 200 {
+			t.Errorf("%T: width %d, want 200", el, h.dims.Size.X)
+		}
 	}
 }

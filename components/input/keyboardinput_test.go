@@ -179,3 +179,23 @@ func TestKeyboardInputBlur(t *testing.T) {
 		t.Errorf("Focused() = %v, OnBlur ran = %v after Blur", h.k.Focused(), blurred)
 	}
 }
+
+// Text typed before a key in the same frame reaches the app before it.
+func TestKeyboardInputOrder(t *testing.T) {
+	h := newKBHarness()
+	var order []string
+	h.k.OnText(func(s string) { order = append(order, "text:"+s) })
+	h.k.OnKey(func(e key.Event) bool {
+		if e.State == key.Press {
+			order = append(order, "key:"+string(e.Name))
+		}
+		return true
+	})
+	h.send(
+		key.EditEvent{Text: "foo("},
+		key.Event{Name: key.NameReturn, State: key.Press},
+		key.EditEvent{Range: key.Range{Start: 4, End: 4}, Text: "x"},
+		key.Event{Name: key.NameLeftArrow, State: key.Press},
+	)
+	check(t, "order", order, []string{"text:foo(", "key:⏎", "text:x", "key:←"})
+}

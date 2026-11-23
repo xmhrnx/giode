@@ -66,6 +66,10 @@ type KeyboardInput struct {
 	caret    image.Rectangle
 	caretSet bool
 
+	// delivered is set when a handler got text or a key this frame: what
+	// it changed may be laid out already, so another frame follows.
+	delivered bool
+
 	pass   func(gtx layout.Context) bool
 	origin image.Point
 	size   image.Point
@@ -341,12 +345,19 @@ func (k *KeyboardInput) update(gtx layout.Context) (changed bool) {
 				break
 			}
 			elements.SeenKey(e)
-			if e.State == key.Press && (e.Name == key.NameReturn || e.Name == key.NameEnter) {
+			enter := e.State == key.Press && (e.Name == key.NameReturn || e.Name == key.NameEnter)
+			if enter {
 				enterPressed = true
 			}
 			if typesWithAlt(e) && len(e.Name) == 1 {
 				altKeys = append(altKeys, e)
 				break
+			}
+			// The text typed before the key goes first: "foo(" then
+			// Enter in one frame mustn't reach the app as Enter, then
+			// "foo(". A new line in it is this Enter, sent as text too.
+			if k.comp.Start < 0 {
+				k.commit(enter)
 			}
 			k.key(e)
 		case key.EditEvent:
@@ -366,17 +377,23 @@ func (k *KeyboardInput) update(gtx layout.Context) (changed bool) {
 			// The whole buffer is the snippet; sync sends it.
 		}
 	}
+	k.commit(enterPressed)
 	if !typedAfterAlt {
 		for _, e := range altKeys {
 			k.key(e)
 		}
 	}
-	k.commit(enterPressed)
+	if k.delivered {
+		k.delivered = false
+		kit.RequestFrame(gtx)
+		changed = true
+	}
 	return changed
 }
 
 // key hands a key to OnKey, or on to the app's shortcuts.
 func (k *KeyboardInput) key(e key.Event) {
+	k.delivered = true
 	if k.onKey != nil && k.onKey(e) {
 		return
 	}
@@ -440,6 +457,7 @@ func (k *KeyboardInput) commit(enterPressed bool) {
 			k.key(key.Event{Name: key.NameReturn, State: key.Release})
 		}
 		if line != "" && k.onText != nil {
+			k.delivered = true
 			k.onText(line)
 		}
 	}

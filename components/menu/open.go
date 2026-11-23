@@ -10,12 +10,18 @@ import (
 	"gioui.org/f32"
 
 	"github.com/xmhrnx/giode/elements"
+	"github.com/xmhrnx/giode/state"
 )
 
 // OpenAt opens the menu anchored at p, in window pixel coordinates.
 func (m *Menu) OpenAt(p f32.Point) {
 	m.pos = p
 	m.open = true
+	if !m.isSubmenu {
+		// Drawn whether or not the view lays it out.
+		elements.ShowMenu(m)
+		state.RequestRedraw()
+	}
 }
 
 // OpenAtWindow opens the menu at p, in window pixels. Elements given the

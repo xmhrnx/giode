@@ -45,6 +45,11 @@ giode.Stack(giode.Styles{Width: -1, Height: -1}, tabs, editorView)
   that the strip scrolls with the wheel or a swipe, and the "+" stays at its end. A title
   that's cut off ends in "…". Resting the pointer on a tab shows its `Tooltip`, or else its
   whole title when it's cut off.
+- **Pinned tabs.** `DocTab.Pinned`, `SetPinned(id, on)` or the tab menu's Pin keeps a tab
+  at the start of the strip, before the others. A pin replaces its close button, and
+  clicking the pin unpins it. A middle click doesn't close it, and Close Others, Close to
+  the Right and Close All leave it open; its menu's Close still does. Dragging keeps
+  pinned tabs among the pinned. `OnPin` reports the user pinning or unpinning.
 - **Reordering.** Dragging a tab with the mouse moves it among the others, and `OnReorder`
   gets the new order. On touch screens a swipe scrolls the strip instead.
 - **Right to left.** In right-to-left locales the tabs run from the right.
@@ -63,6 +68,9 @@ giode.Stack(giode.Styles{Width: -1, Height: -1}, tabs, editorView)
 | `SetTooltip(id, tooltip string)` | Sets the text shown when the pointer rests on the tab. |
 | `SetIcon(id string, icon Element)` | Sets the element shown before the title, laid out in a 16dp square (a file type icon); nil removes it. |
 | `SetModified(id string, on bool)` | Shows or hides the unsaved-changes dot. |
+| `SetPinned(id string, on bool)` | Pins or unpins a tab, moving it to the end of the pinned tabs or the start of the others. |
+| `OnPin(fn func(id string, pinned bool))` | Called when the user pins or unpins a tab. |
+| `Indicator(c Color)` | The color of the line over the selected tab; `theme.primary` by default. |
 | `Rename(id, newID string)` | Changes a tab's ID (Save As), keeping its place and selection. |
 | `Move(id string, to int)` | Moves a tab to index `to`. |
 | `Select(id string)` | Selects a tab without calling `OnSelect`. |

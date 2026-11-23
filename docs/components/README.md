@@ -27,6 +27,7 @@ stateless elements.
 | Pressable | [pressable.md](pressable.md) | press state, click events |
 | TitleBar | [titlebar.md](titlebar.md) | window state, buttons |
 | Terminal | [terminal.md](terminal.md) | screen, history, selection, the program |
+| SplitPane | [splitpane.md](splitpane.md) | the divider's place |
 | Transition | [transition.md](transition.md) | visibility, progress |
 | Progress | [progress.md](progress.md) | stateless |
 | Spinner | [spinner.md](spinner.md) | stateless, animated |

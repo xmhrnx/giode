@@ -24,7 +24,7 @@ func TestLayoutRich_MaxLines(t *testing.T) {
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Constraints{Max: image.Pt(200, 1000)}, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	all := layoutRich(sh, gtx, RichParams{}, spans)
-	two := layoutRich(sh, gtx, RichParams{MaxLines: 2}, spans)
+	two := layoutRich(sh, gtx, RichParams{MaxLines: 2, Ellipsis: true}, spans)
 	tops := map[int]bool{}
 	for _, s := range two.Segments {
 		tops[s.Offset.Y] = true

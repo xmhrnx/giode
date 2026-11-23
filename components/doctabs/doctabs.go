@@ -18,6 +18,7 @@ import (
 	"github.com/xmhrnx/giode/components/menu"
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 // Tab is one document's tab.
@@ -38,6 +39,12 @@ type Tab struct {
 	// icon: any element, laid out in a 16dp square (giode.IconSVG,
 	// giode.Image, ...).
 	Icon elements.Element
+	// Pinned keeps the tab at the start of the strip, before the
+	// unpinned ones: a pin replaces its close button (clicking it
+	// unpins), a middle click doesn't close it, and Close Others, Close
+	// to the Right and Close All leave it open. Its menu has Pin and
+	// Unpin.
+	Pinned bool
 }
 
 // DocTabs is a stateful strip of document tabs. Create it once with
@@ -73,6 +80,8 @@ type DocTabs struct {
 	onCloseTabs func(ids []string)
 	onNew       func()
 	onReorder   func(ids []string)
+	onPin       func(id string, pinned bool)
+	indicator   properties.Color
 	tabMenu     func(id string, m *menu.Menu)
 	menuOff     bool
 
@@ -147,6 +156,7 @@ func (d *DocTabs) Add(tab Tab) *DocTabs {
 		return d
 	}
 	d.tabs = append(d.tabs, tab)
+	d.pinFirst()
 	return d
 }
 
@@ -158,6 +168,7 @@ func (d *DocTabs) Insert(i int, tab Tab) {
 	}
 	i = min(max(i, 0), len(d.tabs))
 	d.tabs = slices.Insert(d.tabs, i, tab)
+	d.pinFirst()
 }
 
 // Remove takes the tab with id away. When it was selected, the tab
@@ -237,6 +248,63 @@ func (d *DocTabs) Move(id string, to int) {
 	d.tabs = slices.Delete(d.tabs, i, i+1)
 	to = min(max(to, 0), len(d.tabs))
 	d.tabs = slices.Insert(d.tabs, to, tab)
+	d.pinFirst()
+}
+
+// pinFirst keeps the pinned tabs before the others, each group in its
+// order.
+func (d *DocTabs) pinFirst() {
+	slices.SortStableFunc(d.tabs, func(a, b Tab) int {
+		switch {
+		case a.Pinned == b.Pinned:
+			return 0
+		case a.Pinned:
+			return -1
+		}
+		return 1
+	})
+}
+
+// SetPinned pins or unpins the tab with id: a tab pinned goes after the
+// other pinned tabs, one unpinned before the other unpinned ones. It
+// doesn't call OnPin.
+func (d *DocTabs) SetPinned(id string, pinned bool) {
+	i := d.Index(id)
+	if i < 0 || d.tabs[i].Pinned == pinned {
+		return
+	}
+	tab := d.tabs[i]
+	tab.Pinned = pinned
+	d.tabs = slices.Delete(d.tabs, i, i+1)
+	at := 0
+	for at < len(d.tabs) && d.tabs[at].Pinned {
+		at++
+	}
+	d.tabs = slices.Insert(d.tabs, at, tab)
+	d.reveal = true
+}
+
+// pin pins or unpins a tab as the user asked, telling OnPin.
+func (d *DocTabs) pin(id string, pinned bool) {
+	d.SetPinned(id, pinned)
+	if d.onPin != nil {
+		d.onPin(id, pinned)
+	}
+}
+
+// OnPin sets the handler for the user pinning or unpinning a tab (its
+// menu, or the pin on a pinned tab), to remember it. The tab is pinned
+// or unpinned already. It returns d for chaining.
+func (d *DocTabs) OnPin(fn func(id string, pinned bool)) *DocTabs {
+	d.onPin = fn
+	return d
+}
+
+// Indicator sets the color of the line over the selected tab; the
+// theme's primary color by default. It returns d for chaining.
+func (d *DocTabs) Indicator(c properties.Color) *DocTabs {
+	d.indicator = c
+	return d
 }
 
 // Select selects the tab with id, scrolling it into view, without
@@ -424,22 +492,27 @@ func (d *DocTabs) buildMenu(id string) {
 	}
 	if d.closable {
 		m.Item("Close", func() { d.requestClose([]string{id}) })
-		if len(d.tabs) > 1 {
+		if len(ids(func(j int) bool { return d.tabs[j].ID != id && !d.tabs[j].Pinned })) > 0 {
 			m.Item("Close Others", func() {
-				d.requestClose(ids(func(j int) bool { return d.tabs[j].ID != id }))
+				d.requestClose(ids(func(j int) bool { return d.tabs[j].ID != id && !d.tabs[j].Pinned }))
 			})
 		} else {
 			m.DisabledItem("Close Others")
 		}
-		if i < len(d.tabs)-1 {
+		if len(ids(func(j int) bool { return j > i && !d.tabs[j].Pinned })) > 0 {
 			m.Item("Close to the Right", func() {
 				k := d.Index(id)
-				d.requestClose(ids(func(j int) bool { return j > k }))
+				d.requestClose(ids(func(j int) bool { return j > k && !d.tabs[j].Pinned }))
 			})
 		} else {
 			m.DisabledItem("Close to the Right")
 		}
-		m.Item("Close All", func() { d.requestClose(ids(func(int) bool { return true })) })
+		m.Item("Close All", func() { d.requestClose(ids(func(j int) bool { return !d.tabs[j].Pinned })) })
+	}
+	if d.tabs[i].Pinned {
+		m.Item("Unpin", func() { d.pin(id, false) })
+	} else {
+		m.Item("Pin", func() { d.pin(id, true) })
 	}
 	if d.tabMenu != nil {
 		d.tabMenu(id, m)

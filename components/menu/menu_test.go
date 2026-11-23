@@ -226,3 +226,55 @@ func TestPanelBorderAndShadow(t *testing.T) {
 		t.Errorf("custom panel: border %d %q, shadow %+v", custom.BorderWidth, custom.BorderColor, custom.BoxShadow)
 	}
 }
+
+// A trigger around something clickable - a button - still opens the
+// menu: the button takes the press first.
+func TestMenu_TriggerAroundButton(t *testing.T) {
+	elements.SetWindowSize(image.Pt(400, 400))
+	defer elements.SetWindowSize(image.Point{})
+	m := New().Item("Item", func() {})
+	btnClicks := 0
+	btn := elements.NewPressable(func(elements.PressState) elements.Element {
+		return elements.Box(styles.Styles{Width: 60, Height: 30})
+	}).OnClick(func(elements.ClickEvent) { btnClicks++ })
+	wrapped := m.Trigger(btn)
+	var ops op.Ops
+	var router input.Router
+	gtx := layout.Context{Ops: &ops, Source: router.Source(), Constraints: layout.Exact(image.Pt(400, 400))}
+	frame := func() {
+		ops.Reset()
+		wrapped.Layout(gtx)
+		m.Layout(gtx)
+		elements.DrainPortals(gtx)
+		router.Frame(&ops)
+	}
+	frame()
+	p := f32.Pt(10, 10)
+	router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: p})
+	router.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: p, Buttons: pointer.ButtonPrimary})
+	frame()
+	router.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: p})
+	frame()
+	if !m.Opened() {
+		t.Errorf("the menu didn't open (the button clicked %d times)", btnClicks)
+	}
+}
+
+// A menu opened at a click is drawn without the view laying it out.
+func TestOpenAtClickDrawsItself(t *testing.T) {
+	elements.SetWindowSize(image.Pt(400, 400))
+	defer elements.SetWindowSize(image.Point{})
+	m := New().Item("Close", func() {})
+	defer m.Close()
+	m.OpenAtClick(elements.ClickEvent{WindowPosition: image.Pt(30, 40)})
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(400, 400))}
+	elements.BeginFrame()
+	elements.DrainContextMenus(gtx)
+	elements.DrainPortals(gtx)
+	n := elements.FrameNumber()
+	elements.EndFrame()
+	if m.LastLaidOut() != n {
+		t.Errorf("the open menu wasn't laid out (frame %d, last %d)", n, m.LastLaidOut())
+	}
+}

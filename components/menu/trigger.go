@@ -23,13 +23,16 @@ import (
 // in the tree (its panel renders via elements.RegisterPortal
 // regardless of where) for its open state to actually render.
 func (m *Menu) Trigger(el elements.Element) elements.Element {
-	return &menuTrigger{menu: m, trigger: el, click: new(widget.Clickable)}
+	return &menuTrigger{menu: m, trigger: el, click: new(widget.Clickable), tap: new(gesture.Click)}
 }
 
 type menuTrigger struct {
 	menu    *Menu
 	trigger elements.Element
 	click   *widget.Clickable
+	// tap sees clicks over the trigger, passing them on: a clickable
+	// trigger (a Button) takes them before click, beneath it, could.
+	tap *gesture.Click
 	// origin is the trigger's position, exact once a frame's layout is
 	// done (see elements.TrackPosition).
 	origin        image.Point
@@ -46,13 +49,25 @@ func (t *menuTrigger) Layout(gtx layout.Context) layout.Dimensions {
 	// Handles its input without an input pass; see kit.OpaqueInput.
 	kit.OpaqueInput()
 	t.hoverOpens(gtx)
-	if t.click.Clicked(gtx) {
+	tapped := false
+	for {
+		e, ok := t.tap.Update(gtx.Source)
+		if !ok {
+			break
+		}
+		if e.Kind == gesture.KindClick {
+			tapped = true
+		}
+	}
+	// A click over plain content reaches both; it toggles once.
+	if clicked := t.click.Clicked(gtx); clicked || tapped {
 		if t.menu.open {
 			t.menu.Close()
 		} else if t.bar != nil {
 			t.bar.switchTo(t, false)
 		} else {
 			t.menu.open = true
+			elements.ShowMenu(t.menu)
 		}
 		// The menu's panel was already laid out (or not) this frame:
 		// draw it opened or closed now, not on the next input.
@@ -71,6 +86,15 @@ func (t *menuTrigger) Layout(gtx layout.Context) layout.Dimensions {
 	}
 	elements.TrackPosition(&t.origin)
 	t.height, t.width = dims.Size.Y, dims.Size.X
+	// Over the trigger, passing presses on to it and the clickable
+	// beneath.
+	{
+		pass := pointer.PassOp{}.Push(gtx.Ops)
+		area := clip.Rect{Max: dims.Size}.Push(gtx.Ops)
+		t.tap.Add(gtx.Ops)
+		area.Pop()
+		pass.Pop()
+	}
 	if t.hover != nil {
 		// Passes presses through to the clickable beneath.
 		pass := pointer.PassOp{}.Push(gtx.Ops)

@@ -44,14 +44,23 @@ type Pressable struct {
 	st      styles.Styles
 
 	onClick, onDouble, onSecondary func(ClickEvent)
-	onLongPress                    func(ClickEvent)
-	onDragStart, onDragMove        func(DragEvent)
-	onDragEnd                      func(DragEvent)
-	label                          string
-	semantics                      func(n *base.SemanticNode)
-	cursor                         properties.Cursor
-	disabled                       bool
-	focusable                      bool
+	onPrimary, onPress             func(ClickEvent)
+	// dragSlop is how far, in dp, a press moves before it's a drag;
+	// negative for the default.
+	dragSlop float32
+	// pressClicks counts presses close together in time and place, for
+	// OnPress; lastPress and lastPressPos are the last one's.
+	pressClicks             int
+	lastPress               time.Time
+	lastPressPos            f32.Point
+	onLongPress             func(ClickEvent)
+	onDragStart, onDragMove func(DragEvent)
+	onDragEnd               func(DragEvent)
+	label                   string
+	semantics               func(n *base.SemanticNode)
+	cursor                  properties.Cursor
+	disabled                bool
+	focusable               bool
 	// selectable keeps the content's text selectable, as in a clickable
 	// Box (OnClick): a mouse drag across it selects rather than clicks.
 	selectable bool
@@ -94,17 +103,46 @@ type Pressable struct {
 // is optional and styles a box wrapped around the content: padding,
 // background, FlexGrow, Width, ... and Cursor (default pointer).
 func NewPressable(content func(s PressState) base.Element, st ...styles.Styles) *Pressable {
-	p := &Pressable{content: content, focusable: true}
+	p := &Pressable{content: content, focusable: true, dragSlop: -1}
 	if len(st) > 0 {
 		p.st = st[0]
 	}
 	return p
 }
 
-// OnClick sets the handler for clicks of any button and count. It
-// returns p for chaining.
+// OnClick sets the handler for clicks of any button and count (see
+// OnPrimaryClick for the primary button alone). It returns p for
+// chaining.
 func (p *Pressable) OnClick(fn func(e ClickEvent)) *Pressable {
 	p.onClick = fn
+	return p
+}
+
+// OnPrimaryClick sets a handler for clicks of the primary button (and
+// keyboard and programmatic clicks), run in addition to OnClick: the
+// handler for a plain click that a right or middle click shouldn't
+// trigger. It returns p for chaining.
+func (p *Pressable) OnPrimaryClick(fn func(e ClickEvent)) *Pressable {
+	p.onPrimary = fn
+	return p
+}
+
+// OnPress sets a handler for a pointer pressing down on it, any button,
+// before it's released: where it pressed, which button, and how many
+// presses in a row (Clicks 2 for the second press of a double click).
+// An editor places its caret on the press, as text editors do, rather
+// than on the release; the release still fires OnClick (unless the
+// press became a drag). It returns p for chaining.
+func (p *Pressable) OnPress(fn func(e ClickEvent)) *Pressable {
+	p.onPress = fn
+	return p
+}
+
+// DragThreshold sets how far, in dp, a press moves before it's a drag
+// (OnDragStart); 6dp by default. 0 starts the drag on the first move,
+// as a text selection does. It returns p for chaining.
+func (p *Pressable) DragThreshold(dp float32) *Pressable {
+	p.dragSlop = max(dp, 0)
 	return p
 }
 

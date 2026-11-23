@@ -14,6 +14,27 @@ func (s *Scroll) ViewportHeight() int {
 	return s.viewportH
 }
 
+// ContentWidth returns the total width of the scrolled content, as
+// measured on the last frame. With Axis(Horizontal) (or both axes) the
+// content may be wider than the viewport; otherwise it's laid out at
+// the viewport's width.
+func (s *Scroll) ContentWidth() int {
+	return s.contentW
+}
+
+// ViewportWidth returns the width of the visible viewport, as measured
+// on the last frame: for keeping a caret in view sideways, together
+// with OffsetX and ScrollToX.
+func (s *Scroll) ViewportWidth() int {
+	return s.viewportW
+}
+
+// MaxOffsetX returns how far it can scroll sideways, in pixels: 0 when
+// the content fits.
+func (s *Scroll) MaxOffsetX() int {
+	return s.maxOffsetX()
+}
+
 // Progress returns how far scrolled, from 0 (top) to 1 (bottom); 0
 // when there's nothing to scroll (the content fits the viewport).
 func (s *Scroll) Progress() float32 {

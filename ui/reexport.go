@@ -44,6 +44,7 @@ import (
 	"github.com/xmhrnx/giode/components/skiplink"
 	"github.com/xmhrnx/giode/components/slider"
 	"github.com/xmhrnx/giode/components/spinner"
+	"github.com/xmhrnx/giode/components/splitpane"
 	"github.com/xmhrnx/giode/components/swipeable"
 	"github.com/xmhrnx/giode/components/tabs"
 	"github.com/xmhrnx/giode/components/terminal"
@@ -1444,6 +1445,25 @@ type (
 	RichSuggester  = richedit.Suggester
 )
 
+// The handles the Input constructors and Scroll return, for struct
+// fields and function parameters: InputElement is a text field
+// (Input.Text), CheckboxElement, SelectElement, SliderElement,
+// SwitchElement, SegmentedElement, AutoCompleteElement,
+// NumberInputElement and ColorPickerElement the other Input fields,
+// ScrollElement a Scroll.
+type (
+	InputElement        = input.Input
+	CheckboxElement     = checkbox.Checkbox
+	SelectElement       = dropdown.Select
+	SliderElement       = slider.Slider
+	SwitchElement       = toggle.Switch
+	SegmentedElement    = segmented.Control
+	AutoCompleteElement = autocomplete.AutoComplete
+	NumberInputElement  = numberinput.NumberInput
+	ColorPickerElement  = colorpicker.ColorPicker
+	ScrollElement       = scroll.Scroll
+)
+
 // DataGridSliceSource is a data grid source over a slice of rows.
 type DataGridSliceSource[T any] = datagrid.SliceSource[T]
 
@@ -1573,4 +1593,25 @@ func Terminal() *TerminalElement { return terminal.New() }
 type (
 	TerminalElement = terminal.Terminal
 	TerminalPalette = terminal.Palette
+)
+
+// SplitPane is two panes with a divider between them the user drags:
+// a sidebar and an editor, an editor and a terminal. Create it once
+// and lay it out every frame; see package splitpane.
+//
+//	split := giode.SplitPane(sidebar, editor).FirstSize(240)
+func SplitPane(first, second func() Element) *SplitPaneElement {
+	return splitpane.New(first, second)
+}
+
+// SplitPaneElement is the element SplitPane returns; SplitAxis how its
+// panes are placed.
+type (
+	SplitPaneElement = splitpane.SplitPane
+	SplitAxis        = splitpane.Axis
+)
+
+const (
+	SplitHorizontal = splitpane.Horizontal
+	SplitVertical   = splitpane.Vertical
 )

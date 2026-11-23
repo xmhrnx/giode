@@ -43,9 +43,10 @@ type RichParams struct {
 	Alignment       text.Alignment
 	LineHeight      unit.Sp
 	LineHeightScale float32
-	// MaxLines, when above zero, stops after that many lines; the last
-	// ends in an ellipsis when text was left out.
+	// MaxLines, when above zero, stops after that many lines; with
+	// Ellipsis, the last ends in "…" when text was left out.
 	MaxLines int
+	Ellipsis bool
 }
 
 // Segment is a piece of one span on one line.
@@ -118,6 +119,9 @@ func richKey(gtx layout.Context, p RichParams, spans []Span) uint64 {
 	w(uint64(math.Float32bits(float32(p.LineHeight))))
 	w(uint64(math.Float32bits(p.LineHeightScale)))
 	w(uint64(p.MaxLines))
+	if p.Ellipsis {
+		w(1)
+	}
 	h.WriteString(gtx.Locale.Language)
 	for _, s := range spans {
 		h.WriteString(string(s.Font.Typeface))
@@ -412,7 +416,7 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 			i--
 		}
 	}
-	if truncated {
+	if truncated && p.Ellipsis {
 		ellipsize(sh, gtx, p, in, out, lastLine)
 	}
 	out.Dims = layout.Dimensions{Size: gtx.Constraints.Constrain(overall)}

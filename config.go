@@ -180,6 +180,11 @@ type Config struct {
 	// maximized, made fullscreen or restored - by the app or by the
 	// user.
 	OnWindowStateChange func(WindowState)
+	// OnFocusChange runs on the UI goroutine when the window gains or
+	// loses the keyboard focus (another window or app comes to the
+	// front): to pause a caret, dim a selection or save a draft,
+	// without polling App.Focused.
+	OnFocusChange func(focused bool)
 	// Locale is the app's locale ("fa", "pt-BR") for the i18n package
 	// and the layout's reading direction; the system's by default. Change
 	// it later with SetLocale.

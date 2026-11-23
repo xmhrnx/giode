@@ -45,8 +45,14 @@ card := giode.Pressable(func(s giode.PressState) giode.Element {
 screen's way to open context actions; the release that follows isn't a click). With a
 mouse, use `OnSecondaryClick`. `Styles(st)` replaces the box styles from the next frame.
 
-`OnClick` sees every click; `OnDoubleClick` and `OnSecondaryClick` run in addition for
-those kinds.
+`OnClick` sees every click, of any button; `OnPrimaryClick`, `OnDoubleClick` and
+`OnSecondaryClick` run in addition for those kinds - `OnPrimaryClick` for a click a right
+or middle click shouldn't trigger.
+
+`OnPress(fn)` runs when a pointer presses down, before the release, with where it
+pressed, which button, and `Clicks` counting presses in a row (2 on the second press of a
+double-click). An editor places its caret on the press, as text editors do; the release
+still fires `OnClick`, unless the press became a drag.
 
 ## Dragging
 
@@ -68,7 +74,8 @@ tab := giode.Pressable(tabContent).
 	})
 ```
 
-A press that moves more than 6dp, with any button or a finger, is a drag: `OnDragStart`
+A press that moves more than 6dp (`DragThreshold(dp)` changes that; 0 starts the drag on
+the first move, as a text selection does), with any button or a finger, is a drag: `OnDragStart`
 runs once (with the press position), `OnDragMove` on every move, and `OnDragEnd` on the
 release. **A press that became a drag doesn't click**, so the same element still clicks
 when it's only tapped; `Dragging()` and `PressState.Dragging` report a drag in progress.

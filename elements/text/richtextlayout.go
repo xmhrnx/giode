@@ -127,6 +127,14 @@ func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 		LineHeight: unit.Sp(pst.LineHeight),
 		MaxLines:   int(pst.MaxLines),
 	}
+	if pst.TextOverflow == properties.TextOverflowEllipsis {
+		// As for Text: an ellipsis on the last line kept, one line
+		// unless MaxLines says more.
+		rp.Ellipsis = true
+		if rp.MaxLines == 0 {
+			rp.MaxLines = 1
+		}
+	}
 	if pst.LineHeight != 0 {
 		// LineHeight is the baseline distance, as for Text.
 		rp.LineHeightScale = 1

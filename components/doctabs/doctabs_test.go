@@ -344,3 +344,44 @@ func TestTabIconWidensTab(t *testing.T) {
 		t.Error("SetIcon(nil) kept the icon")
 	}
 }
+
+// Pinned tabs come first, keep a pin for a close button (clicking it
+// unpins), and outlast middle clicks and Close Others.
+func TestPinnedTabs(t *testing.T) {
+	var closed [][]string
+	var pins []string
+	d := threeTabs().
+		OnCloseTabs(func(ids []string) { closed = append(closed, ids) }).
+		OnClose(func(id string) { closed = append(closed, []string{id}) }).
+		OnPin(func(id string, pinned bool) { pins = append(pins, fmt.Sprintf("%s %v", id, pinned)) })
+	d.SetPinned("c", true)
+	d.Add(Tab{ID: "p", Title: "pinned.go", Pinned: true})
+	if ids(d) != "c,p,a,b" {
+		t.Fatalf("order %s, want the pinned first", ids(d))
+	}
+	h := newHarness(d, 800)
+	defer d.menu.Close()
+	h.click(pointer.ButtonTertiary, float32(h.slot("c").r.Min.X+10))
+	if len(closed) != 0 {
+		t.Fatalf("a middle click closed a pinned tab: %v", closed)
+	}
+	if n, ok := h.node("Unpin gamma.go"); !ok || n.Kind != elements.SemanticButton {
+		t.Error("no Unpin button on the pinned tab")
+	}
+	h.click(pointer.ButtonSecondary, float32(h.slot("a").r.Min.X+10))
+	n, ok := h.node("Close Others")
+	if !ok {
+		t.Fatal("no Close Others")
+	}
+	n.Target.(interface{ Click() }).Click()
+	if fmt.Sprint(closed) != "[[b]]" {
+		t.Errorf("Close Others closed %v, want [[b]]", closed)
+	}
+	d.menu.Close()
+	h.frame()
+	// The pin unpins.
+	h.click(pointer.ButtonPrimary, float32(h.slot("c").close.Min.X+5))
+	if d.pinned("c") || ids(d) != "p,c,a,b" || fmt.Sprint(pins) != "[c false]" {
+		t.Errorf("after clicking the pin: pinned %v, order %s, OnPin %v", d.pinned("c"), ids(d), pins)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
+	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements/internal/base"
@@ -14,6 +15,9 @@ func (p *Pressable) fire(e ClickEvent) {
 	p.fired++
 	if p.onClick != nil {
 		p.onClick(e)
+	}
+	if e.Button == MousePrimary && p.onPrimary != nil {
+		p.onPrimary(e)
 	}
 	if e.Clicks == 2 && e.Button == MousePrimary && p.onDouble != nil {
 		p.onDouble(e)
@@ -77,8 +81,12 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 				break
 			}
 			if !p.dragging {
-				slop := float32(gtx.Dp(dragSlop))
-				if d := e.Position.Sub(p.pressPos); d.X*d.X+d.Y*d.Y <= slop*slop {
+				threshold := float32(dragSlop)
+				if p.dragSlop >= 0 {
+					threshold = p.dragSlop
+				}
+				slop := float32(gtx.Dp(unit.Dp(threshold)))
+				if d := e.Position.Sub(p.pressPos); d.X*d.X+d.Y*d.Y <= slop*slop && (slop > 0 || d == (f32.Point{})) {
 					break
 				}
 				p.dragging = true
@@ -121,6 +129,22 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 			// selection, so Ctrl+C copies what the press selects.
 			if p.focusable && e.Source == pointer.Mouse && !p.selectable {
 				gtx.Execute(key.FocusCmd{Tag: p})
+			}
+			if p.onPress != nil {
+				slop := float32(gtx.Dp(multiClickSlop))
+				d := e.Position.Sub(p.lastPressPos)
+				if gtx.Now.Sub(p.lastPress) <= multiClickWindow && d.X*d.X+d.Y*d.Y <= slop*slop {
+					p.pressClicks++
+				} else {
+					p.pressClicks = 1
+				}
+				p.lastPress, p.lastPressPos = gtx.Now, e.Position
+				p.fired++
+				p.onPress(ClickEvent{
+					Clicks: p.pressClicks, Button: p.pressBtn, Modifiers: e.Modifiers,
+					Source: ClickPointer, Position: e.Position.Round(), PositionDp: toDp(e.Position, gtx),
+					WindowPosition: p.origin.Add(e.Position.Round()),
+				})
 			}
 		case pointer.Release:
 			if !p.pressed {

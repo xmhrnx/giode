@@ -339,3 +339,42 @@ func TestPressable_KeyboardClickPosition(t *testing.T) {
 		t.Errorf("programmatic click at %v, want (20, 70)", got.WindowPosition)
 	}
 }
+
+// OnPress reports the press where it happens, counting presses in a
+// row; DragThreshold(0) starts a drag on the first move; OnPrimaryClick
+// skips other buttons.
+func TestPressable_PressAndThreshold(t *testing.T) {
+	var presses []ClickEvent
+	var primary, starts int
+	p := NewPressable(func(PressState) Element { return sized(100, 40) }).
+		OnPress(func(e ClickEvent) { presses = append(presses, e) }).
+		OnPrimaryClick(func(ClickEvent) { primary++ }).
+		OnDragStart(func(DragEvent) { starts++ }).
+		DragThreshold(0)
+	h := &harness{el: p, now: time.Unix(0, 0)}
+	h.frame()
+
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(10, 10)})
+	h.r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: f32.Pt(10, 10), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	if len(presses) != 1 || presses[0].Position != image.Pt(10, 10) || presses[0].Clicks != 1 {
+		t.Fatalf("presses %+v", presses)
+	}
+	h.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(11, 10), Buttons: pointer.ButtonPrimary})
+	h.frame()
+	if starts != 1 {
+		t.Errorf("a 1px move started %d drags, want 1", starts)
+	}
+	h.r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: f32.Pt(11, 10)})
+	h.frame()
+
+	h.click(13, 10, pointer.ButtonPrimary, 0)
+	if len(presses) != 2 || presses[1].Clicks != 2 {
+		t.Errorf("second press: %+v", presses)
+	}
+	h.now = h.now.Add(time.Second)
+	h.click(20, 10, pointer.ButtonSecondary, 0)
+	if primary != 1 {
+		t.Errorf("OnPrimaryClick ran %d times, want 1 (not for the right click)", primary)
+	}
+}

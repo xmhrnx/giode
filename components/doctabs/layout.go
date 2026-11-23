@@ -59,7 +59,7 @@ func (d *DocTabs) colors() colors {
 		muted:     c("", "theme.muted"),
 		border:    c(d.st.BorderColor, "theme.border"),
 		active:    c("", "theme.background"),
-		indicator: c("", "theme.primary"),
+		indicator: c(d.indicator, "theme.primary"),
 		hover:     c("", "theme.text/0.07"),
 		bg:        c(properties.Color(d.st.Background), "transparent"),
 	}
@@ -313,10 +313,26 @@ func (d *DocTabs) drawTab(gtx layout.Context, i int, r image.Rectangle, col colo
 	call.Add(gtx.Ops)
 	toff.Pop()
 
-	// The close button, or the unsaved dot in its place.
+	// The close button, or the unsaved dot in its place; a pinned
+	// tab's pin.
 	cr := s.close.Sub(s.r.Min)
 	showClose := d.closable && (hovered || (sel && !t.Modified))
 	switch {
+	case t.Pinned && !(t.Modified && !(hovered && d.hoverClose)):
+		if hovered && d.hoverClose {
+			rr := clip.UniformRRect(cr, gtx.Dp(4))
+			paint.FillShape(gtx.Ops, col.hover, rr.Op(gtx.Ops))
+		}
+		gc := col.muted
+		if sel || (hovered && d.hoverClose) {
+			gc = col.text
+		}
+		drawPin(gtx, cr, gc)
+	case t.Pinned:
+		// Modified: the dot, the pin when the pointer is over it.
+		rad := gtx.Dp(dotRadius)
+		c := cr.Min.Add(image.Pt(slotPx/2, slotPx/2))
+		paint.FillShape(gtx.Ops, col.text, clip.Ellipse(image.Rect(c.X-rad, c.Y-rad, c.X+rad, c.Y+rad)).Op(gtx.Ops))
 	case showClose:
 		if hovered && d.hoverClose {
 			rr := clip.UniformRRect(cr, gtx.Dp(4))
@@ -348,11 +364,18 @@ func (d *DocTabs) drawTab(gtx layout.Context, i int, r image.Rectangle, col colo
 	if t.Modified {
 		value += " modified"
 	}
+	if t.Pinned {
+		value += " pinned"
+	}
 	elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticTab, Label: t.Title, Value: value, Target: tabActor{d, t.ID}}, image.Pt(w, h))
-	if d.closable {
+	if d.closable || t.Pinned {
+		label := "Close " + t.Title
+		if t.Pinned {
+			label = "Unpin " + t.Title
+		}
 		coff := op.Offset(cr.Min).Push(gtx.Ops)
 		cpop := elements.PushOffset(cr.Min)
-		elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: "Close " + t.Title, Target: closeActor{d, t.ID}}, cr.Size())
+		elements.RecordSemantic(gtx, elements.SemanticNode{Kind: elements.SemanticButton, Label: label, Target: closeActor{d, t.ID}}, cr.Size())
 		cpop()
 		coff.Pop()
 	}
@@ -431,7 +454,7 @@ func (d *DocTabs) hit(p image.Point) (id string, onClose bool) {
 	}
 	for _, s := range d.slots {
 		if p.In(s.r) {
-			return s.id, d.closable && p.In(s.close)
+			return s.id, (d.closable || d.pinned(s.id)) && p.In(s.close)
 		}
 	}
 	return "", false
@@ -549,11 +572,15 @@ func (d *DocTabs) update(gtx layout.Context) bool {
 				}
 			case pr.moved:
 			case pr.button.Contain(pointer.ButtonTertiary):
-				if d.closable && id != "" && id == pr.tab {
+				if d.closable && id != "" && id == pr.tab && !d.pinned(id) {
 					d.requestClose([]string{id})
 				}
 			case pr.close:
-				if onClose && id == pr.tab {
+				switch {
+				case !onClose || id != pr.tab:
+				case d.pinned(id):
+					d.pin(id, false)
+				default:
 					d.requestClose([]string{id})
 				}
 			case pr.newBtn:
@@ -598,9 +625,11 @@ func (d *DocTabs) dragTo(left float32) bool {
 		// It passes a neighbour when its middle passes the neighbour's.
 		c := left + w/2
 		switch {
-		case prev >= 0 && prev < len(d.slots) && c < mid(d.slots[prev].r):
+		// Pinned tabs stay among the pinned, the others among the
+		// others.
+		case prev >= 0 && prev < len(d.slots) && c < mid(d.slots[prev].r) && d.tabs[prev].Pinned == d.tabs[i].Pinned:
 			d.swap(i, prev)
-		case next >= 0 && next < len(d.slots) && c > mid(d.slots[next].r):
+		case next >= 0 && next < len(d.slots) && c > mid(d.slots[next].r) && d.tabs[next].Pinned == d.tabs[i].Pinned:
 			d.swap(i, next)
 		default:
 			return moved
@@ -685,7 +714,13 @@ type closeActor struct {
 	id string
 }
 
-func (a closeActor) Click() { a.d.requestClose([]string{a.id}) }
+func (a closeActor) Click() {
+	if a.d.pinned(a.id) {
+		a.d.pin(a.id, false)
+		return
+	}
+	a.d.requestClose([]string{a.id})
+}
 
 type newActor struct{ d *DocTabs }
 
@@ -697,6 +732,24 @@ func (a newActor) Click() {
 
 // drawGlyph draws a glyph at its own size, whatever the constraints:
 // kit.DrawGlyph fills a minimum it's given.
+// pinned reports whether the tab with id is pinned.
+func (d *DocTabs) pinned(id string) bool {
+	i := d.Index(id)
+	return i >= 0 && d.tabs[i].Pinned
+}
+
+// drawPin draws a push pin centered in r: a head, a collar and a point.
+func drawPin(gtx layout.Context, r image.Rectangle, c color.NRGBA) {
+	u := max(gtx.Dp(1), 1)
+	cx, cy := (r.Min.X+r.Max.X)/2, (r.Min.Y+r.Max.Y)/2
+	head := image.Rect(cx-2*u, cy-5*u, cx+2*u, cy-u)
+	collar := image.Rect(cx-4*u, cy-u, cx+4*u, cy+u)
+	point := image.Rect(cx-u/2-u%2, cy+u, cx+u/2+1, cy+5*u)
+	for _, p := range []image.Rectangle{head, collar, point} {
+		paint.FillShape(gtx.Ops, c, clip.Rect(p).Op())
+	}
+}
+
 func drawGlyph(gtx layout.Context, g kit.Glyph, size unit.Dp, col color.NRGBA) {
 	gtx.Constraints = layout.Constraints{Max: image.Pt(1<<16, 1<<16)}
 	kit.DrawGlyph(gtx, g, size, col)

@@ -54,10 +54,11 @@ menu.Close()
 menu.Opened()
 ```
 
-Without `SetContextMenu`, lay the menu out anywhere in the view: it takes no space there
-(like `Dialog`, its siblings keep their layout), its panel paints above everything else via
-a portal (see [extending.md](../extending.md#rendering-above-everything-portals)), and a
-press anywhere in the window outside it closes it. `OpenAt` takes window coordinates and
+A menu opened with `OpenAt` or `OpenAtClick` draws itself while it's open: it needs no
+place in the view. Laying it out somewhere too does no harm (it takes no space, like
+`Dialog`). Its panel paints above everything else via a portal (see
+[extending.md](../extending.md#rendering-above-everything-portals)), and a press anywhere
+in the window outside it closes it. `OpenAt` takes window coordinates and
 the panel opens exactly there, whatever containers the menu sits in. To open a menu where a
 row or a tab was right-clicked (or long-pressed), pass the click to `OpenAtClick`, which
 needs no Gio import:
@@ -88,10 +89,13 @@ button:
 trigger := giode.Button("File", giode.Styles{Background: "gray"})
 wrapped := menu.Trigger(trigger)
 
-// in the view, lay out wrapped in trigger's place, and lay menu out
-// somewhere too (its panel still renders via a portal):
-giode.Stack(giode.Styles{}, wrapped, menu)
+// in the view, lay out wrapped in trigger's place; the menu draws
+// itself while it's open.
+giode.Row(giode.Styles{}, wrapped, otherButtons)
 ```
+
+The trigger can be anything, clickable or not: a `Button` or a `Pressable` keeps its own
+click and still opens the menu.
 
 ## Menu bar: MenuBar
 
@@ -108,7 +112,7 @@ titleBar.Leading(
 	bar.Add(editMenu, giode.Button("Edit")),
 	bar.Add(viewMenu, giode.Button("View")),
 )
-// lay out fileMenu, editMenu and viewMenu somewhere too, as with Trigger
+// the menus draw themselves while open
 ```
 
 `bar.Add(m, el)` returns the trigger to lay out in el's place. `bar.Open()` returns the open

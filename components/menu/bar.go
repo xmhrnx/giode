@@ -108,6 +108,7 @@ func (b *Bar) step(m *Menu, dir int) bool {
 // open opens t's menu below the trigger, where it was laid out last.
 func (t *menuTrigger) open() {
 	t.menu.open = true
+	elements.ShowMenu(t.menu)
 	t.placeMenu()
 }
 

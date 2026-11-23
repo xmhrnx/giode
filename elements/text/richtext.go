@@ -29,8 +29,10 @@ type RichTextElement struct {
 //
 // st styles the paragraph: Color, FontSize, FontWeight, FontStyle and
 // FontFamily are the defaults spans inherit; TextAlign, LineHeight,
-// TabWidth and MaxLines (the last line ending in "…" when text is cut)
-// apply to the whole paragraph. Like Text it's stateless:
+// TabWidth, MaxLines and TextOverflow (TextOverflowEllipsis ends the
+// last line in "…" when text is cut, and alone means one line) apply
+// to the whole paragraph, and Width, MinWidth and MaxWidth size it, as
+// for Text. Like Text it's stateless:
 // build it in the view function every frame.
 func RichText(st styles.Styles, spans ...Span) *RichTextElement {
 	return &RichTextElement{st: st, spans: spans}
