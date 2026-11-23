@@ -108,7 +108,11 @@ func highContrastToken(c string) (Color, bool) {
 	field := strings.ToLower(strings.TrimPrefix(c, "theme."))
 	v, ok := paletteField(p, field)
 	if !ok {
-		return "", false
+		// App-defined colors keep their mode's value.
+		themeMu.RLock()
+		cur, mode := currentPaletteLocked(), currentMode
+		themeMu.RUnlock()
+		return customColor(field, cur, mode)
 	}
 	if v == "" {
 		v, _ = paletteField(def, field)

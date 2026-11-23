@@ -784,6 +784,9 @@ const (
 var (
 	// IconSVG renders raw SVG path data on a 24x24 viewBox.
 	IconSVG = ui.IconSVG
+	// IconSVGEvenOdd is IconSVG with fill-rule="evenodd": inner
+	// subpaths cut holes whichever way they run.
+	IconSVGEvenOdd = ui.IconSVGEvenOdd
 	// IconSVGCustom renders raw SVG path data on a custom viewBox.
 	IconSVGCustom = ui.IconSVGCustom
 	// IconSVGStroke strokes raw SVG path data (outline icon sets).
@@ -870,6 +873,9 @@ var (
 	// active. Start from DefaultLightPalette/DefaultDarkPalette to
 	// override just a few fields.
 	SetPalette = ui.SetPalette
+	// SetThemeColor names an app color for one mode: "theme.<name>"
+	// resolves to it while that mode is active (see Palette.Custom).
+	SetThemeColor = ui.SetThemeColor
 	// ToggleMode switches between light and dark mode.
 	ToggleMode = ui.ToggleMode
 	// CurrentPalette returns the palette of the active mode.
@@ -1116,6 +1122,23 @@ const (
 	CursorGrabbing       = ui.CursorGrabbing
 	CursorNotAllowed     = ui.CursorNotAllowed
 	CursorWait           = ui.CursorWait
+	CursorProgress       = ui.CursorProgress
+	CursorMove           = ui.CursorMove
+	CursorVertical       = ui.CursorVertical
+	CursorColResize      = ui.CursorColResize
+	CursorRowResize      = ui.CursorRowResize
+	CursorEWResize       = ui.CursorEWResize
+	CursorNSResize       = ui.CursorNSResize
+	CursorNESWResize     = ui.CursorNESWResize
+	CursorNWSEResize     = ui.CursorNWSEResize
+	CursorNResize        = ui.CursorNResize
+	CursorSResize        = ui.CursorSResize
+	CursorEResize        = ui.CursorEResize
+	CursorWResize        = ui.CursorWResize
+	CursorNEResize       = ui.CursorNEResize
+	CursorNWResize       = ui.CursorNWResize
+	CursorSEResize       = ui.CursorSEResize
+	CursorSWResize       = ui.CursorSWResize
 	FitNone              = ui.FitNone
 	FitContain           = ui.FitContain
 	FitCover             = ui.FitCover
@@ -1222,3 +1245,58 @@ const (
 	AutofillAddress     = ui.AutofillAddress
 	AutofillPostalCode  = ui.AutofillPostalCode
 )
+
+// The types the component constructors return, for keeping a stateful
+// component in a struct field or passing it around; the constructor
+// itself has the plain name (Dialog creates a *DialogElement).
+type (
+	AccordionElement      = ui.AccordionElement
+	AvatarElement         = ui.AvatarElement
+	BadgeElement          = ui.BadgeElement
+	ChipElement           = ui.ChipElement
+	ComboboxElement       = ui.ComboboxElement
+	MultiSelectElement    = ui.MultiSelectElement
+	MentionsElement       = ui.MentionsElement
+	CopyButtonElement     = ui.CopyButtonElement
+	DialogElement         = ui.DialogElement
+	DrawerElement         = ui.DrawerElement
+	EmojiPickerElement    = ui.EmojiPickerElement
+	IconButtonElement     = ui.IconButtonElement
+	ImageElement          = ui.ImageElement
+	LicensesElement       = ui.LicensesElement
+	PaginationElement     = ui.PaginationElement
+	CommandPaletteElement = ui.CommandPaletteElement
+	ProgressElement       = ui.ProgressElement
+	SheetElement          = ui.SheetElement
+	SpinnerElement        = ui.SpinnerElement
+	SwipeableElement      = ui.SwipeableElement
+	TabsElement           = ui.TabsElement
+	TitleBarElement       = ui.TitleBarElement
+	TooltipElement        = ui.TooltipElement
+	ZoomElement           = ui.ZoomElement
+	// ComboboxList is a combobox's list of options; Emoji one emoji of
+	// the picker's set; License a module's license for LicensesView;
+	// IconVGIcon a decoded IconVG icon; MenuItem a menu's row.
+	ComboboxList = ui.ComboboxList
+	Emoji        = ui.Emoji
+	License      = ui.License
+	IconVGIcon   = ui.IconVGIcon
+	MenuItem     = ui.MenuItem
+	// The data grid's data source and layout types.
+	DataGridSource       = ui.DataGridSource
+	DataGridLoader       = ui.DataGridLoader
+	DataGridSorter       = ui.DataGridSorter
+	DataGridFilterer     = ui.DataGridFilterer
+	DataGridKeyer        = ui.DataGridKeyer
+	DataGridLayout       = ui.DataGridLayout
+	DataGridColumnLayout = ui.DataGridColumnLayout
+	DataGridEditorKind   = ui.DataGridEditorKind
+	DataGridExportFormat = ui.DataGridExportFormat
+	// RichSubmitMode is what Enter does in a rich editor; RichSuggester
+	// supplies its suggestions.
+	RichSubmitMode = ui.RichSubmitMode
+	RichSuggester  = ui.RichSuggester
+)
+
+// DataGridSliceSource is a data grid source over a slice of rows.
+type DataGridSliceSource[T any] = ui.DataGridSliceSource[T]

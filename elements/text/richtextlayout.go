@@ -125,6 +125,7 @@ func (r *RichTextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 	rp := textrender.RichParams{
 		Alignment:  pst.TextAlign.LayoutAlignment(),
 		LineHeight: unit.Sp(pst.LineHeight),
+		MaxLines:   int(pst.MaxLines),
 	}
 	if pst.LineHeight != 0 {
 		// LineHeight is the baseline distance, as for Text.

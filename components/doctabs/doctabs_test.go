@@ -325,3 +325,22 @@ func TestFit(t *testing.T) {
 		}
 	}
 }
+
+func TestTabIconWidensTab(t *testing.T) {
+	plain, iconed := New(), New()
+	plain.Add(Tab{ID: "a", Title: "configuration_loader.go"})
+	iconed.Add(Tab{ID: "a", Title: "configuration_loader.go", Icon: elements.Raw(func(gtx layout.Context) layout.Dimensions {
+		return layout.Dimensions{Size: gtx.Constraints.Max}
+	})})
+	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Constraints{Max: image.Pt(1<<20, 40)}, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	w1 := plain.Layout(gtx).Size.X
+	gtx.Ops.Reset()
+	w2 := iconed.Layout(gtx).Size.X
+	if w2 != w1+iconSize+iconGap {
+		t.Errorf("width with icon %d, want %d", w2, w1+iconSize+iconGap)
+	}
+	iconed.SetIcon("a", nil)
+	if tab, _ := iconed.Tab("a"); tab.Icon != nil {
+		t.Error("SetIcon(nil) kept the icon")
+	}
+}

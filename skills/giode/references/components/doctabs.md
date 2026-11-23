@@ -15,7 +15,8 @@ tabs := giode.DocTabs().
 	OnNew(newDocument)
 
 // Opening a file:
-tabs.Add(giode.DocTab{ID: path, Title: filepath.Base(path), Tooltip: path})
+tabs.Add(giode.DocTab{ID: path, Title: filepath.Base(path), Tooltip: path,
+	Icon: giode.IconSVG(goFileIcon, giode.Styles{Color: "#00acd7"})}) // optional, before the title
 tabs.Select(path)
 
 // Editing it:
@@ -60,6 +61,7 @@ giode.Stack(giode.Styles{Width: -1, Height: -1}, tabs, editorView)
 | `Remove(id string)` | Removes a tab. |
 | `SetTitle(id, title string)` | Renames a tab. |
 | `SetTooltip(id, tooltip string)` | Sets the text shown when the pointer rests on the tab. |
+| `SetIcon(id string, icon Element)` | Sets the element shown before the title, laid out in a 16dp square (a file type icon); nil removes it. |
 | `SetModified(id string, on bool)` | Shows or hides the unsaved-changes dot. |
 | `Rename(id, newID string)` | Changes a tab's ID (Save As), keeping its place and selection. |
 | `Move(id string, to int)` | Moves a tab to index `to`. |

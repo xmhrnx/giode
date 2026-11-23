@@ -8,6 +8,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/components/kit"
 	"github.com/xmhrnx/giode/elements"
@@ -70,6 +71,11 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 	panelGtx.Constraints.Min = image.Point{}
 	panelGtx.Constraints.Max.X = win.X - 2*kit.Margin
 	panelGtx.Constraints.Max.Y = win.Y - 2*kit.Margin
+	top := 0
+	if d.topSet {
+		top = gtx.Dp(unit.Dp(d.top))
+		panelGtx.Constraints.Max.Y = max(win.Y-top-kit.Margin, 0)
+	}
 
 	// The panel must hug its content, so its minimum is cleared above:
 	// Gio's Flex zeros a rigid child's minimum on the main axis but
@@ -88,6 +94,9 @@ func (d *Dialog) layoutOverlay(gtx layout.Context) layout.Dimensions {
 		d.size = elements.Measure(panelGtx, elements.Box(st, d.content())).Size
 	}
 	pos := image.Pt((win.X-d.size.X)/2, (win.Y-d.size.Y)/2)
+	if d.topSet {
+		pos.Y = top
+	}
 	off := op.Offset(pos).Push(gtx.Ops)
 	pop := elements.PushOffset(pos)
 	panel := elements.AccessibleGroup(elements.SemanticNode{Kind: elements.SemanticDialog, Label: d.label, Target: d}, elements.Box(st, d.content()))

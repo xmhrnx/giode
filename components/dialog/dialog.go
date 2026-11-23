@@ -42,6 +42,19 @@ type Dialog struct {
 	focus kit.FocusScope
 	// shown is whether it was open last frame, to give focus back.
 	shown bool
+	// top, when set, places the panel that many dp below the window's
+	// top instead of centering it vertically.
+	top    int
+	topSet bool
+}
+
+// Top places the panel dp below the window's top edge, still centered
+// horizontally, instead of in the middle of the window: where a search
+// or command palette opens, so it stays put as its results grow. It
+// returns d for chaining.
+func (d *Dialog) Top(dp int) *Dialog {
+	d.top, d.topSet = max(dp, 0), true
+	return d
 }
 
 // Label names the dialog for screen readers, which announce it when it

@@ -135,6 +135,9 @@ func (a *AutoComplete) panel(gtx layout.Context, filtered []string, width int) l
 	st := styles.Merge(styles.Styles{
 		Background:   defaultBackground,
 		BorderRadius: 8,
+		BorderWidth:  1,
+		BorderColor:  kit.PopupBorder,
+		BoxShadow:    kit.PopupShadow,
 		Padding:      properties.UniformInset(4),
 	}, a.st)
 	st.FlexDirection = properties.FlexDirectionColumn

@@ -1,6 +1,9 @@
 package kit
 
-import "gioui.org/f32"
+import (
+	"gioui.org/f32"
+	"github.com/xmhrnx/giode/styles/properties"
+)
 
 // Margin is the default distance kept between an overlay and the
 // window edges.
@@ -28,3 +31,10 @@ func ClampPos(win, size, pos f32.Point, margin float32) f32.Point {
 	}
 	return p
 }
+
+// PopupBorder and PopupShadow outline floating panels - menus, select
+// and autocomplete lists - so they stand out over panels of their own
+// color.
+const PopupBorder = "theme.border"
+
+var PopupShadow = properties.BoxShadow{Y: 4, Blur: 16, Color: "#00000059"}

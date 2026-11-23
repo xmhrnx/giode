@@ -31,7 +31,10 @@ the 148 CSS named colors (`"rebeccapurple"`) or `"transparent"`. Theme tokens
 (`"theme.primary"`, `"theme.surface"`, `"theme.text"`, `"theme.border"`, `"theme.muted"`,
 `"theme.accent"`, `"theme.onprimary"`, `"theme.success"`, `"theme.warning"`,
 `"theme.danger"`, `"theme.info"`, …) follow `SetMode`/`SetPalette`, and take an alpha:
-`"theme.primary/0.5"` or `"theme.primary/50%"`. An empty string means unset; an
+`"theme.primary/0.5"` or `"theme.primary/50%"`. Apps name their own colors too, per mode,
+through `Palette.Custom` or `giode.SetThemeColor(giode.ModeDark, "editorGutter", "#313335")`:
+`"theme.editorGutter"` then follows the mode like the built-in tokens (names compare
+case-insensitively; a name set in one mode only keeps that color in the other). An empty string means unset; an
 unparseable value renders white so a typo is visible — validate input with `ParseColor`.
 Parsed colors are cached.
 

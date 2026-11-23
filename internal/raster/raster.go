@@ -35,6 +35,9 @@ type Shape struct {
 	// Round gives strokes round caps and joins; otherwise butt caps and
 	// miter joins.
 	Round bool
+	// EvenOdd fills with SVG's evenodd rule (inner subpaths cut holes
+	// whatever their direction) instead of nonzero.
+	EvenOdd bool
 }
 
 // Render draws shapes, transformed by xf, into a new image of size.
@@ -56,7 +59,11 @@ func Render(size image.Point, xf f32.Affine2D, shapes []Shape) *image.RGBA {
 		if s.Fill.A > 0 {
 			f := rasterx.NewFiller(size.X, size.Y, scanner)
 			f.SetColor(s.Fill)
-			addPath(f, s.Path, pt)
+			path := s.Path
+			if s.EvenOdd {
+				path = evenOdd(path)
+			}
+			addPath(f, path, pt)
 			f.Draw()
 			scanner.Clear()
 		}

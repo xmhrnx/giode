@@ -23,6 +23,7 @@ giode.Stack(giode.Styles{}, page, dialog)
 | `Dialog(open *bool, content func() Element, st ...Styles) *Dialog` | Creates the dialog; styles apply to the panel. |
 | `Opened() bool` | Whether the dialog is open. |
 | `Dismissible(on bool) *Dialog` | Whether the scrim, Back and Escape close it (on by default). |
+| `Top(dp int) *Dialog` | Places the panel dp below the window's top, centered horizontally, instead of in the middle: for search and command palettes that shouldn't move as their results grow. |
 | `Padding(p Inset) *Dialog` | The panel's padding, zero included (`Padding(giode.Inset{})` lets content reach the edges; a zero `Padding` in the styles means the default). |
 
 The dialog takes no space where it's placed, and a box's `Gap` leaves it out: while it's

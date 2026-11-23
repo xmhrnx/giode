@@ -28,8 +28,9 @@ type RichTextElement struct {
 //	).OnLink(func(url string) { ... })
 //
 // st styles the paragraph: Color, FontSize, FontWeight, FontStyle and
-// FontFamily are the defaults spans inherit; TextAlign, LineHeight and
-// TabWidth apply to the whole paragraph. Like Text it's stateless:
+// FontFamily are the defaults spans inherit; TextAlign, LineHeight,
+// TabWidth and MaxLines (the last line ending in "…" when text is cut)
+// apply to the whole paragraph. Like Text it's stateless:
 // build it in the view function every frame.
 func RichText(st styles.Styles, spans ...Span) *RichTextElement {
 	return &RichTextElement{st: st, spans: spans}

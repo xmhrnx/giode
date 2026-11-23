@@ -26,6 +26,13 @@ func SVGCustom(pathData string, viewBox image.Point, st ...styles.Styles) elemen
 	return &svgEl{path: compileCached(pathData), viewW: float32(viewBox.X), viewH: float32(viewBox.Y), st: first(st)}
 }
 
+// SVGEvenOdd is SVG with the evenodd fill rule (fill-rule="evenodd"):
+// a subpath inside another cuts a hole whichever way it runs, as in
+// ring and target icons drawn for that rule.
+func SVGEvenOdd(pathData string, st ...styles.Styles) elements.Element {
+	return &svgEl{path: compileCached(pathData), viewW: 24, viewH: 24, st: first(st), evenOdd: true}
+}
+
 // SVGStroke renders SVG path data as a stroke of the given width (in
 // viewBox units) instead of a fill, scaled from a 24x24 viewBox - the
 // format of outline icon sets like Lucide or Feather.
@@ -39,6 +46,7 @@ type svgEl struct {
 	viewW, viewH float32
 	st           styles.Styles
 	stroke       float32
+	evenOdd      bool
 }
 
 // Layout fills (or strokes) the path into the element's size, as an
@@ -49,8 +57,8 @@ func (s *svgEl) Layout(gtx layout.Context) layout.Dimensions {
 		return layout.Dimensions{}
 	}
 	col := elements.ResolveColor(s.st.Color)
-	img := raster.Image(svgKey{&s.path[0], len(s.path), s.viewW, s.viewH, s.stroke, size, col}, func() *image.RGBA {
-		shape := raster.Shape{Path: s.path.segments()}
+	img := raster.Image(svgKey{&s.path[0], len(s.path), s.viewW, s.viewH, s.stroke, size, col, s.evenOdd}, func() *image.RGBA {
+		shape := raster.Shape{Path: s.path.segments(), EvenOdd: s.evenOdd}
 		if s.stroke > 0 {
 			shape.Stroke, shape.StrokeWidth, shape.Round = col, s.stroke, true
 		} else {
@@ -72,4 +80,5 @@ type svgKey struct {
 	stroke       float32
 	size         image.Point
 	col          color.NRGBA
+	evenOdd      bool
 }

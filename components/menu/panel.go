@@ -19,14 +19,7 @@ const defaultPanelPadding = 6
 // panel lays out the menu body and processes item clicks.
 func (m *Menu) panel(gtx layout.Context) layout.Dimensions {
 	margin := gtx.Dp(unit.Dp(kit.Margin))
-	st := styles.Merge(styles.Styles{
-		FlexDirection: properties.FlexDirectionColumn,
-		Background:    properties.CalcColorReverse(defaultBackground),
-		BorderRadius:  8,
-		Padding:       properties.UniformInset(defaultPanelPadding),
-		Color:         properties.CalcColorReverse(defaultText),
-	}, m.styles)
-	st.FlexDirection = properties.FlexDirectionColumn
+	st := m.panelStyles()
 
 	// Bound the panel to the window and let it hug its content: the
 	// incoming gtx is bounded by the window regardless of how deep in
@@ -51,6 +44,25 @@ func (m *Menu) panel(gtx layout.Context) layout.Dimensions {
 	return elements.Box(st, elements.Raw(func(gtx layout.Context) layout.Dimensions {
 		return m.layoutRows(gtx, rows, st.Color)
 	})).Layout(gtx)
+}
+
+// panelStyles are the panel's styles: the defaults, overridden by those
+// given to New.
+func (m *Menu) panelStyles() styles.Styles {
+	st := styles.Merge(styles.Styles{
+		FlexDirection: properties.FlexDirectionColumn,
+		Background:    properties.CalcColorReverse(defaultBackground),
+		BorderRadius:  8,
+		// A border and a shadow keep the menu apart from panels of
+		// the same color under it.
+		BorderWidth: 1,
+		BorderColor: defaultBorder,
+		BoxShadow:   defaultShadow,
+		Padding:     properties.UniformInset(defaultPanelPadding),
+		Color:       properties.CalcColorReverse(defaultText),
+	}, m.styles)
+	st.FlexDirection = properties.FlexDirectionColumn
+	return st
 }
 
 // panelPaddingTop is the panel's top padding in dp: the Padding given

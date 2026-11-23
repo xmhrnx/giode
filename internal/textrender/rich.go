@@ -43,6 +43,9 @@ type RichParams struct {
 	Alignment       text.Alignment
 	LineHeight      unit.Sp
 	LineHeightScale float32
+	// MaxLines, when above zero, stops after that many lines; the last
+	// ends in an ellipsis when text was left out.
+	MaxLines int
 }
 
 // Segment is a piece of one span on one line.
@@ -114,6 +117,7 @@ func richKey(gtx layout.Context, p RichParams, spans []Span) uint64 {
 	w(uint64(p.Alignment))
 	w(uint64(math.Float32bits(float32(p.LineHeight))))
 	w(uint64(math.Float32bits(p.LineHeightScale)))
+	w(uint64(p.MaxLines))
 	h.WriteString(gtx.Locale.Language)
 	for _, s := range spans {
 		h.WriteString(string(s.Font.Typeface))
@@ -259,6 +263,10 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 		overall  image.Point
 		line     []Segment
 		out      = &RichLaid{}
+		// lines counts the lines placed; lastLine is where the last
+		// one's segments start in out.Segments.
+		lines, lastLine int
+		truncated       bool
 	)
 	// endLine places the line's segments, the line as tall as its text,
 	// or as its boxes where they reach past the text and its leading.
@@ -304,6 +312,7 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 			if !hasText {
 				base = overall.Y + asc
 			}
+			lastLine = len(out.Segments)
 			for _, s := range line {
 				s.Offset.X += pad
 				if s.Box {
@@ -317,8 +326,13 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 		line = line[:0]
 		overall.Y += adv + extraTop + extraBottom
 		lineDims = image.Point{}
+		lines++
 	}
 	for i := 0; i < len(spans); i++ {
+		if p.MaxLines > 0 && lines >= p.MaxLines {
+			truncated = true
+			break
+		}
 		span := spans[i]
 		maxWidth := gtx.Constraints.Max.X - lineDims.X
 		if span.IsBox() {
@@ -398,8 +412,70 @@ func layoutRich(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span) *R
 			i--
 		}
 	}
+	if truncated {
+		ellipsize(sh, gtx, p, in, out, lastLine)
+	}
 	out.Dims = layout.Dimensions{Size: gtx.Constraints.Constrain(overall)}
 	return out
+}
+
+// ellipsize ends the last line, from out.Segments[from], with an
+// ellipsis in its last text span's font, dropping glyphs (and boxes)
+// from its end until the ellipsis fits the width.
+func ellipsize(sh *text.Shaper, gtx layout.Context, p RichParams, in []Span, out *RichLaid, from int) {
+	segs := out.Segments[from:]
+	last := -1
+	for i := len(segs) - 1; i >= 0; i-- {
+		if !segs[i].Box {
+			last = i
+			break
+		}
+	}
+	if last < 0 {
+		return
+	}
+	ref := segs[last]
+	ell, _ := shapeSpan(sh, gtx, p, gtx.Constraints.Max.X, spanState{Span: Span{Font: in[ref.Span].Font, Size: in[ref.Span].Size, Content: "…"}}, true)
+	ellW := 0
+	for _, g := range ell.glyphs {
+		ellW = max(ellW, (g.X + g.Advance).Ceil())
+	}
+	limit := gtx.Constraints.Max.X - ellW
+	// Drop what reaches past limit, glyph by glyph.
+	end := 0
+	for len(segs) > 0 {
+		s := &segs[len(segs)-1]
+		if s.Box {
+			if s.Offset.X+s.Size.X <= limit {
+				end = s.Offset.X + s.Size.X
+				break
+			}
+			segs = segs[:len(segs)-1]
+			continue
+		}
+		n := len(s.Glyphs)
+		for n > 0 && s.Offset.X+(s.Glyphs[n-1].X+s.Glyphs[n-1].Advance).Ceil() > limit {
+			n--
+		}
+		if n == 0 {
+			segs = segs[:len(segs)-1]
+			continue
+		}
+		s.Glyphs = s.Glyphs[:n:n]
+		s.Size.X = (s.Glyphs[n-1].X + s.Glyphs[n-1].Advance).Ceil()
+		end = s.Offset.X + s.Size.X
+		break
+	}
+	out.Segments = append(out.Segments[:from], segs...)
+	out.Segments = append(out.Segments, Segment{
+		Span:      ref.Span,
+		Offset:    image.Point{X: end, Y: ref.Offset.Y},
+		Size:      image.Point{X: ellW, Y: ref.Size.Y},
+		Ascent:    ref.Ascent,
+		Glyphs:    ell.glyphs,
+		RuneStart: ref.RuneEnd,
+		RuneEnd:   ref.RuneEnd,
+	})
 }
 
 // spanLines shapes span once, starting a line maxWidth wide, and

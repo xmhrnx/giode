@@ -57,6 +57,7 @@ func (e *docEl) Layout(gtx layout.Context) layout.Dimensions {
 				Stroke:      colorFor(s.stroke),
 				StrokeWidth: s.strokeWidth,
 				Round:       s.roundCaps,
+				EvenOdd:     s.evenOdd,
 			})
 		}
 		return raster.Render(size, viewBoxTransform(d.viewX, d.viewY, d.viewW, d.viewH, size), shapes)

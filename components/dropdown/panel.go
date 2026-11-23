@@ -22,6 +22,9 @@ func (s *Select) dropdown(gtx layout.Context, st styles.Styles, width, maxH int)
 	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, maxH)
 	st.FlexDirection = properties.FlexDirectionColumn
 	st.Padding = properties.UniformInset(4)
+	if st.BoxShadow.Color == "" {
+		st.BoxShadow = kit.PopupShadow
+	}
 
 	options := func() elements.Element {
 		rows := make([]elements.Element, 0, len(s.options))

@@ -48,6 +48,13 @@ type Palette struct {
 	// chosen to tell apart side by side, and the dark ones to stand
 	// out on a dark background.
 	Chart []Color
+
+	// Custom names the app's own colors: "theme.<name>" resolves to
+	// Custom[name] (names compare case-insensitively), in each mode's
+	// palette, so a gutter or a diff color can follow SetMode like the
+	// built-in ones. Built-in names win over custom ones. A name set in
+	// one mode only resolves to that color in the other mode too.
+	Custom map[string]Color
 }
 
 // DefaultLightPalette and DefaultDarkPalette are the built-in
@@ -198,7 +205,7 @@ func themeToken(c string) (Color, bool) {
 	field := strings.ToLower(strings.TrimPrefix(c, "theme."))
 	v, ok := paletteField(p, field)
 	if !ok {
-		return "", false
+		return customColor(field, p, mode)
 	}
 	if v == "" {
 		def := DefaultLightPalette
@@ -208,6 +215,52 @@ func themeToken(c string) (Color, bool) {
 		v, _ = paletteField(def, field)
 	}
 	return v, true
+}
+
+// customColor resolves an app-defined theme color: from the palette
+// first, then from the other mode's.
+func customColor(field string, p Palette, mode Mode) (Color, bool) {
+	if v, ok := lookupCustom(p.Custom, field); ok {
+		return v, true
+	}
+	themeMu.RLock()
+	other := darkPalette
+	if mode == ModeDark {
+		other = lightPalette
+	}
+	themeMu.RUnlock()
+	return lookupCustom(other.Custom, field)
+}
+
+func lookupCustom(m map[string]Color, field string) (Color, bool) {
+	if v, ok := m[field]; ok {
+		return v, true
+	}
+	for k, v := range m {
+		if strings.EqualFold(k, field) {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+// SetThemeColor sets an app-defined color for one mode: "theme.<name>"
+// resolves to color while that mode is active (see Palette.Custom). It
+// is safe to call from any goroutine.
+func SetThemeColor(m Mode, name string, color Color) {
+	themeMu.Lock()
+	p := &lightPalette
+	if m == ModeDark {
+		p = &darkPalette
+	}
+	custom := make(map[string]Color, len(p.Custom)+1)
+	for k, v := range p.Custom {
+		custom[k] = v
+	}
+	custom[strings.ToLower(name)] = color
+	p.Custom = custom
+	themeMu.Unlock()
+	notifyTheme()
 }
 
 func paletteField(p Palette, field string) (Color, bool) {

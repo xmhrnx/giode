@@ -29,6 +29,8 @@ const (
 	dragSlop  = 6
 	tipDelay  = 600 * time.Millisecond
 	dotRadius = 4
+	iconSize  = 16 // a tab's icon
+	iconGap   = 6  // between the icon and the title
 )
 
 // Layout lays out the strip, as wide as it may be.
@@ -97,6 +99,9 @@ func (d *DocTabs) layoutSelf(gtx layout.Context) layout.Dimensions {
 		mg := gtx
 		mg.Constraints = layout.Constraints{Max: image.Pt(1<<20, h)}
 		textW[i] = elements.Measure(mg, elements.Text(t.Title, styles.Styles{FontSize: fs, MaxLines: 1})).Size.X
+		if t.Icon != nil {
+			textW[i] += gtx.Dp(iconSize + iconGap)
+		}
 		nat[i] = min(max(textW[i]+chrome, minW), maxW)
 	}
 	newW := 0
@@ -276,8 +281,25 @@ func (d *DocTabs) drawTab(gtx layout.Context, i int, r image.Rectangle, col colo
 		textCol = col.text
 	}
 	tx := padS
+	if t.Icon != nil {
+		// The icon at the start, the title after it.
+		isz, igap := gtx.Dp(iconSize), gtx.Dp(iconGap)
+		ix := padS
+		if rtl {
+			ix = w - padS - isz
+		}
+		igtx := gtx
+		igtx.Constraints = layout.Exact(image.Pt(isz, isz))
+		ioff := op.Offset(image.Pt(ix, (h-isz)/2)).Push(gtx.Ops)
+		ipop := elements.PushOffset(image.Pt(ix, (h-isz)/2))
+		t.Icon.Layout(igtx)
+		ipop()
+		ioff.Pop()
+		room = max(room-isz-igap, 0)
+		tx = padS + isz + igap
+	}
 	if rtl {
-		tx = w - padS - room
+		tx = w - tx - room
 	}
 	tgtx := gtx
 	tgtx.Constraints = layout.Constraints{Max: image.Pt(room, h)}

@@ -9,6 +9,7 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/unit"
 
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/fonts"
@@ -105,4 +106,31 @@ func TestZeroPadding(t *testing.T) {
 	if d2.size != image.Pt(100, 50) {
 		t.Errorf("panel %v with Padding: NoInset, want the content's 100x50", d2.size)
 	}
+}
+
+func TestDialogTop(t *testing.T) {
+	fonts.UseGofont()
+	open := true
+	d := New(&open, func() elements.Element { return elements.Box(styles.Styles{Width: 200, Height: 100}) }).Top(40)
+	win := image.Pt(400, 600)
+	var nodes []elements.SemanticNode
+	for range 2 {
+		elements.SetWindowSize(win)
+		elements.BeginFrame()
+		elements.BeginSemantics()
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(win), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+		d.Layout(gtx)
+		elements.DrainPortals(gtx)
+		nodes = elements.EndSemantics()
+	}
+	for _, n := range nodes {
+		if n.Kind == elements.SemanticDialog {
+			if n.Bounds.Min.Y != 40 || n.Bounds.Min.X != (win.X-n.Bounds.Dx())/2 {
+				t.Errorf("panel at %v, want 40 from the top, centered", n.Bounds)
+			}
+			return
+		}
+	}
+	t.Error("no dialog node")
 }

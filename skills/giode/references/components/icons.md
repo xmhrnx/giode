@@ -48,7 +48,8 @@ doc.IconColored(giode.Styles{Width: 32})     // keeps the file's own fill/stroke
 
 Supported: `<path>`, `<rect>` (with `rx`/`ry`), `<circle>`, `<ellipse>`, `<line>`,
 `<polyline>`, `<polygon>`, nested `<g>` groups; `fill`, `stroke`, `stroke-width`,
-`stroke-linecap`/`linejoin` as attributes or in `style`, inherited as in SVG; `transform`
+`stroke-linecap`/`linejoin` and `fill-rule` (`nonzero`, `evenodd`) as attributes or in
+`style`, inherited as in SVG; `transform`
 (`matrix`, `translate`, `scale`, `rotate`, `skewX`, `skewY`); `display="none"`. Both
 fill-based sets (Material Symbols, Font Awesome, Bootstrap Icons) and stroke-based ones
 (Lucide, Feather, Tabler, Heroicons outline) render. Gradients, masks, text and filters
@@ -63,6 +64,7 @@ For sets distributed as path strings:
 giode.IconSVG("M3 6h18v2H3V6zm0 5h18v2H3v-2z", giode.Styles{Width: 24}) // 24x24 viewBox
 giode.IconSVGCustom(d, image.Pt(512, 512), st)                         // custom viewBox
 giode.IconSVGStroke(d, 2, st)                                          // outline icons
+giode.IconSVGEvenOdd(d, st)                                            // fill-rule="evenodd": inner subpaths cut holes
 giode.RegisterIcon("menu", giode.IconPath{Data: d})
 ```
 

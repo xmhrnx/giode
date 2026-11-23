@@ -12,6 +12,7 @@ type paintAttrs struct {
 	fill, stroke string
 	strokeWidth  float32
 	roundCaps    bool
+	evenOdd      bool // fill-rule="evenodd"
 }
 
 func defaultPaint() paintAttrs {
@@ -34,9 +35,11 @@ func (p paintAttrs) inherit(attrs map[string]string) paintAttrs {
 			}
 		case "stroke-linecap", "stroke-linejoin":
 			p.roundCaps = v == "round"
+		case "fill-rule":
+			p.evenOdd = v == "evenodd"
 		}
 	}
-	for _, k := range []string{"fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin"} {
+	for _, k := range []string{"fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "fill-rule"} {
 		if v, ok := attrs[k]; ok {
 			apply(k, v)
 		}

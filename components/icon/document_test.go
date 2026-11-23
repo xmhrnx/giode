@@ -2,6 +2,7 @@ package icon
 
 import (
 	"image"
+	"image/color"
 	"math"
 	"testing"
 	"testing/fstest"
@@ -10,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/xmhrnx/giode/internal/raster"
 	"github.com/xmhrnx/giode/styles"
 )
 
@@ -220,5 +222,41 @@ func TestSVG_Renders(t *testing.T) {
 	dims := SVG("M0 0 L24 0 L24 24 Z", styles.Styles{Width: 32}).Layout(gtx)
 	if dims.Size != image.Pt(32, 32) {
 		t.Errorf("size = %v, want 32x32 (single axis makes it square)", dims.Size)
+	}
+}
+
+// ring is two circles drawn the same way round: a ring under evenodd,
+// a disc under nonzero.
+const ring = "M12 2a10 10 0 1 1 0 20a10 10 0 1 1 0-20zM12 7a5 5 0 1 1 0 10a5 5 0 1 1 0-10z"
+
+func centerAlpha(t *testing.T, img *image.RGBA) uint8 {
+	t.Helper()
+	return img.RGBAAt(img.Rect.Dx()/2, img.Rect.Dy()/2).A
+}
+
+func TestFillRule(t *testing.T) {
+	for _, tc := range []struct {
+		name, svg string
+		hole      bool
+	}{
+		{"nonzero", `<svg viewBox="0 0 24 24"><path d="` + ring + `"/></svg>`, false},
+		{"evenodd attribute", `<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="` + ring + `"/></svg>`, true},
+		{"evenodd style", `<svg viewBox="0 0 24 24"><path style="fill-rule: evenodd" d="` + ring + `"/></svg>`, true},
+		{"evenodd inherited", `<svg viewBox="0 0 24 24" fill-rule="evenodd"><g><path d="` + ring + `"/></g></svg>`, true},
+	} {
+		d := MustLoadSVG([]byte(tc.svg))
+		size := image.Pt(48, 48)
+		shapes := make([]raster.Shape, 0, len(d.shapes))
+		for _, s := range d.shapes {
+			shapes = append(shapes, raster.Shape{Path: s.path.segments(), Fill: color.NRGBA{A: 255}, EvenOdd: s.evenOdd})
+		}
+		img := raster.Render(size, viewBoxTransform(0, 0, 24, 24, size), shapes)
+		if hole := centerAlpha(t, img) == 0; hole != tc.hole {
+			t.Errorf("%s: hole in the middle = %v, want %v", tc.name, hole, tc.hole)
+		}
+		// The ring itself is painted either way.
+		if img.RGBAAt(24, 6).A == 0 {
+			t.Errorf("%s: the ring isn't painted", tc.name)
+		}
 	}
 }

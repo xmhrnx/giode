@@ -87,8 +87,11 @@ func (m *Menu) root() *Menu {
 }
 
 // New returns an empty menu. The styles argument is optional:
-// Background, BorderRadius, Padding and Color (item text) are
-// honored; the rest fall back to defaults.
+// Background, BorderRadius, BorderWidth, BorderColor, BoxShadow,
+// Padding and Color (item text) are honored; the rest fall back to
+// defaults. Menus have a 1dp theme.border border and a soft shadow, so
+// they stand out over panels of their own color; set BorderColor to
+// "transparent" or a BoxShadow with a transparent Color to drop them.
 func New(st ...styles.Styles) *Menu {
 	m := &Menu{openSubmenu: -1, active: -1}
 	if len(st) > 0 {

@@ -34,6 +34,10 @@ type Tab struct {
 	// Modified shows a dot for unsaved changes, in the close button's
 	// place until the pointer is over the tab.
 	Modified bool
+	// Icon, when set, shows before the title, such as the file type's
+	// icon: any element, laid out in a 16dp square (giode.IconSVG,
+	// giode.Image, ...).
+	Icon elements.Element
 }
 
 // DocTabs is a stateful strip of document tabs. Create it once with
@@ -193,6 +197,13 @@ func (d *DocTabs) SetTitle(id, title string) {
 func (d *DocTabs) SetTooltip(id, tooltip string) {
 	if i := d.Index(id); i >= 0 {
 		d.tabs[i].Tooltip = tooltip
+	}
+}
+
+// SetIcon sets the element shown before the tab's title; nil removes it.
+func (d *DocTabs) SetIcon(id string, icon elements.Element) {
+	if i := d.Index(id); i >= 0 {
+		d.tabs[i].Icon = icon
 	}
 }
 

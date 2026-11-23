@@ -12,6 +12,7 @@ import (
 
 	"github.com/xmhrnx/giode/elements"
 	"github.com/xmhrnx/giode/styles"
+	"github.com/xmhrnx/giode/styles/properties"
 )
 
 func TestMenu_Trigger_ClickTogglesOpen(t *testing.T) {
@@ -212,5 +213,16 @@ func TestMenu_Trigger_ClickRequestsFrame(t *testing.T) {
 			t.Errorf("the click that made Opened() %v asked for no frame", want)
 		}
 		frame() // the requested frame
+	}
+}
+
+func TestPanelBorderAndShadow(t *testing.T) {
+	st := New().panelStyles()
+	if st.BorderWidth != 1 || st.BorderColor != defaultBorder || st.BoxShadow != defaultShadow {
+		t.Errorf("default panel: border %d %q, shadow %+v", st.BorderWidth, st.BorderColor, st.BoxShadow)
+	}
+	custom := New(styles.Styles{BorderColor: "#ff0000", BoxShadow: properties.BoxShadow{Blur: 2, Color: "#000"}}).panelStyles()
+	if custom.BorderColor != "#ff0000" || custom.BoxShadow.Blur != 2 || custom.BorderWidth != 1 {
+		t.Errorf("custom panel: border %d %q, shadow %+v", custom.BorderWidth, custom.BorderColor, custom.BoxShadow)
 	}
 }

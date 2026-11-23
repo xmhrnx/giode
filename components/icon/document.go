@@ -22,7 +22,7 @@ import (
 //
 // Supported: <path>, <rect>, <circle>, <ellipse>, <line>, <polyline>
 // and <polygon>, nested in any number of <g> groups; fill, stroke,
-// stroke-width and stroke-linecap/linejoin (as attributes or in a
+// stroke-width, stroke-linecap/linejoin and fill-rule (as attributes or in a
 // style attribute), inherited from the root and groups as in SVG; and
 // transform (matrix, translate, scale, rotate, skewX, skewY) on any
 // element. That covers fill-based sets (Material, Font Awesome,
@@ -41,6 +41,7 @@ type shape struct {
 	stroke      string
 	strokeWidth float32
 	roundCaps   bool
+	evenOdd     bool
 }
 
 // LoadSVG parses an SVG document. It returns an error for malformed
@@ -178,6 +179,7 @@ func (d *Document) addShape(p compiled, a paintAttrs, xf f32.Affine2D) {
 		stroke:      a.stroke,
 		strokeWidth: sw,
 		roundCaps:   a.roundCaps,
+		evenOdd:     a.evenOdd,
 	})
 }
 

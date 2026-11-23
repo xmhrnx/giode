@@ -156,7 +156,11 @@ Escape) closes every open submenu with it.
 | `OpenAtClick(e ClickEvent)` | Opens the menu where the click happened: at the pointer, or below the element for a keyboard click. |
 | `OpenAt(p f32.Point)` / `Toggle(p f32.Point)` | Opens (or toggles) the menu at a window position in pixels. |
 
-Styles: `Background`, `BorderRadius`, `Padding`, `Color` (item text).
+Styles: `Background`, `BorderRadius`, `BorderWidth`, `BorderColor`, `BoxShadow`, `Padding`,
+`Color` (item text). Menus have a 1dp `theme.border` border and a soft shadow by default, so
+they stand out over panels of their own color; set `BorderColor: "transparent"`, or a
+`BoxShadow` with a transparent `Color`, to drop them. Select and autocomplete lists share the
+shadow.
 
 When any item has an icon, a check or a radio dot, every row keeps that leading column, so
 the labels line up. Panels are as wide as their widest row.
