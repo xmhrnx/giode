@@ -160,6 +160,9 @@ func (i *Input) update(gtx layout.Context) (changed bool) {
 			if !ok {
 				break
 			}
+			if e, ok := ev.(key.Event); ok {
+				elements.SeenKey(e)
+			}
 			if e, ok := ev.(key.Event); ok && e.State == key.Press && i.onKeys != nil {
 				i.onKeys(e)
 				changed = true

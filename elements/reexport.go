@@ -221,6 +221,13 @@ var (
 	// MarkTyping records that a focused text field takes typing this
 	// frame, so typed keys don't run OnKey shortcuts; see base.
 	MarkTyping = base.MarkTyping
+	// WatchKeys registers, for this frame, a watcher of every key the
+	// app gets; see base.WatchKeys.
+	WatchKeys = base.WatchKeys
+	// SeenKey reports a key a component took to the watchers;
+	// ForwardKey passes one it didn't use on to the OnKey handlers.
+	SeenKey    = base.SeenKey
+	ForwardKey = base.ForwardKey
 )
 
 // Touch input and diagnostics.

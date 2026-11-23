@@ -1444,3 +1444,88 @@ type (
 
 // DataGridSliceSource is a data grid source over a slice of rows.
 type DataGridSliceSource[T any] = datagrid.SliceSource[T]
+
+// KeyboardInput takes the keyboard for content the app draws itself -
+// a terminal, a game, a canvas: it gets focus, the text typed (layout,
+// dead keys and input methods applied) at OnText, and the other keys
+// at OnKey, with Enter, Space and Tab passed on rather than activating
+// anything. Create it once and lay it out every frame; see
+// input.KeyboardInput.
+//
+//	term := giode.KeyboardInput(screen).
+//		OnText(func(s string) { pty.Write([]byte(s)) }).
+//		OnKey(func(e giode.KeyEvent) bool { return sendKey(pty, e) }).
+//		Keyboard(giode.KeyboardText)
+func KeyboardInput(content Element) *KeyboardInputElement {
+	return input.NewKeyboardInput(content)
+}
+
+// KeyboardInputElement is the element KeyboardInput returns.
+type KeyboardInputElement = input.KeyboardInput
+
+// WatchKeys registers fn, for this frame, to see every key press and
+// release the app gets before anything acts on it - the modifier keys
+// too, for a double Shift; see elements.WatchKeys. Call it from the
+// view every frame, as with OnKey.
+func WatchKeys(fn func(e KeyEvent)) {
+	elements.WatchKeys(fn)
+}
+
+// KeyEvent is a key press or release; KeyName names its key, as
+// "A", "5", "F5" or one of the Key* names; KeyModifiers are the
+// modifiers held.
+type (
+	KeyEvent     = key.Event
+	KeyName      = key.Name
+	KeyModifiers = key.Modifiers
+	KeyState     = key.State
+)
+
+// KeyModShortcut is Command on Apple platforms and Ctrl elsewhere.
+var KeyModShortcut = key.ModShortcut
+
+// Key states, modifiers and the names of keys that aren't characters.
+const (
+	KeyPress   = key.Press
+	KeyRelease = key.Release
+
+	KeyModCtrl    = key.ModCtrl
+	KeyModShift   = key.ModShift
+	KeyModAlt     = key.ModAlt
+	KeyModSuper   = key.ModSuper
+	KeyModCommand = key.ModCommand
+
+	KeyLeft      = key.NameLeftArrow
+	KeyRight     = key.NameRightArrow
+	KeyUp        = key.NameUpArrow
+	KeyDown      = key.NameDownArrow
+	KeyReturn    = key.NameReturn
+	KeyEnter     = key.NameEnter
+	KeyEscape    = key.NameEscape
+	KeyHome      = key.NameHome
+	KeyEnd       = key.NameEnd
+	KeyBackspace = key.NameDeleteBackward
+	KeyDelete    = key.NameDeleteForward
+	KeyPageUp    = key.NamePageUp
+	KeyPageDown  = key.NamePageDown
+	KeyTab       = key.NameTab
+	KeySpace     = key.NameSpace
+	KeyCtrl      = key.NameCtrl
+	KeyShift     = key.NameShift
+	KeyAlt       = key.NameAlt
+	KeySuper     = key.NameSuper
+	KeyCommand   = key.NameCommand
+	KeyBack      = key.NameBack
+	KeyF1        = key.NameF1
+	KeyF2        = key.NameF2
+	KeyF3        = key.NameF3
+	KeyF4        = key.NameF4
+	KeyF5        = key.NameF5
+	KeyF6        = key.NameF6
+	KeyF7        = key.NameF7
+	KeyF8        = key.NameF8
+	KeyF9        = key.NameF9
+	KeyF10       = key.NameF10
+	KeyF11       = key.NameF11
+	KeyF12       = key.NameF12
+)

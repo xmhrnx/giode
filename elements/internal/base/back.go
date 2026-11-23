@@ -57,6 +57,20 @@ func DispatchBack(gtx layout.Context) {
 			escape = e.fn
 		}
 	}
+	// Back and Escape presses a focused component took and passed on
+	// (ForwardKey) come here before the OnKey handlers.
+	kept := forwarded[:0]
+	for _, e := range forwarded {
+		switch {
+		case e.Name == key.NameBack && e.State == key.Press:
+			AfterLayout(back)
+		case e.Name == key.NameEscape && escape != nil && e.State == key.Press:
+			AfterLayout(escape)
+		default:
+			kept = append(kept, e)
+		}
+	}
+	forwarded = kept
 	filters := []key.Filter{{Name: key.NameBack}}
 	if escape != nil {
 		filters = append(filters, key.Filter{Name: key.NameEscape})
@@ -68,7 +82,11 @@ func DispatchBack(gtx layout.Context) {
 				break
 			}
 			e, ok := ev.(key.Event)
-			if !ok || e.State != key.Press {
+			if !ok {
+				continue
+			}
+			seenKeys = append(seenKeys, e)
+			if e.State != key.Press {
 				continue
 			}
 			if e.Name == key.NameBack {

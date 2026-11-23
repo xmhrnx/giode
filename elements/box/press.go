@@ -7,6 +7,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/xmhrnx/giode/components/kit"
+	"github.com/xmhrnx/giode/elements/internal/base"
 )
 
 func (p *Pressable) fire(e ClickEvent) {
@@ -200,6 +201,7 @@ func (p *Pressable) update(gtx layout.Context) (changed bool) {
 				if !gtx.Focused(p) {
 					break
 				}
+				base.SeenKey(e)
 				switch e.State {
 				case key.Press:
 					p.pressedKey = e.Name

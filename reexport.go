@@ -1300,3 +1300,82 @@ type (
 
 // DataGridSliceSource is a data grid source over a slice of rows.
 type DataGridSliceSource[T any] = ui.DataGridSliceSource[T]
+
+// KeyboardInput takes the keyboard for content the app draws itself -
+// a terminal, a game, a canvas: it gets focus, the text typed (layout,
+// dead keys and input methods applied) at OnText, and the other keys
+// at OnKey, with Enter, Space and Tab passed on rather than activating
+// anything. Create it once and lay it out every frame; see
+// input.KeyboardInput.
+//
+//	term := giode.KeyboardInput(screen).
+//		OnText(func(s string) { pty.Write([]byte(s)) }).
+//		OnKey(func(e giode.KeyEvent) bool { return sendKey(pty, e) }).
+//		Keyboard(giode.KeyboardText)
+var KeyboardInput = ui.KeyboardInput
+
+// KeyboardInputElement is the element KeyboardInput returns.
+type KeyboardInputElement = ui.KeyboardInputElement
+
+// WatchKeys registers fn, for this frame, to see every key press and
+// release the app gets before anything acts on it - the modifier keys
+// too, for a double Shift; see elements.WatchKeys. Call it from the
+// view every frame, as with OnKey.
+var WatchKeys = ui.WatchKeys
+
+// KeyEvent is a key press or release; KeyName names its key, as
+// "A", "5", "F5" or one of the Key* names; KeyModifiers are the
+// modifiers held.
+type (
+	KeyEvent     = ui.KeyEvent
+	KeyName      = ui.KeyName
+	KeyModifiers = ui.KeyModifiers
+	KeyState     = ui.KeyState
+)
+
+// KeyModShortcut is Command on Apple platforms and Ctrl elsewhere.
+var KeyModShortcut = ui.KeyModShortcut
+
+// Key states, modifiers and the names of keys that aren't characters.
+const (
+	KeyPress      = ui.KeyPress
+	KeyRelease    = ui.KeyRelease
+	KeyModCtrl    = ui.KeyModCtrl
+	KeyModShift   = ui.KeyModShift
+	KeyModAlt     = ui.KeyModAlt
+	KeyModSuper   = ui.KeyModSuper
+	KeyModCommand = ui.KeyModCommand
+	KeyLeft       = ui.KeyLeft
+	KeyRight      = ui.KeyRight
+	KeyUp         = ui.KeyUp
+	KeyDown       = ui.KeyDown
+	KeyReturn     = ui.KeyReturn
+	KeyEnter      = ui.KeyEnter
+	KeyEscape     = ui.KeyEscape
+	KeyHome       = ui.KeyHome
+	KeyEnd        = ui.KeyEnd
+	KeyBackspace  = ui.KeyBackspace
+	KeyDelete     = ui.KeyDelete
+	KeyPageUp     = ui.KeyPageUp
+	KeyPageDown   = ui.KeyPageDown
+	KeyTab        = ui.KeyTab
+	KeySpace      = ui.KeySpace
+	KeyCtrl       = ui.KeyCtrl
+	KeyShift      = ui.KeyShift
+	KeyAlt        = ui.KeyAlt
+	KeySuper      = ui.KeySuper
+	KeyCommand    = ui.KeyCommand
+	KeyBack       = ui.KeyBack
+	KeyF1         = ui.KeyF1
+	KeyF2         = ui.KeyF2
+	KeyF3         = ui.KeyF3
+	KeyF4         = ui.KeyF4
+	KeyF5         = ui.KeyF5
+	KeyF6         = ui.KeyF6
+	KeyF7         = ui.KeyF7
+	KeyF8         = ui.KeyF8
+	KeyF9         = ui.KeyF9
+	KeyF10        = ui.KeyF10
+	KeyF11        = ui.KeyF11
+	KeyF12        = ui.KeyF12
+)

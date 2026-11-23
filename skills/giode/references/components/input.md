@@ -110,7 +110,50 @@ Styles: `Color` (text), `Background` (fill), `BorderWidth`/`BorderColor`/`Border
 (frame, 1px border by default), `Padding` (12x8 by default). Expands to the available
 width; set `Width` to fix it.
 
-## Checkbox
+## Keyboard input for your own content
+
+`giode.KeyboardInput(content)` takes the keyboard for content the app draws itself - a
+terminal, a game, a drawing canvas - without a text field. Create it once and lay it out
+every frame:
+
+```go
+term := giode.KeyboardInput(screen).
+	OnText(func(s string) { pty.Write([]byte(s)) }).
+	OnKey(func(e giode.KeyEvent) bool {
+		if e.State != giode.KeyPress {
+			return false
+		}
+		return sendKey(pty, e) // arrows, Enter, Tab, Backspace, Ctrl+C...
+	}).
+	OnFocus(showCursor).
+	OnBlur(hideCursor).
+	Keyboard(giode.KeyboardText). // the on-screen keyboard on phones
+	Label("Terminal")
+
+term.Focus()
+```
+
+- **OnText** gets the typed text as the platform composes it: in the keyboard layout in
+  effect, with Shift and Caps Lock applied, dead keys and compose sequences combined ("´"
+  then "e" gives "é"), AltGr and Option characters, and input-method text (Chinese,
+  Japanese, Korean; a phone keyboard's swipes and suggestions) once committed. Space is text.
+- **OnKey** gets the keys that don't type text, pressed and released: the arrows, Enter,
+  Tab and Shift+Tab, Backspace, Delete, Escape, Home, End, Page Up and Down, F1-F12, the
+  modifier keys, and any key with Ctrl, Alt, Cmd or Super held. Enter, Space and Tab don't
+  activate anything, and Tab doesn't move the focus while it has it. A key `fn` returns
+  false for goes on to the app's shortcuts (`OnKey`, `Shortcuts`), and Escape to an open
+  dialog; Android's Back goes to `HandleBack`. With names, `OnKey(fn, "W", "A", "S", "D")`
+  takes only those keys, a game's movement keys among them, and leaves the rest to the app.
+- A new line in typed text (some phone keyboards send one) comes as an Enter press, and a
+  correction of text already delivered (a phone keyboard's autocorrect) as Backspace
+  presses followed by the new text. `Autocorrect(true)` lets a phone keyboard correct and
+  suggest; it's off by default.
+- **Caret(rect)** tells the input method where the app draws its caret, in pixels relative
+  to the element, so a Chinese or Japanese candidate window opens there. `Composition()`
+  is the text being composed, not yet committed, for the app to draw at its caret.
+- `Focus()`, `Blur()` and `Focused()` work as on `Input`; a click or tap on it focuses it.
+  Without `Keyboard(...)` no on-screen keyboard shows on phones.
+
 
 ```go
 notify := giode.Input.Checkbox("Enable notifications").

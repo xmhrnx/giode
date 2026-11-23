@@ -13,7 +13,45 @@ var (
 	namedKeys   []NamedKey
 	// typing is set while a text field that takes typing has focus.
 	typing bool
+	// keyWatchers are the WatchKeys handlers registered this frame;
+	// seenKeys the keys components took this frame, for them.
+	keyWatchers []func(key.Event)
+	seenKeys    []key.Event
+	// forwarded are keys a component took and passed on to the OnKey
+	// handlers (ForwardKey).
+	forwarded []key.Event
 )
+
+// WatchKeys registers fn, for this frame, to see every key press and
+// release the app gets, before anything acts on it: the keys nothing
+// took, which then go on to the OnKey handlers, and the ones a focused
+// component took (a KeyboardInput's, a button's Enter and Space,
+// an Input's OnKeys). Call it from the view every frame, as with OnKey.
+// fn only watches: it can't stop a key from going where it goes. It
+// sees the modifier keys themselves (key.NameShift, NameCtrl, NameAlt,
+// NameCommand, NameSuper) pressed and released, so it can spot a
+// double Shift. The keys a focused text field (Input) edits with -
+// arrows, Backspace, Delete, Enter, Home, End and its Ctrl or Cmd
+// shortcuts - stay inside the field and aren't seen; its typed text
+// isn't a key press either. The keys of a frame reach fn at the end of
+// it.
+func WatchKeys(fn func(key.Event)) {
+	keyWatchers = append(keyWatchers, fn)
+}
+
+// SeenKey reports a key a component took, for the WatchKeys handlers.
+// Components that take keys from Gio themselves call it; app code
+// doesn't need to.
+func SeenKey(e key.Event) {
+	seenKeys = append(seenKeys, e)
+}
+
+// ForwardKey passes a key a component took but didn't use on to the
+// OnKey handlers (app shortcuts) at the end of the frame, as if nothing
+// had taken it; the component reports it with SeenKey as well.
+func ForwardKey(e key.Event) {
+	forwarded = append(forwarded, e)
+}
 
 // MarkTyping records, for this frame, that a focused text field takes
 // typing: the keys that type text (a character or Space, with no
@@ -89,8 +127,28 @@ func OnKey(fn func(key.Event) bool, named ...NamedKey) {
 // need to.
 func DispatchKeys(gtx layout.Context) {
 	handlers, named, typingNow := keyHandlers, namedKeys, typing
+	watchers, seen, fwd := keyWatchers, seenKeys, forwarded
 	keyHandlers, namedKeys, typing = nil, nil, false
-	if len(handlers) == 0 {
+	keyWatchers, seenKeys, forwarded = nil, nil, nil
+	watch := func(e key.Event) {
+		for _, w := range watchers {
+			w(e)
+		}
+	}
+	for _, e := range seen {
+		watch(e)
+	}
+	dispatch := func(e key.Event) {
+		for i := len(handlers) - 1; i >= 0; i-- {
+			if handlers[i](e) {
+				break
+			}
+		}
+	}
+	for _, e := range fwd {
+		dispatch(e)
+	}
+	if len(handlers) == 0 && len(watchers) == 0 {
 		return
 	}
 	filters := make([]event.Filter, 0, 1+len(named))
@@ -106,13 +164,13 @@ func DispatchKeys(gtx layout.Context) {
 			return
 		}
 		e, ok := ev.(key.Event)
-		if !ok || typingNow && typed(e) {
+		if !ok {
 			continue
 		}
-		for i := len(handlers) - 1; i >= 0; i-- {
-			if handlers[i](e) {
-				break
-			}
+		watch(e)
+		if typingNow && typed(e) {
+			continue
 		}
+		dispatch(e)
 	}
 }

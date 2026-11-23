@@ -526,6 +526,32 @@ giode.OnKey(complete, giode.NamedKey{Name: key.NameTab})
 On phones, the arrow keys move the focus the same way, and a shortcut naming `Up`,
 `Down`, `Left` or `Right` takes them.
 
+**Watching every key.** `giode.WatchKeys(fn)`, called from the view every frame, sees every
+key press and release the app gets before anything acts on it: the keys nothing took, the
+ones a focused `KeyboardInput` or button took, and the modifier keys themselves pressed
+alone (`giode.KeyShift`, `KeyCtrl`, `KeyAlt`, `KeyCommand`). It only watches; it can't stop
+a key. This is how an app spots a double Shift:
+
+```go
+var lastShift time.Time
+
+giode.WatchKeys(func(e giode.KeyEvent) {
+	if e.Name != giode.KeyShift || e.State != giode.KeyPress || e.Modifiers&^giode.KeyModShift != 0 {
+		return
+	}
+	if time.Since(lastShift) < 400*time.Millisecond {
+		openSearchEverywhere()
+		lastShift = time.Time{}
+		return
+	}
+	lastShift = time.Now()
+})
+```
+
+The keys a focused text field (`Input`) edits with - the arrows, Backspace, Delete, Enter,
+Home, End and its Ctrl or Cmd shortcuts - stay inside the field and aren't seen, and its
+typed text isn't a key press. The keys of a frame reach `fn` at the end of it.
+
 ## File drop
 
 ```go
