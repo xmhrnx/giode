@@ -46,6 +46,7 @@ import (
 	"github.com/xmhrnx/giode/components/spinner"
 	"github.com/xmhrnx/giode/components/swipeable"
 	"github.com/xmhrnx/giode/components/tabs"
+	"github.com/xmhrnx/giode/components/terminal"
 	"github.com/xmhrnx/giode/components/title"
 	"github.com/xmhrnx/giode/components/titlebar"
 	"github.com/xmhrnx/giode/components/toaster"
@@ -1556,3 +1557,20 @@ func NoWindowDrag(el Element) Element {
 		return dims
 	})
 }
+
+// Terminal is a terminal: it runs a shell or any program in a
+// pseudo-terminal (Start) or shows one the app connects (Attach and
+// Write, for an SSH session), drawing its screen and taking the
+// keyboard for it. Create it once and lay it out every frame; see
+// package terminal.
+//
+//	term := giode.Terminal().OnExit(func(code int, err error) { closeTab() })
+//	if err := term.Start(nil); err != nil { ... } // the user's shell
+func Terminal() *TerminalElement { return terminal.New() }
+
+// TerminalElement is the element Terminal returns; TerminalPalette its
+// colors.
+type (
+	TerminalElement = terminal.Terminal
+	TerminalPalette = terminal.Palette
+)

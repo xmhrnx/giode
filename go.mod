@@ -22,6 +22,7 @@ require (
 	golang.org/x/image v0.26.0
 	golang.org/x/net v0.50.0
 	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.34.0
 )
 
 require (
@@ -45,6 +46,5 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
-	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 )

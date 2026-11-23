@@ -1390,3 +1390,20 @@ var WindowDragArea = ui.WindowDragArea
 // NoWindowDrag keeps el, inside a WindowDragArea, from dragging the
 // window, so a press on it reaches it.
 var NoWindowDrag = ui.NoWindowDrag
+
+// Terminal is a terminal: it runs a shell or any program in a
+// pseudo-terminal (Start) or shows one the app connects (Attach and
+// Write, for an SSH session), drawing its screen and taking the
+// keyboard for it. Create it once and lay it out every frame; see
+// package terminal.
+//
+//	term := giode.Terminal().OnExit(func(code int, err error) { closeTab() })
+//	if err := term.Start(nil); err != nil { ... } // the user's shell
+var Terminal = ui.Terminal
+
+// TerminalElement is the element Terminal returns; TerminalPalette its
+// colors.
+type (
+	TerminalElement = ui.TerminalElement
+	TerminalPalette = ui.TerminalPalette
+)

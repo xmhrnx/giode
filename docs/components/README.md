@@ -26,6 +26,7 @@ stateless elements.
 | Toaster | [toaster.md](toaster.md) | toasts showing |
 | Pressable | [pressable.md](pressable.md) | press state, click events |
 | TitleBar | [titlebar.md](titlebar.md) | window state, buttons |
+| Terminal | [terminal.md](terminal.md) | screen, history, selection, the program |
 | Transition | [transition.md](transition.md) | visibility, progress |
 | Progress | [progress.md](progress.md) | stateless |
 | Spinner | [spinner.md](spinner.md) | stateless, animated |
