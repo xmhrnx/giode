@@ -5,6 +5,7 @@ import (
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/xmhrnx/giode/elements"
@@ -72,6 +73,8 @@ func New(placeholder string, st ...styles.Styles) *Input {
 		i.st = st[0]
 	}
 	i.editor.SingleLine = true
+	// A multi-line field wraps between words, never inside one.
+	i.editor.WrapPolicy = text.WrapWords
 	i.editor.Submit = true
 	return i
 }

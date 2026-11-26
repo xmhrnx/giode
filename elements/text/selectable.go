@@ -47,6 +47,7 @@ func (t *TextElement) layoutSelectable(gtx layout.Context, st styles.Styles, str
 
 	s.sel.Alignment = st.TextAlign.LayoutAlignment()
 	s.sel.MaxLines = int(st.MaxLines)
+	s.sel.WrapPolicy = wrapPolicy(s.sel.MaxLines, "")
 	s.sel.LineHeight = unit.Sp(st.LineHeight)
 	if st.LineHeight != 0 {
 		s.sel.LineHeightScale = 1
@@ -60,7 +61,7 @@ func (t *TextElement) layoutSelectable(gtx layout.Context, st styles.Styles, str
 		// widget.Selectable's drag would take touch drags from an
 		// enclosing Scroll, so on touch the text is laid out plainly
 		// and selection works by long-press.
-		label := widget.Label{Alignment: s.sel.Alignment, MaxLines: s.sel.MaxLines, LineHeight: s.sel.LineHeight, LineHeightScale: s.sel.LineHeightScale}
+		label := widget.Label{Alignment: s.sel.Alignment, MaxLines: s.sel.MaxLines, LineHeight: s.sel.LineHeight, LineHeightScale: s.sel.LineHeightScale, WrapPolicy: s.sel.WrapPolicy}
 		if s.all {
 			macro := op.Record(gtx.Ops)
 			dims = label.Layout(gtx, fonts.Shaper(), face, size, str, textColor)

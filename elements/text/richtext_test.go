@@ -195,3 +195,30 @@ func TestTextWidth(t *testing.T) {
 		}
 	}
 }
+
+// A word too long for the line isn't broken between its letters: it
+// stays whole, on a line of its own.
+func TestTextKeepsWordsWhole(t *testing.T) {
+	fonts.UseGofont()
+	line := func(el base.Element) int {
+		h := &textHarness{now: time.Unix(0, 0), view: func() base.Element { return el }}
+		h.frame()
+		return h.dims.Size.Y
+	}
+	one := line(Text("a", styles.Styles{FontSize: 16}))
+	for _, tc := range []struct {
+		name string
+		el   base.Element
+	}{
+		{"Text", Text("supercalifragilistic", styles.Styles{FontSize: 16, Width: 40})},
+		{"RichText", RichText(styles.Styles{FontSize: 16, Width: 40}, SpanText("supercalifragilistic"))},
+	} {
+		if h := line(tc.el); h > one+one/2 {
+			t.Errorf("%s: a single long word took %dpx, more than one %dpx line: its letters wrapped", tc.name, h, one)
+		}
+	}
+	// Two words wrap between them.
+	if h := line(Text("hello world", styles.Styles{FontSize: 16, Width: 50})); h < 2*one-one/4 {
+		t.Errorf("two words in a narrow box took %dpx, want two lines of %dpx", h, one)
+	}
+}

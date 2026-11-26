@@ -235,6 +235,12 @@ These are supported, though they're sometimes taken to be missing:
 - **Transitions and keyframes:** see [Animation](#animation).
 - **Truncation:** `MaxLines: 1` with `TextOverflow: TextOverflowEllipsis` keeps text on one
   line ending in "…"; a larger `MaxLines` clamps it to that many lines.
+- **Line breaks:** `Text`, `RichText` and multi-line `Input` fields break lines between
+  words, never inside one: a word too long for the line runs past its end (clip it with
+  the parent's `Overflow`, or give it room) instead of continuing on the next line letter by
+  letter. Breaks follow the Unicode line breaking rules: at spaces, and also after a
+  hyphen and between Chinese or Japanese characters, which have no spaces. A single line
+  cut with `TextOverflowEllipsis` still cuts a long word, to show as much of it as fits.
 
 ## Animation
 

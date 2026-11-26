@@ -96,6 +96,7 @@ func (t *TextElement) layoutSelf(gtx layout.Context) layout.Dimensions {
 		Locale:          gtx.Locale,
 		LineHeight:      fixed.I(gtx.Sp(label.LineHeight)),
 		LineHeightScale: label.LineHeightScale,
+		WrapPolicy:      wrapPolicy(label.MaxLines, label.Truncator),
 	}
 	var l *textrender.Laid
 	if t.selKey != nil && st.Visibility != properties.VisibilityHidden {
